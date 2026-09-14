@@ -15,7 +15,7 @@ function saveProfile() {
   <main class="auth-page">
     <form class="auth-form" @submit.prevent="saveProfile">
       <div class="mb-7 flex items-baseline justify-between gap-4">
-        <h1 class="text-[28px] font-extrabold text-neutral-900">Pet Owner Profile</h1>
+        <h1 class="text-headline-3 font-extrabold text-primary-900">Pet Owner Profile</h1>
         <RouterLink class="text-sm font-bold no-underline" to="/login">Back to Login</RouterLink>
       </div>
 

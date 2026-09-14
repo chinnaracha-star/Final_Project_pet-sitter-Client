@@ -7,11 +7,11 @@ const emit = defineEmits<{
 
 <template>
   <div class="w-full">
-    <p class="mt-7 mb-4 text-center text-[13px] text-[#9aa0b4]">Or Continue With</p>
+    <p class="mt-7 mb-4 text-center text-body-3 text-primary-500">Or Continue With</p>
     <div class="flex gap-3.5">
       <button
         type="button"
-        class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#f3f4f8] text-sm font-semibold text-[#3a3f4d]"
+        class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary-100 text-sm font-semibold text-primary-900"
         @click="emit('facebook')"
       >
         <span class="grid size-[22px] place-items-center rounded-full bg-[#1877f2] text-[15px] font-extrabold leading-none text-white" aria-hidden="true">f</span>
@@ -19,7 +19,7 @@ const emit = defineEmits<{
       </button>
       <button
         type="button"
-        class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#f3f4f8] text-sm font-semibold text-[#3a3f4d]"
+        class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary-100 text-sm font-semibold text-primary-900"
         @click="emit('google')"
       >
         <svg class="size-[18px]" viewBox="0 0 24 24" aria-hidden="true">

@@ -32,26 +32,26 @@ function continueWith(provider: 'Facebook' | 'Google') {
       <h1 class="auth-title">Join Us!</h1>
       <p class="auth-subtitle">Find your perfect pet sitter with us</p>
 
-      <div class="mb-8 flex w-full rounded-full bg-[#f7f7fc] p-1" aria-label="Account type">
-       <button
-        type="button"
-        class="w-1/2 rounded-full py-2.5 text-sm font-bold"
-        :class="isOwner ? 'border border-brand-soft bg-white text-brand-soft' : 'text-[#9296a5]'"
-        :aria-current="isOwner ? 'page' : undefined"
-        @click="setRole('owner')"
-       >
-        Owner
-       </button>
-       <button
-        type="button"
-        class="w-1/2 rounded-full py-2.5 text-sm font-bold"
-        :class="!isOwner ? 'border border-brand-soft bg-white text-brand-soft' : 'text-[#9296a5]'"
-        :aria-current="!isOwner ? 'page' : undefined"
-        @click="setRole('sitter')"
-       >
-        Sitter
-       </button>
-     </div>
+      <div class="mb-8 flex w-full rounded-full bg-primary-100/40 p-1" aria-label="Account type">
+        <button
+          type="button"
+          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          :class="isOwner ? 'border border-orange-700 bg-white text-orange-700' : 'text-primary-500'"
+          :aria-current="isOwner ? 'page' : undefined"
+          @click="setRole('owner')"
+        >
+          Owner
+        </button>
+        <button
+          type="button"
+          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          :class="!isOwner ? 'border border-orange-700 bg-white text-orange-700' : 'text-primary-500'"
+          :aria-current="!isOwner ? 'page' : undefined"
+          @click="setRole('sitter')"
+        >
+          Sitter
+        </button>
+      </div>
 
       <template v-if="!isOwner">
         <label class="auth-label" for="register-name">Name</label>
@@ -102,7 +102,7 @@ function continueWith(provider: 'Facebook' | 'Google') {
         />
         <button
           type="button"
-          class="absolute top-1 right-2 h-10 border-0 bg-white text-[13px] text-muted"
+          class="absolute top-1 right-2 h-10 border-0 bg-white text-body-3 text-primary-500"
           :aria-label="showPassword ? 'Hide password' : 'Show password'"
           @click="showPassword = !showPassword"
         >

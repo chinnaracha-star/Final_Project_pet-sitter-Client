@@ -89,13 +89,13 @@ function submitProfile() {
 
 <template>
   <div class="flex min-h-svh bg-[#f6f7fb]">
-    <aside class="flex w-[72px] shrink-0 flex-col border-r border-line bg-white min-[761px]:w-[250px]">
-      <div class="px-2 py-[22px] text-[19px] font-extrabold text-neutral-900 min-[761px]:px-6 min-[761px]:py-8 min-[761px]:text-[34px]">
-        S<span class="italic text-brand">i</span>tter<strong class="align-top text-[10px] text-[#16bd80] min-[761px]:text-lg">✦</strong>
+    <aside class="flex w-[72px] shrink-0 flex-col border-r border-primary-100 bg-white min-[761px]:w-[250px]">
+      <div class="px-2 py-[22px] text-[19px] font-extrabold text-primary-900 min-[761px]:px-6 min-[761px]:py-8 min-[761px]:text-[34px]">
+        S<span class="italic text-orange-700">i</span>tter<strong class="align-top text-[10px] text-[#16bd80] min-[761px]:text-lg">✦</strong>
       </div>
       <nav class="mt-[18px] flex flex-col gap-[7px]" aria-label="Sitter menu">
         <RouterLink
-          class="flex min-h-[52px] items-center justify-center gap-3.5 bg-[#fff3ee] px-2.5 text-base text-brand no-underline min-[761px]:justify-start min-[761px]:px-[22px]"
+          class="flex min-h-[52px] items-center justify-center gap-3.5 bg-orange-100 px-2.5 text-base text-orange-700 no-underline min-[761px]:justify-start min-[761px]:px-[22px]"
           to="/sitter/profile"
         >
           ♙ <span class="max-[760px]:hidden">Pet Sitter Profile</span>
@@ -111,7 +111,7 @@ function submitProfile() {
         </span>
       </nav>
       <RouterLink
-        class="mt-auto flex min-h-[52px] items-center justify-center gap-3.5 border-t border-line px-2.5 text-base text-[#73798a] no-underline min-[761px]:justify-start min-[761px]:px-[22px]"
+        class="mt-auto flex min-h-[52px] items-center justify-center gap-3.5 border-t border-primary-100 px-2.5 text-base text-[#73798a] no-underline min-[761px]:justify-start min-[761px]:px-[22px]"
         :to="{ path: '/login', query: { role: 'sitter' } }"
       >
         ↪ <span class="max-[760px]:hidden">Back to Login</span>
@@ -119,7 +119,7 @@ function submitProfile() {
     </aside>
 
     <div class="min-w-0 flex-1">
-      <header class="flex h-[78px] items-center gap-3.5 border-b border-line bg-white px-5 min-[761px]:px-9">
+      <header class="flex h-[78px] items-center gap-3.5 border-b border-primary-100 bg-white px-5 min-[761px]:px-9">
         <span class="grid size-10 place-items-center rounded-full bg-[#e7e9f6] text-2xl text-white">♙</span>
         <span>{{ fullName || 'Pet Sitter' }}</span>
       </header>
@@ -130,7 +130,7 @@ function submitProfile() {
             <h1 class="m-0 text-[26px]">Pet Sitter Profile</h1>
             <span class="text-sm" :class="statusClass">{{ statusText }}</span>
           </div>
-          <button type="submit" form="profile-form" class="rounded-3xl border-0 bg-brand px-5 py-3 font-bold text-white">
+          <button type="submit" form="profile-form" class="rounded-3xl border-0 bg-orange-700 px-5 py-3 font-bold text-white">
             {{ status === 'unverified' || status === 'rejected' ? 'Request for approval' : 'Update Profile' }}
           </button>
         </div>
@@ -144,12 +144,12 @@ function submitProfile() {
         <p v-if="status === 'approved'" class="mb-4 rounded-md bg-[#eaf8f0] px-[18px] py-3.5 text-[#168e62]">
           Your sitter profile is listed. New edits will need approval before they appear publicly.
         </p>
-        <p v-if="notice" class="mb-4 rounded-md bg-[#fff1e9] px-[18px] py-3.5 text-[#454d5f]" role="status">{{ notice }}</p>
+        <p v-if="notice" class="mb-4 rounded-md bg-orange-100 px-[18px] py-3.5 text-primary-700" role="status">{{ notice }}</p>
 
         <form id="profile-form" @submit.prevent="submitProfile">
           <section class="mb-5 rounded-xl bg-white p-[22px] min-[761px]:p-[34px]">
             <h2 class="mb-[26px] text-xl text-[#9299ad]">Basic Information</h2>
-            <label class="mb-[15px] block font-semibold text-neutral-800">Profile Image</label>
+            <label class="mb-[15px] block font-semibold text-primary-900">Profile Image</label>
             <div class="relative mb-7 w-[210px]">
               <div class="grid size-[210px] place-items-center overflow-hidden rounded-full bg-[#e7e9f6]" aria-label="Profile image">
                 <img v-if="avatarUrl" class="size-full object-cover" :src="avatarUrl" alt="Selected profile" />
@@ -160,7 +160,7 @@ function submitProfile() {
               </div>
               <button
                 type="button"
-                class="absolute right-0 bottom-0 size-[52px] rounded-full border-0 bg-[#fff2eb] text-[30px] text-brand"
+                class="absolute right-0 bottom-0 size-[52px] rounded-full border-0 bg-orange-100 text-[30px] text-orange-700"
                 aria-label="Choose profile image"
                 @click="photoInput?.click()"
               >
@@ -170,12 +170,12 @@ function submitProfile() {
             </div>
             <div class="grid grid-cols-1 gap-x-7 gap-y-[22px] min-[761px]:grid-cols-2">
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="full-name">Your full name <b class="text-[#ed3d4a]">*</b></label>
-                <input id="full-name" v-model.trim="fullName" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" autocomplete="name" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="full-name">Your full name <b class="text-red">*</b></label>
+                <input id="full-name" v-model.trim="fullName" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" autocomplete="name" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="experience">Experience <b class="text-[#ed3d4a]">*</b></label>
-                <select id="experience" v-model="experience" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" required>
+                <label class="text-[15px] font-semibold text-primary-900" for="experience">Experience <b class="text-red">*</b></label>
+                <select id="experience" v-model="experience" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required>
                   <option value="" disabled>Select experience</option>
                   <option>0–1 year</option>
                   <option>1–3 years</option>
@@ -184,24 +184,24 @@ function submitProfile() {
                 </select>
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="phone">Phone Number <b class="text-[#ed3d4a]">*</b></label>
-                <input id="phone" v-model.trim="phone" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" type="tel" autocomplete="tel" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="phone">Phone Number <b class="text-red">*</b></label>
+                <input id="phone" v-model.trim="phone" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" type="tel" autocomplete="tel" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="email">Email <b class="text-[#ed3d4a]">*</b></label>
-                <input id="email" v-model.trim="email" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" type="email" autocomplete="email" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="email">Email <b class="text-red">*</b></label>
+                <input id="email" v-model.trim="email" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" type="email" autocomplete="email" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="dob">Date of Birth <b class="text-[#ed3d4a]">*</b></label>
-                <input id="dob" v-model="dateOfBirth" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" type="date" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="dob">Date of Birth <b class="text-red">*</b></label>
+                <input id="dob" v-model="dateOfBirth" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" type="date" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="id-number">ID Number <b class="text-[#ed3d4a]">*</b></label>
-                <input id="id-number" v-model.trim="idNumber" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" inputmode="numeric" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="id-number">ID Number <b class="text-red">*</b></label>
+                <input id="id-number" v-model.trim="idNumber" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" inputmode="numeric" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
-                <label class="text-[15px] font-semibold text-neutral-800" for="intro">Introduction (Describe about yourself as pet sitter)</label>
-                <textarea id="intro" v-model.trim="introduction" class="min-h-12 w-full resize-y rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" rows="5" />
+                <label class="text-[15px] font-semibold text-primary-900" for="intro">Introduction (Describe about yourself as pet sitter)</label>
+                <textarea id="intro" v-model.trim="introduction" class="min-h-12 w-full resize-y rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" rows="5" />
               </div>
             </div>
           </section>
@@ -210,25 +210,25 @@ function submitProfile() {
             <h2 class="mb-[26px] text-xl text-[#9299ad]">Pet Sitter</h2>
             <div class="grid grid-cols-1 gap-x-7 gap-y-[22px] min-[761px]:grid-cols-2">
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="sitter-name">Pet sitter name (Trade Name) <b class="text-[#ed3d4a]">*</b></label>
-                <input id="sitter-name" v-model.trim="sitterName" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="sitter-name">Pet sitter name (Trade Name) <b class="text-red">*</b></label>
+                <input id="sitter-name" v-model.trim="sitterName" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
               </div>
               <fieldset class="flex min-w-0 flex-row flex-wrap gap-[18px] border-0 p-0 min-[761px]:col-span-2">
-                <legend class="mb-[9px] text-[15px] font-semibold text-neutral-800">Pet type <b class="text-[#ed3d4a]">*</b></legend>
+                <legend class="mb-[9px] text-[15px] font-semibold text-primary-900">Pet type <b class="text-red">*</b></legend>
                 <label v-for="pet in ['Dog', 'Cat', 'Bird', 'Rabbit']" :key="pet" class="inline-flex items-center gap-1.5">
                   <input v-model="petTypes" type="checkbox" :value="pet" />{{ pet }}
                 </label>
               </fieldset>
               <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
-                <label class="text-[15px] font-semibold text-neutral-800" for="services">Services (Describe your service for pet sitting)</label>
-                <textarea id="services" v-model.trim="services" class="min-h-12 w-full resize-y rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" rows="4" />
+                <label class="text-[15px] font-semibold text-primary-900" for="services">Services (Describe your service for pet sitting)</label>
+                <textarea id="services" v-model.trim="services" class="min-h-12 w-full resize-y rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" rows="4" />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
-                <label class="text-[15px] font-semibold text-neutral-800" for="my-place">My Place (Describe your place)</label>
-                <textarea id="my-place" v-model.trim="myPlace" class="min-h-12 w-full resize-y rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" rows="4" />
+                <label class="text-[15px] font-semibold text-primary-900" for="my-place">My Place (Describe your place)</label>
+                <textarea id="my-place" v-model.trim="myPlace" class="min-h-12 w-full resize-y rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" rows="4" />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
-                <label class="text-[15px] font-semibold text-neutral-800">Image Gallery (Maximum 10 images)</label>
+                <label class="text-[15px] font-semibold text-primary-900">Image Gallery (Maximum 10 images)</label>
                 <div class="flex flex-wrap gap-2.5">
                   <div v-for="(image, index) in images" :key="image.url" class="relative h-[100px] w-[108px] overflow-hidden rounded">
                     <img class="size-full object-cover" :src="image.url" :alt="image.name" />
@@ -241,7 +241,7 @@ function submitProfile() {
                       ×
                     </button>
                   </div>
-                  <label class="flex h-[100px] w-[108px] cursor-pointer flex-col items-center justify-center gap-1 bg-[#fff2ec] text-[28px] text-brand">
+                  <label class="flex h-[100px] w-[108px] cursor-pointer flex-col items-center justify-center gap-1 bg-orange-100 text-[28px] text-orange-700">
                     ⊕<span class="text-xs">Upload Image</span>
                     <input type="file" accept="image/*" multiple class="sr-only" @change="addImages" />
                   </label>
@@ -255,24 +255,24 @@ function submitProfile() {
             <h2 class="mb-[26px] text-xl text-[#9299ad]">Address</h2>
             <div class="grid grid-cols-1 gap-x-7 gap-y-[22px] min-[761px]:grid-cols-2">
               <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
-                <label class="text-[15px] font-semibold text-neutral-800" for="address">Address detail <b class="text-[#ed3d4a]">*</b></label>
-                <input id="address" v-model.trim="address" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="address">Address detail <b class="text-red">*</b></label>
+                <input id="address" v-model.trim="address" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="district">District <b class="text-[#ed3d4a]">*</b></label>
-                <input id="district" v-model.trim="district" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="district">District <b class="text-red">*</b></label>
+                <input id="district" v-model.trim="district" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="sub-district">Sub-district <b class="text-[#ed3d4a]">*</b></label>
-                <input id="sub-district" v-model.trim="subDistrict" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="sub-district">Sub-district <b class="text-red">*</b></label>
+                <input id="sub-district" v-model.trim="subDistrict" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="province">Province <b class="text-[#ed3d4a]">*</b></label>
-                <input id="province" v-model.trim="province" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="province">Province <b class="text-red">*</b></label>
+                <input id="province" v-model.trim="province" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
               </div>
               <div class="flex min-w-0 flex-col gap-[9px]">
-                <label class="text-[15px] font-semibold text-neutral-800" for="post-code">Post code <b class="text-[#ed3d4a]">*</b></label>
-                <input id="post-code" v-model.trim="postCode" class="min-h-12 w-full rounded-md border border-line bg-white px-3.5 py-3 text-slate-700" inputmode="numeric" required />
+                <label class="text-[15px] font-semibold text-primary-900" for="post-code">Post code <b class="text-red">*</b></label>
+                <input id="post-code" v-model.trim="postCode" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" inputmode="numeric" required />
               </div>
             </div>
             <div class="mt-[22px] grid min-h-[220px] place-items-center rounded-lg border border-dashed border-[#cdd5e5] bg-[#f2f5f8] p-5 text-center text-[#777f90]">
@@ -281,7 +281,7 @@ function submitProfile() {
           </section>
 
           <div class="flex justify-end">
-            <button type="submit" class="rounded-3xl border-0 bg-brand px-5 py-3 font-bold text-white">Update Profile</button>
+            <button type="submit" class="rounded-3xl border-0 bg-orange-700 px-5 py-3 font-bold text-white">Update Profile</button>
           </div>
         </form>
       </main>

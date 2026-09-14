@@ -27,19 +27,19 @@ function continueWith(provider: 'Facebook' | 'Google') {
 <template>
   <main class="auth-page">
     <form class="auth-form" @submit.prevent="submitLogin">
-      <p v-if="!isOwner" class="mb-8 text-[26px] font-extrabold text-neutral-900">
-        S<span class="italic text-brand">i</span>tter<strong class="align-top text-[20px] text-[#18bd83]">✦</strong>
+      <p v-if="!isOwner" class="mb-8 text-[26px] font-extrabold text-primary-900">
+        S<span class="italic text-orange-700">i</span>tter<strong class="align-top text-[20px] text-green-500">✦</strong>
       </p>
       <h1 class="auth-title">{{ isOwner ? 'Welcome back!' : 'Welcome Back!' }}</h1>
       <p class="auth-subtitle">
         {{ isOwner ? 'Find your perfect pet sitter with us' : 'Become the best Pet Sitter with us' }}
       </p>
 
-      <div class="mb-8 flex w-full rounded-full bg-[#f7f7fc] p-1" aria-label="Account type">
+      <div class="mb-8 flex w-full rounded-full bg-primary-100/40 p-1" aria-label="Account type">
        <button
         type="button"
         class="w-1/2 rounded-full py-2.5 text-sm font-bold"
-        :class="isOwner ? 'border border-brand-soft bg-white text-brand-soft' : 'text-[#9296a5]'"
+        :class="isOwner ? 'border border-orange-700 bg-white text-orange-700' : 'text-primary-500'"
         :aria-current="isOwner ? 'page' : undefined"
         @click="setRole('owner')"
        >
@@ -48,7 +48,7 @@ function continueWith(provider: 'Facebook' | 'Google') {
        <button
         type="button"
         class="w-1/2 rounded-full py-2.5 text-sm font-bold"
-        :class="!isOwner ? 'border border-brand-soft bg-white text-brand-soft' : 'text-[#9296a5]'"
+        :class="!isOwner ? 'border border-orange-700 bg-white text-orange-700' : 'text-primary-500'"
         :aria-current="!isOwner ? 'page' : undefined"
         @click="setRole('sitter')"
        >
@@ -79,12 +79,12 @@ function continueWith(provider: 'Facebook' | 'Google') {
       />
 
       <div class="mt-3.5 mb-[22px] flex items-center justify-between">
-        <label v-if="isOwner" class="inline-flex items-center gap-2 text-[13px] text-slate-500">
-          <input v-model="rememberMe" class="size-[15px] accent-brand" type="checkbox" />
+        <label v-if="isOwner" class="inline-flex items-center gap-2 text-body-3 text-primary-500">
+          <input v-model="rememberMe" class="size-[15px] accent-orange-700" type="checkbox" />
           Remember?
         </label>
         <span v-else></span>
-        <span class="text-[13px] text-brand">{{ isOwner ? 'Forget Password?' : 'Forgot Password?' }}</span>
+        <span class="text-body-3 text-orange-700">{{ isOwner ? 'Forget Password?' : 'Forgot Password?' }}</span>
       </div>
 
       <button class="auth-submit" type="submit">Login</button>

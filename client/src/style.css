@@ -1,16 +1,83 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: Arial, Helvetica, sans-serif;
-  --color-brand: #ff713e;
-  --color-brand-soft: #ff6b39;
-  --color-muted: #8b90a0;
-  --color-line: #d8ddef;
+  --font-sans: "Satoshi", Arial, Helvetica, sans-serif;
+
+  --text-display: 5.5rem;
+  --text-display--line-height: 6rem;
+  --text-display--font-weight: 900;
+
+  --text-headline-1: 3.5rem;
+  --text-headline-1--line-height: 4rem;
+  --text-headline-1--font-weight: 700;
+
+  --text-headline-2: 2.25rem;
+  --text-headline-2--line-height: 2.75rem;
+  --text-headline-2--font-weight: 700;
+
+  --text-headline-3: 1.5rem;
+  --text-headline-3--line-height: 2rem;
+  --text-headline-3--font-weight: 700;
+
+  --text-headline-4: 1.25rem;
+  --text-headline-4--line-height: 1.75rem;
+  --text-headline-4--font-weight: 700;
+
+  --text-body-1: 1.125rem;
+  --text-body-1--line-height: 1.625rem;
+  --text-body-1--font-weight: 500;
+
+  --text-body-2: 1rem;
+  --text-body-2--line-height: 1.75rem;
+  --text-body-2--font-weight: 500;
+
+  --text-body-3: 0.875rem;
+  --text-body-3--line-height: 1.5rem;
+  --text-body-3--font-weight: 500;
+
+  --color-primary-900: #30343f;
+  --color-primary-700: #565a6c;
+  --color-primary-500: #82869b;
+  --color-primary-300: #adb1c6;
+  --color-primary-100: #dde0ef;
+
+  --color-orange-900: #e2480a;
+  --color-orange-700: #ff7a3d;
+  --color-orange-500: #ffa374;
+  --color-orange-300: #ffc7a8;
+  --color-orange-200: #ffdfc9;
+  --color-orange-100: #fff2ec;
+
+  --color-yellow-500: #ffc95c;
+  --color-yellow-100: #fff2e8;
+
+  --color-blue-500: #7ccfff;
+  --color-blue-100: #e9f7ff;
+
+  --color-green-500: #22c07f;
+  --color-green-100: #e5f9ef;
+
+  --color-pink-500: #ee82c1;
+  --color-pink-100: #fdeef2;
+
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-red: #e91010;
+
+  /* Aliases for existing auth/sitter classes → design system tokens */
+  --color-brand: #ff7a3d;
+  --color-brand-soft: #ff7a3d;
+  --color-muted: #82869b;
+  --color-line: #dde0ef;
 }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
   body {
-    @apply m-0 bg-white font-sans text-slate-700 antialiased;
+    @apply m-0 bg-[#f8f9fd] font-sans text-primary-900 antialiased;
   }
 
   button,
@@ -25,11 +92,11 @@
   }
 
   a {
-    @apply text-brand;
+    @apply text-orange-700;
   }
 
   :focus-visible {
-    @apply outline-3 outline-offset-2 outline-[#ff9c79];
+    @apply outline-3 outline-offset-2 outline-orange-500;
   }
 }
 
@@ -43,38 +110,38 @@
   }
 
   .auth-title {
-    @apply m-0 text-center text-[clamp(2.125rem,5vw,2.75rem)] font-extrabold text-neutral-900;
+    @apply m-0 text-center text-headline-2 font-extrabold text-primary-900;
   }
 
   .auth-subtitle {
-    @apply mb-9 mt-2.5 text-center text-base text-muted;
+    @apply mb-9 mt-2.5 text-center text-body-2 text-primary-500;
   }
 
   .auth-label {
-    @apply mt-3.5 mb-2 text-sm font-bold text-neutral-900;
+    @apply mt-3.5 mb-2 text-body-3 font-bold text-primary-900;
   }
 
   .auth-input {
-    @apply h-[46px] w-full rounded-3xl border border-line bg-white px-[18px] text-neutral-800;
+    @apply h-[46px] w-full rounded-3xl border border-primary-100 bg-white px-[18px] text-primary-900;
   }
 
   .auth-submit {
-    @apply min-h-12 rounded-full bg-brand text-base font-bold text-white;
+    @apply min-h-12 rounded-full bg-orange-700 text-body-2 font-bold text-white;
   }
 
   .auth-notice {
-    @apply mt-4 text-center text-[13px] leading-normal text-slate-500;
+    @apply mt-4 text-center text-body-3 leading-normal text-primary-500;
   }
 
   .auth-switch {
-    @apply mt-[22px] text-center text-sm text-neutral-800;
+    @apply mt-[22px] text-center text-body-3 text-primary-900;
   }
 
   .auth-switch a {
-    @apply font-bold no-underline;
+    @apply font-bold text-orange-700 no-underline;
   }
 
   .auth-role {
-    @apply mt-3 border-0 bg-transparent text-[13px] text-muted;
+    @apply mt-3 border-0 bg-transparent text-body-3 text-primary-500;
   }
 }

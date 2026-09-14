@@ -1,0 +1,220 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.users (
+  id uuid NOT NULL,
+  name character varying,
+  email character varying NOT NULL UNIQUE,
+  phone character varying UNIQUE,
+  id_number character varying,
+  date_of_birth date,
+  avatar_url text,
+  is_admin boolean NOT NULL DEFAULT false,
+  is_verified boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_banned boolean DEFAULT false,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.sitter_profiles (
+  user_id uuid NOT NULL,
+  display_name character varying NOT NULL,
+  introduction text,
+  my_place text,
+  services text,
+  address_detail character varying,
+  district character varying,
+  sub_district character varying,
+  province character varying,
+  post_code character varying,
+  latitude numeric,
+  longitude numeric,
+  experience_years character varying NOT NULL DEFAULT '0-2 Years'::character varying,
+  rating_avg numeric NOT NULL DEFAULT 0.0,
+  review_count integer NOT NULL DEFAULT 0,
+  bank_name character varying,
+  account_number character varying,
+  approval_status character varying NOT NULL DEFAULT 'Unverified'::character varying CHECK (approval_status::text = ANY (ARRAY['Unverified'::character varying, 'Waiting for verify'::character varying, 'Verified'::character varying, 'Waiting for approve'::character varying, 'Approved'::character varying, 'Rejected'::character varying]::text[])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_listed boolean NOT NULL DEFAULT false,
+  pending_profile jsonb,
+  account_name character varying,
+  book_bank_image_url text,
+  bank_code character varying,
+  rejection_reason text,
+  CONSTRAINT sitter_profiles_pkey PRIMARY KEY (user_id),
+  CONSTRAINT sitter_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.sitter_photos (
+  id bigint NOT NULL DEFAULT nextval('sitter_photos_id_seq'::regclass),
+  sitter_id uuid NOT NULL,
+  photo_url text NOT NULL,
+  sort_order integer DEFAULT 0,
+  CONSTRAINT sitter_photos_pkey PRIMARY KEY (id),
+  CONSTRAINT sitter_photos_sitter_id_fkey FOREIGN KEY (sitter_id) REFERENCES public.sitter_profiles(user_id)
+);
+CREATE TABLE public.pet_types (
+  id integer NOT NULL DEFAULT nextval('pet_types_id_seq'::regclass),
+  name character varying NOT NULL UNIQUE,
+  CONSTRAINT pet_types_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.sitter_pet_types (
+  sitter_id uuid NOT NULL,
+  pet_type_id integer NOT NULL,
+  CONSTRAINT sitter_pet_types_pkey PRIMARY KEY (sitter_id, pet_type_id),
+  CONSTRAINT sitter_pet_types_sitter_id_fkey FOREIGN KEY (sitter_id) REFERENCES public.sitter_profiles(user_id),
+  CONSTRAINT sitter_pet_types_pet_type_id_fkey FOREIGN KEY (pet_type_id) REFERENCES public.pet_types(id)
+);
+CREATE TABLE public.pets (
+  id bigint NOT NULL DEFAULT nextval('pets_id_seq'::regclass),
+  owner_id uuid NOT NULL,
+  pet_type_id integer NOT NULL,
+  name character varying NOT NULL,
+  breed character varying,
+  sex character varying CHECK (sex::text = ANY (ARRAY['Male'::character varying, 'Female'::character varying]::text[])),
+  age_months integer,
+  color character varying,
+  weight_kg real,
+  about text,
+  avatar_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_suspended boolean DEFAULT false,
+  CONSTRAINT pets_pkey PRIMARY KEY (id),
+  CONSTRAINT pets_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id),
+  CONSTRAINT pets_pet_type_id_fkey FOREIGN KEY (pet_type_id) REFERENCES public.pet_types(id)
+);
+CREATE TABLE public.bookings (
+  id bigint NOT NULL DEFAULT nextval('bookings_id_seq'::regclass),
+  owner_id uuid NOT NULL,
+  sitter_id uuid NOT NULL,
+  start_date date NOT NULL,
+  start_time time without time zone NOT NULL,
+  end_time time without time zone NOT NULL,
+  duration numeric NOT NULL,
+  contact_name character varying NOT NULL,
+  contact_email character varying NOT NULL,
+  contact_phone character varying NOT NULL,
+  additional_message text,
+  total_price numeric NOT NULL,
+  status character varying NOT NULL DEFAULT 'waiting_confirm'::character varying CHECK (status::text = ANY (ARRAY['waiting_confirm'::text, 'waiting_service'::text, 'in_service'::text, 'success'::text, 'cancelled'::text])),
+  transaction_no character varying UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  sitter_viewed_at timestamp with time zone,
+  end_date date NOT NULL,
+  duration_unit character varying NOT NULL CHECK (duration_unit::text = ANY (ARRAY['hours'::character varying, 'Day'::character varying]::text[])),
+  payment_method character varying CHECK (payment_method IS NULL OR (payment_method::text = ANY (ARRAY['cash'::character varying, 'stripe'::character varying]::text[]))),
+  CONSTRAINT bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT bookings_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id),
+  CONSTRAINT bookings_sitter_id_fkey FOREIGN KEY (sitter_id) REFERENCES public.sitter_profiles(user_id)
+);
+CREATE TABLE public.booking_pets (
+  booking_id bigint NOT NULL,
+  pet_id bigint NOT NULL,
+  CONSTRAINT booking_pets_pkey PRIMARY KEY (booking_id, pet_id),
+  CONSTRAINT booking_pets_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT booking_pets_pet_id_fkey FOREIGN KEY (pet_id) REFERENCES public.pets(id)
+);
+CREATE TABLE public.booking_reschedules (
+  id bigint NOT NULL DEFAULT nextval('booking_reschedules_id_seq'::regclass),
+  booking_id bigint NOT NULL,
+  old_date date NOT NULL,
+  old_start_time time without time zone NOT NULL,
+  old_end_time time without time zone NOT NULL,
+  new_date date NOT NULL,
+  new_start_time time without time zone NOT NULL,
+  new_end_time time without time zone NOT NULL,
+  changed_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT booking_reschedules_pkey PRIMARY KEY (id),
+  CONSTRAINT booking_reschedules_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id)
+);
+CREATE TABLE public.payments (
+  id bigint NOT NULL DEFAULT nextval('payments_id_seq'::regclass),
+  booking_id bigint NOT NULL UNIQUE,
+  card_owner_name character varying,
+  card_last4 character varying,
+  payment_token character varying,
+  amount numeric NOT NULL,
+  paid_at timestamp with time zone,
+  status character varying NOT NULL DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'paid'::character varying, 'failed'::character varying, 'refunded'::character varying]::text[])),
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id)
+);
+CREATE TABLE public.reviews (
+  id bigint NOT NULL DEFAULT nextval('reviews_id_seq'::regclass),
+  booking_id bigint NOT NULL UNIQUE,
+  owner_id uuid NOT NULL,
+  sitter_id uuid NOT NULL,
+  rating smallint NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_approved boolean NOT NULL DEFAULT false,
+  CONSTRAINT reviews_pkey PRIMARY KEY (id),
+  CONSTRAINT reviews_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT reviews_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id),
+  CONSTRAINT reviews_sitter_id_fkey FOREIGN KEY (sitter_id) REFERENCES public.sitter_profiles(user_id)
+);
+CREATE TABLE public.conversations (
+  id bigint NOT NULL DEFAULT nextval('conversations_id_seq'::regclass),
+  owner_id uuid NOT NULL,
+  sitter_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT conversations_pkey PRIMARY KEY (id),
+  CONSTRAINT conversations_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id),
+  CONSTRAINT conversations_sitter_id_fkey FOREIGN KEY (sitter_id) REFERENCES public.sitter_profiles(user_id)
+);
+CREATE TABLE public.messages (
+  id bigint NOT NULL DEFAULT nextval('messages_id_seq'::regclass),
+  conversation_id bigint NOT NULL,
+  sender_id uuid NOT NULL,
+  content text,
+  image_url text,
+  sent_at timestamp with time zone NOT NULL DEFAULT now(),
+  read_at timestamp with time zone,
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES public.conversations(id),
+  CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.reports (
+  id bigint NOT NULL DEFAULT nextval('reports_id_seq'::regclass),
+  booking_id bigint,
+  reporter_id uuid NOT NULL,
+  issue character varying NOT NULL,
+  description text,
+  status character varying NOT NULL DEFAULT 'open'::character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT reports_pkey PRIMARY KEY (id),
+  CONSTRAINT reports_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT reports_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.notifications (
+  id bigint NOT NULL DEFAULT nextval('notifications_id_seq'::regclass),
+  user_id uuid NOT NULL,
+  type character varying NOT NULL,
+  content text NOT NULL,
+  is_read boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.sitter_availability (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  sitter_id uuid NOT NULL,
+  day_of_week smallint NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+  start_time time without time zone NOT NULL,
+  end_time time without time zone NOT NULL,
+  is_available boolean NOT NULL DEFAULT true,
+  CONSTRAINT sitter_availability_pkey PRIMARY KEY (id),
+  CONSTRAINT sitter_availability_sitter_id_fkey FOREIGN KEY (sitter_id) REFERENCES public.sitter_profiles(user_id)
+);
+CREATE TABLE public.sitter_unavailability (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  sitter_id uuid NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  reason text,
+  CONSTRAINT sitter_unavailability_pkey PRIMARY KEY (id),
+  CONSTRAINT sitter_unavailability_sitter_id_fkey FOREIGN KEY (sitter_id) REFERENCES public.sitter_profiles(user_id)
+);

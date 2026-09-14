@@ -23,7 +23,7 @@
         <span class="label">Payout Option</span>
       </span>
     </nav>
-    <RouterLink class="nav-item logout" to="/login">
+    <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'sitter' } }">
       <span class="nav-icon exit" aria-hidden="true"></span>
       <span class="label">Back to Login</span>
     </RouterLink>

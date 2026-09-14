@@ -4,7 +4,9 @@ defineProps<{ name: string }>()
 
 <template>
   <header class="topbar">
-    <span class="small-avatar">♙</span>
+    <span class="small-avatar">
+      <img src="/icon/user.svg" alt="" width="20" height="20" />
+    </span>
     <span>{{ name || 'Pet Sitter' }}</span>
   </header>
 </template>

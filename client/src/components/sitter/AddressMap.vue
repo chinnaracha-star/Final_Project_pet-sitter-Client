@@ -67,6 +67,7 @@ onMounted(async () => {
   marker = L.marker([lat.value, lon.value], { icon: pin }).addTo(map)
   await nextTick()
   map.invalidateSize()
+  window.setTimeout(() => map?.invalidateSize(), 300)
 })
 
 onUnmounted(() => {

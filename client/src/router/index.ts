@@ -7,5 +7,6 @@ export default createRouter({
     { path: '/login', component: () => import('../views/LoginView.vue') },
     { path: '/register', component: () => import('../views/RegisterView.vue') },
     { path: '/sitter/profile', component: () => import('../views/SitterProfileView.vue') },
+    { path: '/admin/petsitters', component: () => import('../views/Admin/AdminPetSitterView.vue') },
   ],
 })

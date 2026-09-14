@@ -1,5 +1,6 @@
 /.env
 Figma/
+Logo&Icon/
 node_modules/
 dist/
 coverage/

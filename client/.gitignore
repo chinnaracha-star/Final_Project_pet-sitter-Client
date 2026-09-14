@@ -2,6 +2,10 @@
 Figma/
 node_modules/
 Logo&Icon/
+icon/
+Logo&Icon/
+images/
+navbar/
 logs
 *.log
 npm-debug.log*

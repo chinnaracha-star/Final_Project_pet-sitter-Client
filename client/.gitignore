@@ -1,5 +1,7 @@
 # Logs
 Figma/
+node_modules/
+Logo&Icon/
 logs
 *.log
 npm-debug.log*

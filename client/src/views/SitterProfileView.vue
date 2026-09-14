@@ -9,10 +9,20 @@ const route = useRoute()
 const initialStatus = route.query.status
 const status = ref<ApprovalStatus>(
   initialStatus === 'waiting' || initialStatus === 'approved' || initialStatus === 'rejected'
-    ? initialStatus : 'unverified',
+    ? initialStatus
+    : 'unverified',
 )
 const statusText = computed(() => ({
-  unverified: 'Unverified', waiting: 'Waiting for approval', approved: 'Approved', rejected: 'Rejected',
+  unverified: 'Unverified',
+  waiting: 'Waiting for approval',
+  approved: 'Approved',
+  rejected: 'Rejected',
+})[status.value])
+const statusClass = computed(() => ({
+  unverified: 'text-[#ec6d85]',
+  waiting: 'text-[#ec6d85]',
+  approved: 'text-[#16a86f]',
+  rejected: 'text-[#e34b4b]',
 })[status.value])
 
 const fullName = ref('')
@@ -78,88 +88,203 @@ function submitProfile() {
 </script>
 
 <template>
-  <div class="profile-shell">
-    <aside class="sidebar">
-      <div class="brand">S<span>i</span>tter<strong>✦</strong></div>
-      <nav aria-label="Sitter menu">
-        <RouterLink class="active" to="/sitter/profile">♙ <span>Pet Sitter Profile</span></RouterLink>
-        <span>☷ <span>Booking List</span></span>
-        <span>▣ <span>Calendar</span></span>
-        <span>▤ <span>Payout Option</span></span>
+  <div class="flex min-h-svh bg-[#f6f7fb]">
+    <aside class="flex w-[72px] shrink-0 flex-col border-r border-primary-100 bg-white min-[761px]:w-[250px]">
+      <div class="px-2 py-[22px] text-[19px] font-extrabold text-primary-900 min-[761px]:px-6 min-[761px]:py-8 min-[761px]:text-[34px]">
+        S<span class="italic text-orange-700">i</span>tter<strong class="align-top text-[10px] text-[#16bd80] min-[761px]:text-lg">✦</strong>
+      </div>
+      <nav class="mt-[18px] flex flex-col gap-[7px]" aria-label="Sitter menu">
+        <RouterLink
+          class="flex min-h-[52px] items-center justify-center gap-3.5 bg-orange-100 px-2.5 text-base text-orange-700 no-underline min-[761px]:justify-start min-[761px]:px-[22px]"
+          to="/sitter/profile"
+        >
+          ♙ <span class="max-[760px]:hidden">Pet Sitter Profile</span>
+        </RouterLink>
+        <span class="flex min-h-[52px] items-center justify-center gap-3.5 px-2.5 text-base text-[#73798a] min-[761px]:justify-start min-[761px]:px-[22px]">
+          ☷ <span class="max-[760px]:hidden">Booking List</span>
+        </span>
+        <span class="flex min-h-[52px] items-center justify-center gap-3.5 px-2.5 text-base text-[#73798a] min-[761px]:justify-start min-[761px]:px-[22px]">
+          ▣ <span class="max-[760px]:hidden">Calendar</span>
+        </span>
+        <span class="flex min-h-[52px] items-center justify-center gap-3.5 px-2.5 text-base text-[#73798a] min-[761px]:justify-start min-[761px]:px-[22px]">
+          ▤ <span class="max-[760px]:hidden">Payout Option</span>
+        </span>
       </nav>
-      <RouterLink class="logout" to="/login">↪ <span>Back to Login</span></RouterLink>
+      <RouterLink
+        class="mt-auto flex min-h-[52px] items-center justify-center gap-3.5 border-t border-primary-100 px-2.5 text-base text-[#73798a] no-underline min-[761px]:justify-start min-[761px]:px-[22px]"
+        :to="{ path: '/login', query: { role: 'sitter' } }"
+      >
+        ↪ <span class="max-[760px]:hidden">Back to Login</span>
+      </RouterLink>
     </aside>
 
-    <div class="main-column">
-      <header class="topbar"><span class="small-avatar">♙</span><span>{{ fullName || 'Pet Sitter' }}</span></header>
-      <main class="profile-content">
-        <div class="page-heading">
-          <div><h1>Pet Sitter Profile</h1><span class="status" :class="status">{{ statusText }}</span></div>
-          <button type="submit" form="profile-form" class="approval-button">{{ status === 'unverified' || status === 'rejected' ? 'Request for approval' : 'Update Profile' }}</button>
+    <div class="min-w-0 flex-1">
+      <header class="flex h-[78px] items-center gap-3.5 border-b border-primary-100 bg-white px-5 min-[761px]:px-9">
+        <span class="grid size-10 place-items-center rounded-full bg-[#e7e9f6] text-2xl text-white">♙</span>
+        <span>{{ fullName || 'Pet Sitter' }}</span>
+      </header>
+
+      <main class="mx-auto mb-[60px] mt-8 w-[min(100%-28px,1120px)] min-[761px]:w-[min(100%-56px,1120px)]">
+        <div class="mb-5 flex flex-col items-start justify-between gap-4 min-[761px]:flex-row min-[761px]:items-center">
+          <div class="flex flex-wrap items-center gap-4">
+            <h1 class="m-0 text-[26px]">Pet Sitter Profile</h1>
+            <span class="text-sm" :class="statusClass">{{ statusText }}</span>
+          </div>
+          <button type="submit" form="profile-form" class="rounded-3xl border-0 bg-orange-700 px-5 py-3 font-bold text-white">
+            {{ status === 'unverified' || status === 'rejected' ? 'Request for approval' : 'Update Profile' }}
+          </button>
         </div>
-        <p v-if="status === 'rejected'" class="rejection" role="status">Your request has not been approved. Please revise your information and request approval again.</p>
-        <p v-if="status === 'waiting'" class="pending" role="status">Your profile is waiting for Admin approval.</p>
-        <p v-if="status === 'approved'" class="approved-note">Your sitter profile is listed. New edits will need approval before they appear publicly.</p>
-        <p v-if="notice" class="demo-notice" role="status">{{ notice }}</p>
+
+        <p v-if="status === 'rejected'" class="mb-4 rounded-md bg-[#e8ebf8] px-[18px] py-3.5 text-[#dc4451]" role="status">
+          Your request has not been approved. Please revise your information and request approval again.
+        </p>
+        <p v-if="status === 'waiting'" class="mb-4 rounded-md bg-[#e8ebf8] px-[18px] py-3.5 text-[#626a7c]" role="status">
+          Your profile is waiting for Admin approval.
+        </p>
+        <p v-if="status === 'approved'" class="mb-4 rounded-md bg-[#eaf8f0] px-[18px] py-3.5 text-[#168e62]">
+          Your sitter profile is listed. New edits will need approval before they appear publicly.
+        </p>
+        <p v-if="notice" class="mb-4 rounded-md bg-orange-100 px-[18px] py-3.5 text-primary-700" role="status">{{ notice }}</p>
 
         <form id="profile-form" @submit.prevent="submitProfile">
-          <section class="card">
-            <h2>Basic Information</h2>
-            <label class="image-label">Profile Image</label>
-            <div class="avatar-picker">
-              <div class="avatar-placeholder" aria-label="Profile image"><img v-if="avatarUrl" :src="avatarUrl" alt="Selected profile" /><svg v-else viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="35" r="16"/><path d="M22 82c0-17 12-28 28-28s28 11 28 28"/></svg></div>
-              <button type="button" class="add-avatar" aria-label="Choose profile image" @click="photoInput?.click()">＋</button>
-              <input ref="photoInput" class="visually-hidden" type="file" accept="image/*" aria-label="Profile image" @change="changeAvatar" />
+          <section class="mb-5 rounded-xl bg-white p-[22px] min-[761px]:p-[34px]">
+            <h2 class="mb-[26px] text-xl text-[#9299ad]">Basic Information</h2>
+            <label class="mb-[15px] block font-semibold text-primary-900">Profile Image</label>
+            <div class="relative mb-7 w-[210px]">
+              <div class="grid size-[210px] place-items-center overflow-hidden rounded-full bg-[#e7e9f6]" aria-label="Profile image">
+                <img v-if="avatarUrl" class="size-full object-cover" :src="avatarUrl" alt="Selected profile" />
+                <svg v-else class="w-[90px] fill-none stroke-white stroke-[6] [stroke-linecap:round]" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle cx="50" cy="35" r="16" />
+                  <path d="M22 82c0-17 12-28 28-28s28 11 28 28" />
+                </svg>
+              </div>
+              <button
+                type="button"
+                class="absolute right-0 bottom-0 size-[52px] rounded-full border-0 bg-orange-100 text-[30px] text-orange-700"
+                aria-label="Choose profile image"
+                @click="photoInput?.click()"
+              >
+                ＋
+              </button>
+              <input ref="photoInput" class="sr-only" type="file" accept="image/*" aria-label="Profile image" @change="changeAvatar" />
             </div>
-            <div class="fields">
-              <div class="field"><label for="full-name">Your full name <b>*</b></label><input id="full-name" v-model.trim="fullName" autocomplete="name" required /></div>
-              <div class="field"><label for="experience">Experience <b>*</b></label><select id="experience" v-model="experience" required><option value="" disabled>Select experience</option><option>0–1 year</option><option>1–3 years</option><option>3–5 years</option><option>5+ years</option></select></div>
-              <div class="field"><label for="phone">Phone Number <b>*</b></label><input id="phone" v-model.trim="phone" type="tel" autocomplete="tel" required /></div>
-              <div class="field"><label for="email">Email <b>*</b></label><input id="email" v-model.trim="email" type="email" autocomplete="email" required /></div>
-              <div class="field"><label for="dob">Date of Birth <b>*</b></label><input id="dob" v-model="dateOfBirth" type="date" required /></div>
-              <div class="field"><label for="id-number">ID Number <b>*</b></label><input id="id-number" v-model.trim="idNumber" inputmode="numeric" required /></div>
-              <div class="field wide"><label for="intro">Introduction (Describe about yourself as pet sitter)</label><textarea id="intro" v-model.trim="introduction" rows="5" /></div>
+            <div class="grid grid-cols-1 gap-x-7 gap-y-[22px] min-[761px]:grid-cols-2">
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="full-name">Your full name <b class="text-red">*</b></label>
+                <input id="full-name" v-model.trim="fullName" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" autocomplete="name" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="experience">Experience <b class="text-red">*</b></label>
+                <select id="experience" v-model="experience" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required>
+                  <option value="" disabled>Select experience</option>
+                  <option>0–1 year</option>
+                  <option>1–3 years</option>
+                  <option>3–5 years</option>
+                  <option>5+ years</option>
+                </select>
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="phone">Phone Number <b class="text-red">*</b></label>
+                <input id="phone" v-model.trim="phone" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" type="tel" autocomplete="tel" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="email">Email <b class="text-red">*</b></label>
+                <input id="email" v-model.trim="email" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" type="email" autocomplete="email" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="dob">Date of Birth <b class="text-red">*</b></label>
+                <input id="dob" v-model="dateOfBirth" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" type="date" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="id-number">ID Number <b class="text-red">*</b></label>
+                <input id="id-number" v-model.trim="idNumber" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" inputmode="numeric" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
+                <label class="text-[15px] font-semibold text-primary-900" for="intro">Introduction (Describe about yourself as pet sitter)</label>
+                <textarea id="intro" v-model.trim="introduction" class="min-h-12 w-full resize-y rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" rows="5" />
+              </div>
             </div>
           </section>
 
-          <section class="card">
-            <h2>Pet Sitter</h2>
-            <div class="fields">
-              <div class="field"><label for="sitter-name">Pet sitter name (Trade Name) <b>*</b></label><input id="sitter-name" v-model.trim="sitterName" required /></div>
-              <fieldset class="field wide pet-types"><legend>Pet type <b>*</b></legend><label v-for="pet in ['Dog', 'Cat', 'Bird', 'Rabbit']" :key="pet"><input v-model="petTypes" type="checkbox" :value="pet" />{{ pet }}</label></fieldset>
-              <div class="field wide"><label for="services">Services (Describe your service for pet sitting)</label><textarea id="services" v-model.trim="services" rows="4" /></div>
-              <div class="field wide"><label for="my-place">My Place (Describe your place)</label><textarea id="my-place" v-model.trim="myPlace" rows="4" /></div>
-              <div class="field wide"><label>Image Gallery (Maximum 10 images)</label><div class="gallery"><div v-for="(image, index) in images" :key="image.url" class="gallery-image"><img :src="image.url" :alt="image.name" /><button type="button" :aria-label="`Remove ${image.name}`" @click="removeImage(index)">×</button></div><label class="upload-tile">⊕<span>Upload Image</span><input type="file" accept="image/*" multiple class="visually-hidden" @change="addImages" /></label></div><small v-if="imageError" class="error" role="alert">{{ imageError }}</small></div>
+          <section class="mb-5 rounded-xl bg-white p-[22px] min-[761px]:p-[34px]">
+            <h2 class="mb-[26px] text-xl text-[#9299ad]">Pet Sitter</h2>
+            <div class="grid grid-cols-1 gap-x-7 gap-y-[22px] min-[761px]:grid-cols-2">
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="sitter-name">Pet sitter name (Trade Name) <b class="text-red">*</b></label>
+                <input id="sitter-name" v-model.trim="sitterName" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
+              </div>
+              <fieldset class="flex min-w-0 flex-row flex-wrap gap-[18px] border-0 p-0 min-[761px]:col-span-2">
+                <legend class="mb-[9px] text-[15px] font-semibold text-primary-900">Pet type <b class="text-red">*</b></legend>
+                <label v-for="pet in ['Dog', 'Cat', 'Bird', 'Rabbit']" :key="pet" class="inline-flex items-center gap-1.5">
+                  <input v-model="petTypes" type="checkbox" :value="pet" />{{ pet }}
+                </label>
+              </fieldset>
+              <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
+                <label class="text-[15px] font-semibold text-primary-900" for="services">Services (Describe your service for pet sitting)</label>
+                <textarea id="services" v-model.trim="services" class="min-h-12 w-full resize-y rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" rows="4" />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
+                <label class="text-[15px] font-semibold text-primary-900" for="my-place">My Place (Describe your place)</label>
+                <textarea id="my-place" v-model.trim="myPlace" class="min-h-12 w-full resize-y rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" rows="4" />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
+                <label class="text-[15px] font-semibold text-primary-900">Image Gallery (Maximum 10 images)</label>
+                <div class="flex flex-wrap gap-2.5">
+                  <div v-for="(image, index) in images" :key="image.url" class="relative h-[100px] w-[108px] overflow-hidden rounded">
+                    <img class="size-full object-cover" :src="image.url" :alt="image.name" />
+                    <button
+                      type="button"
+                      class="absolute top-[3px] right-[3px] size-[23px] rounded-full border-0 bg-[#444b60] text-white"
+                      :aria-label="`Remove ${image.name}`"
+                      @click="removeImage(index)"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <label class="flex h-[100px] w-[108px] cursor-pointer flex-col items-center justify-center gap-1 bg-orange-100 text-[28px] text-orange-700">
+                    ⊕<span class="text-xs">Upload Image</span>
+                    <input type="file" accept="image/*" multiple class="sr-only" @change="addImages" />
+                  </label>
+                </div>
+                <small v-if="imageError" class="text-[#d43a3a]" role="alert">{{ imageError }}</small>
+              </div>
             </div>
           </section>
 
-          <section class="card">
-            <h2>Address</h2>
-            <div class="fields">
-              <div class="field wide"><label for="address">Address detail <b>*</b></label><input id="address" v-model.trim="address" required /></div>
-              <div class="field"><label for="district">District <b>*</b></label><input id="district" v-model.trim="district" required /></div>
-              <div class="field"><label for="sub-district">Sub-district <b>*</b></label><input id="sub-district" v-model.trim="subDistrict" required /></div>
-              <div class="field"><label for="province">Province <b>*</b></label><input id="province" v-model.trim="province" required /></div>
-              <div class="field"><label for="post-code">Post code <b>*</b></label><input id="post-code" v-model.trim="postCode" inputmode="numeric" required /></div>
+          <section class="mb-5 rounded-xl bg-white p-[22px] min-[761px]:p-[34px]">
+            <h2 class="mb-[26px] text-xl text-[#9299ad]">Address</h2>
+            <div class="grid grid-cols-1 gap-x-7 gap-y-[22px] min-[761px]:grid-cols-2">
+              <div class="flex min-w-0 flex-col gap-[9px] min-[761px]:col-span-2">
+                <label class="text-[15px] font-semibold text-primary-900" for="address">Address detail <b class="text-red">*</b></label>
+                <input id="address" v-model.trim="address" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="district">District <b class="text-red">*</b></label>
+                <input id="district" v-model.trim="district" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="sub-district">Sub-district <b class="text-red">*</b></label>
+                <input id="sub-district" v-model.trim="subDistrict" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="province">Province <b class="text-red">*</b></label>
+                <input id="province" v-model.trim="province" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" required />
+              </div>
+              <div class="flex min-w-0 flex-col gap-[9px]">
+                <label class="text-[15px] font-semibold text-primary-900" for="post-code">Post code <b class="text-red">*</b></label>
+                <input id="post-code" v-model.trim="postCode" class="min-h-12 w-full rounded-md border border-primary-100 bg-white px-3.5 py-3 text-slate-700" inputmode="numeric" required />
+              </div>
             </div>
-            <div class="map-placeholder">Map preview will be available after connecting a location service.</div>
+            <div class="mt-[22px] grid min-h-[220px] place-items-center rounded-lg border border-dashed border-[#cdd5e5] bg-[#f2f5f8] p-5 text-center text-[#777f90]">
+              Map preview will be available after connecting a location service.
+            </div>
           </section>
-          <div class="form-actions"><button type="submit">Update Profile</button></div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="rounded-3xl border-0 bg-orange-700 px-5 py-3 font-bold text-white">Update Profile</button>
+          </div>
         </form>
       </main>
     </div>
   </div>
 </template>
-
-<style scoped>
-.profile-shell { min-height: 100svh; display: flex; }.sidebar { width: 250px; flex: none; display: flex; flex-direction: column; border-right: 1px solid #e0e4f2; background: #fff; }.brand { padding: 32px 24px; color: #111; font-size: 34px; font-weight: 800; }.brand span { color: #ff713e; font-style: italic; }.brand strong { color: #16bd80; font-size: 18px; vertical-align: top; }
-.sidebar nav { display: flex; flex-direction: column; gap: 7px; margin-top: 18px; }.sidebar nav > *,.logout { display: flex; gap: 14px; align-items: center; min-height: 52px; padding: 10px 22px; color: #73798a; font-size: 16px; text-decoration: none; }.sidebar nav .active { color: #ff713e; background: #fff3ee; }.logout { margin-top: auto; border-top: 1px solid #e0e4f2; }
-.main-column { min-width: 0; flex: 1; }.topbar { height: 78px; display: flex; gap: 14px; align-items: center; padding: 0 36px; background: white; border-bottom: 1px solid #e0e4f2; }.small-avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #e7e9f6; color: white; font-size: 24px; }
-.profile-content { width: min(100% - 56px, 1120px); margin: 32px auto 60px; }.page-heading { display: flex; gap: 16px; justify-content: space-between; align-items: center; margin-bottom: 20px; }.page-heading > div { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }h1 { margin: 0; font-size: 26px; }.status { font-size: 14px; color: #ec6d85; }.status.approved { color: #16a86f; }.status.rejected { color: #e34b4b; }.approval-button,.form-actions button { padding: 12px 20px; border: 0; border-radius: 24px; background: #ff713e; color: white; font-weight: 700; }
-.rejection,.pending,.approved-note,.demo-notice { padding: 14px 18px; border-radius: 7px; background: #e8ebf8; color: #dc4451; }.pending { color: #626a7c; }.approved-note { color: #168e62; background: #eaf8f0; }.demo-notice { color: #454d5f; background: #fff1e9; }
-.card { margin-bottom: 20px; padding: 34px; border-radius: 12px; background: white; }h2 { margin: 0 0 26px; color: #9299ad; font-size: 20px; }.image-label { display: block; margin-bottom: 15px; color: #222; font-weight: 600; }.avatar-picker { position: relative; width: 210px; margin-bottom: 28px; }.avatar-placeholder { display: grid; place-items: center; width: 210px; height: 210px; overflow: hidden; border-radius: 50%; background: #e7e9f6; }.avatar-placeholder img { width: 100%; height: 100%; object-fit: cover; }.avatar-placeholder svg { width: 90px; fill: none; stroke: white; stroke-width: 6; stroke-linecap: round; }.add-avatar { position: absolute; right: 0; bottom: 0; width: 52px; height: 52px; border: 0; border-radius: 50%; color: #ff713e; background: #fff2eb; font-size: 30px; }
-.fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px 28px; }.field { min-width: 0; display: flex; flex-direction: column; gap: 9px; }.field.wide { grid-column: 1 / -1; }.field > label,legend { color: #222; font-size: 15px; font-weight: 600; }.field b,legend b { color: #ed3d4a; }.field input:not([type=checkbox]),.field select,.field textarea { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid #d8ddef; border-radius: 7px; color: #30343f; background: white; }.field textarea { resize: vertical; }.pet-types { display: flex; flex-direction: row; gap: 18px; flex-wrap: wrap; padding: 0; border: 0; }.pet-types legend { margin-bottom: 9px; }.pet-types label { display: inline-flex; gap: 5px; align-items: center; }
-.gallery { display: flex; gap: 10px; flex-wrap: wrap; }.gallery-image,.upload-tile { position: relative; width: 108px; height: 100px; border-radius: 5px; overflow: hidden; }.gallery-image img { width: 100%; height: 100%; object-fit: cover; }.gallery-image button { position: absolute; right: 3px; top: 3px; width: 23px; height: 23px; border: 0; border-radius: 50%; background: #444b60; color: white; }.upload-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #ff713e; background: #fff2ec; font-size: 28px; cursor: pointer; }.upload-tile span { font-size: 12px; }.error { color: #d43a3a; }.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.map-placeholder { display: grid; place-items: center; min-height: 220px; margin-top: 22px; padding: 20px; border: 1px dashed #cdd5e5; border-radius: 8px; color: #777f90; background: #f2f5f8; text-align: center; }.form-actions { display: flex; justify-content: flex-end; }
-@media (max-width: 760px) { .sidebar { width: 72px; }.brand { padding: 22px 8px; font-size: 19px; }.brand strong { font-size: 10px; }.sidebar nav > *,.logout { justify-content: center; padding: 10px; }.sidebar nav span,.logout span { display: none; }.topbar { padding: 0 20px; }.profile-content { width: min(100% - 28px, 1120px); }.card { padding: 22px; }.fields { grid-template-columns: 1fr; }.field.wide { grid-column: 1; }.page-heading { align-items: flex-start; flex-direction: column; } }
-</style>

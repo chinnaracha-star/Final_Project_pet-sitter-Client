@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import {
   Navbar,
   Footer,
@@ -9,9 +10,11 @@ import {
   type SearchFilterState,
 } from '../components'
 
+const router = useRouter()
+
 function handleSearch(filter: SearchFilterState) {
-  // เมื่อเพื่อนทำหน้าค้นหา/รายการเสร็จ สามารถเปิดใช้งาน router.push ไปยัง path นั้นได้
-  console.log('Landing Page Search Query:', filter)
+  void filter
+  void router.push('/search')
 }
 </script>
 

@@ -58,12 +58,12 @@ import { RouterLink } from 'vue-router'
               Register
             </RouterLink>
 
-            <button
-              type="button"
+            <RouterLink
+              to="/search"
               class="w-full sm:w-auto inline-flex items-center justify-center bg-[#FF6525] hover:bg-[#FA5510] text-white font-bold text-xs sm:text-sm md:text-base lg:text-lg px-8 sm:px-10 py-3.5 sm:py-4 rounded-full transition shadow-md hover:shadow-lg active:scale-95"
             >
               Find A Pet Sitter
-            </button>
+            </RouterLink>
           </div>
         </div>
       </div>

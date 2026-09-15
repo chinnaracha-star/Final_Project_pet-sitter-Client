@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { Footer, Navbar } from '../components'
 
 type Sitter = {
   name: string
@@ -104,27 +105,7 @@ function petTypeClass(petType: string) {
 
 <template>
   <div class="search-page">
-    <header class="topbar">
-      <div class="topbar-inner">
-        <RouterLink to="/search" aria-label="Sitter home">
-          <img class="brand-logo" src="/navbar/logo-sitter.svg" alt="Sitter" />
-        </RouterLink>
-
-        <div class="topbar-actions">
-          <button class="round-action" type="button" aria-label="Notifications">
-            <img src="/navbar/icon-bell.svg" alt="" />
-            <span class="notification-dot"></span>
-          </button>
-          <button class="round-action" type="button" aria-label="Messages">
-            <img src="/navbar/icon-chat.svg" alt="" />
-          </button>
-          <RouterLink class="profile-link" to="/owner/profile" aria-label="Profile">
-            <img src="/navbar/profile.png" alt="Profile" />
-          </RouterLink>
-          <RouterLink class="find-button" to="/search">Find A Pet Sitter</RouterLink>
-        </div>
-      </div>
-    </header>
+    <Navbar />
 
     <main class="search-main">
       <div class="title-row">
@@ -224,41 +205,17 @@ function petTypeClass(petType: string) {
       </div>
     </main>
 
-    <footer class="footer">
-      <img src="/image/Sitter-logo-white.svg" alt="Sitter" />
-      <p>Find your perfect pet sitter with us.</p>
-    </footer>
+    <Footer />
   </div>
 </template>
 
 <style scoped>
 .search-page {
   min-height: 100vh;
-  background: #f8f8fa;
-  color: #30343f;
+  background: #f7f8fb;
+  color: #292a36;
 }
 
-.topbar {
-  height: 64px;
-  background: #fff;
-}
-
-.topbar-inner {
-  width: min(100% - 40px, 900px);
-  height: 100%;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand-logo {
-  display: block;
-  width: 82px;
-  height: auto;
-}
-
-.topbar-actions,
 .view-switch,
 .filter-actions,
 .identity,
@@ -270,56 +227,11 @@ function petTypeClass(petType: string) {
   align-items: center;
 }
 
-.topbar-actions { gap: 9px; }
-
-.round-action {
-  position: relative;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: #f7f8fb;
-}
-
-.round-action img { width: 14px; height: 14px; }
-
-.notification-dot {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #ff7037;
-}
-
-.profile-link,
-.profile-link img {
-  display: block;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.find-button {
-  margin-left: 4px;
-  padding: 9px 17px;
-  border-radius: 20px;
-  background: #ff7037;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
 .search-main {
-  width: min(100% - 40px, 900px);
-  min-height: 970px;
+  width: min(100% - 40px, 940px);
+  min-height: 900px;
   margin: 0 auto;
-  padding-top: 44px;
+  padding-top: 56px;
 }
 
 .title-row {
@@ -331,8 +243,10 @@ function petTypeClass(petType: string) {
 
 .title-row h1 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  color: #161616;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.02em;
 }
 
 .view-switch { gap: 8px; }
@@ -344,41 +258,42 @@ function petTypeClass(petType: string) {
   align-items: center;
   gap: 5px;
   border: 1px solid #dde0ef;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #fff;
   color: #adb1c6;
   font-size: 9px;
 }
 
 .view-switch button img { width: 12px; height: 12px; opacity: .65; }
-.view-switch button.active { border-color: #ff7037; color: #ff7037; }
+.view-switch button.active { border-color: #ff6525; color: #ff6525; }
 
 .search-layout {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
   gap: 30px;
   align-items: start;
 }
 
 .filter-column {
   position: sticky;
-  top: 20px;
+  top: 92px;
 }
 
 .filter-card {
-  padding: 18px 16px 16px;
-  border-radius: 12px;
+  padding: 22px 18px 18px;
+  border: 1px solid #e2e7f0;
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 5px 18px rgb(48 52 63 / 3%);
+  box-shadow: 0 16px 44px -18px rgb(0 0 0 / 12%);
 }
 
 .filter-card > label,
 .filter-card legend {
   display: block;
   margin-bottom: 10px;
-  color: #30343f;
-  font-size: 10px;
-  font-weight: 600;
+  color: #232733;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .search-input-wrap { position: relative; }
@@ -388,7 +303,7 @@ function petTypeClass(petType: string) {
   width: 100%;
   height: 35px;
   border: 1px solid #dde0ef;
-  border-radius: 5px;
+  border-radius: 9px;
   background: #fff;
   color: #82869b;
   font-size: 10px;
@@ -419,7 +334,7 @@ function petTypeClass(petType: string) {
   font-size: 8px;
 }
 
-.pet-options input { width: 10px; height: 10px; margin: 0; accent-color: #ff7037; }
+.pet-options input { width: 11px; height: 11px; margin: 0; accent-color: #ff6525; }
 
 .rating-options {
   display: flex;
@@ -431,7 +346,7 @@ function petTypeClass(petType: string) {
   height: 20px;
   padding: 0 5px;
   border: 1px solid #dde0ef;
-  border-radius: 3px;
+  border-radius: 7px;
   background: #fff;
   color: #82869b;
   font-size: 8px;
@@ -456,8 +371,8 @@ function petTypeClass(petType: string) {
   font-weight: 700;
 }
 
-.clear-button { background: #fff2ec; color: #ff7037; }
-.search-button { background: #ff7037; color: #fff; }
+.clear-button { background: #ffeae3; color: #ff6525; }
+.search-button { background: #ff6525; color: #fff; }
 
 .results {
   display: flex;
@@ -467,18 +382,23 @@ function petTypeClass(petType: string) {
 
 .sitter-card {
   min-height: 131px;
-  padding: 10px;
+  padding: 11px;
   display: grid;
   grid-template-columns: 164px minmax(0, 1fr);
   gap: 16px;
-  border-radius: 10px;
+  border: 1px solid #e7ecf3;
+  border-radius: 16px;
   background: #fff;
+  box-shadow: 0 12px 32px -22px rgb(0 0 0 / 18%);
+  transition: transform 150ms ease, box-shadow 150ms ease;
 }
+
+.sitter-card:hover { transform: translateY(-2px); box-shadow: 0 18px 38px -22px rgb(0 0 0 / 24%); }
 
 .place-image {
   width: 164px;
   height: 111px;
-  border-radius: 7px;
+  border-radius: 11px;
   object-fit: cover;
 }
 
@@ -486,7 +406,7 @@ function petTypeClass(petType: string) {
 .card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .identity { min-width: 0; gap: 10px; }
 .identity > img { width: 37px; height: 37px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
-.identity h2 { margin: 0; font-size: 13px; font-weight: 700; line-height: 1.25; }
+.identity h2 { margin: 0; color: #161616; font-size: 13px; font-weight: 700; line-height: 1.25; }
 .identity p { margin: 3px 0 0; color: #30343f; font-size: 9px; }
 .stars { flex: 0 0 auto; gap: 1px; padding-top: 2px; }
 .stars img { width: 12px; height: 12px; }
@@ -525,25 +445,10 @@ function petTypeClass(petType: string) {
 
 .pagination { justify-content: center; gap: 5px; margin-top: 10px; }
 .pagination button { width: 25px; height: 25px; border: 0; border-radius: 50%; background: transparent; color: #adb1c6; font-size: 10px; }
-.pagination button.active { background: #fff2ec; color: #ff7037; }
-
-.footer {
-  height: 190px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-  color: #fff;
-}
-
-.footer img { width: 113px; height: auto; }
-.footer p { margin: 12px 0 0; font-size: 11px; }
+.pagination button.active { background: #ffeae3; color: #ff6525; }
 
 @media (max-width: 760px) {
-  .topbar-inner,
   .search-main { width: min(100% - 28px, 900px); }
-  .find-button { display: none; }
   .search-main { min-height: auto; padding: 28px 0 60px; }
   .title-row { margin-bottom: 20px; }
   .search-layout { grid-template-columns: 1fr; gap: 20px; }

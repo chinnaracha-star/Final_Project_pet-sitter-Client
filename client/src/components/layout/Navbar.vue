@@ -42,12 +42,12 @@ function toggleMobileMenu() {
           Login
         </RouterLink>
 
-        <button
-          type="button"
+        <RouterLink
+          to="/search"
           class="bg-[#FF6525] hover:bg-[#FA5510] text-white text-sm font-bold px-6 py-2.5 rounded-full transition duration-150 shadow-sm hover:shadow active:scale-95"
         >
           Find A Pet Sitter
-        </button>
+        </RouterLink>
       </div>
 
       <!-- Mobile Hamburger Button -->
@@ -107,13 +107,13 @@ function toggleMobileMenu() {
       >
         Login
       </RouterLink>
-      <button
-        type="button"
+      <RouterLink
+        to="/search"
         class="w-full bg-[#FF6525] hover:bg-[#FA5510] text-white text-sm font-bold py-3 rounded-full transition shadow active:scale-95"
         @click="isMobileMenuOpen = false"
       >
         Find A Pet Sitter
-      </button>
+      </RouterLink>
     </div>
   </header>
 </template>

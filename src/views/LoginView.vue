@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import SocialLoginButtons from "../components/SocialLoginButtons.vue";
 import { useAuthRole } from "../composables/useAuthRole";
+import { useAuthStore } from "../stores/auth";
 
 const { isOwner, registerTo, setRole } = useAuthRole();
+const auth = useAuthStore();
+const router = useRouter();
 
 const email = ref("");
 const password = ref("");
@@ -14,6 +18,13 @@ const socialNotice = ref("");
 function submitLogin() {
   submitted.value = true;
   socialNotice.value = "";
+  if (isOwner.value) {
+    auth.loginAsOwner({ email: email.value });
+    void router.push("/owner/profile");
+    return;
+  }
+  auth.loginAsSitter();
+  void router.push("/sitter/profile");
 }
 
 function continueWith(provider: "Facebook" | "Google") {
@@ -37,7 +48,6 @@ function continueWith(provider: "Facebook" | "Google") {
       </p>
 
       <div
-        v-if="isOwner"
         class="mb-8 flex w-full rounded-full bg-primary-100/40 p-1"
         aria-label="Account type"
       >

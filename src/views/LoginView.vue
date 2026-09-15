@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 import SocialLoginButtons from "../components/SocialLoginButtons.vue";
 import { useAuthRole } from "../composables/useAuthRole";
 
-const router = useRouter();
 const { isOwner, registerTo, setRole } = useAuthRole();
 
 const email = ref("");
@@ -16,7 +14,6 @@ const socialNotice = ref("");
 function submitLogin() {
   submitted.value = true;
   socialNotice.value = "";
-  void router.push(isOwner.value ? "/search" : "/sitter/profile");
 }
 
 function continueWith(provider: "Facebook" | "Google") {
@@ -40,6 +37,7 @@ function continueWith(provider: "Facebook" | "Google") {
       </p>
 
       <div
+        v-if="isOwner"
         class="mb-8 flex w-full rounded-full bg-primary-100/40 p-1"
         aria-label="Account type"
       >
@@ -89,11 +87,10 @@ function continueWith(provider: "Facebook" | "Google") {
         class="auth-input"
         type="password"
         autocomplete="current-password"
-        :placeholder="isOwner ? 'email@company.com' : undefined"
         required
       />
 
-      <div class="mt-3.5 mb-[22px] flex items-center justify-between">
+      <div class="mt-3.5 mb-[22px] flex items-center" :class="isOwner ? 'justify-between' : 'justify-center'">
         <label
           v-if="isOwner"
           class="inline-flex items-center gap-2 text-body-3 text-primary-500"
@@ -113,6 +110,7 @@ function continueWith(provider: "Facebook" | "Google") {
 
       <button class="auth-submit" type="submit">Login</button>
       <SocialLoginButtons
+        v-if="isOwner"
         @facebook="continueWith('Facebook')"
         @google="continueWith('Google')"
       />

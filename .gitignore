@@ -6,6 +6,8 @@ daily-reports/
 node_modules/
 dist/
 coverage/
+ERD_Pet_sitter/
+ERD_Pet_sitter.txt
 .env
 .env.*
 !.env.example

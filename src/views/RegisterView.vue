@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import SocialLoginButtons from '../components/SocialLoginButtons.vue'
 import { useAuthRole } from '../composables/useAuthRole'
+import { useAuthStore } from '../stores/auth'
 
 const { isOwner, loginTo, setRole } = useAuthRole()
+const auth = useAuthStore()
+const router = useRouter()
 
 const showPassword = ref(false)
 const submitted = ref(false)
@@ -16,6 +20,13 @@ const password = ref('')
 function submitRegister() {
   submitted.value = true
   socialNotice.value = ''
+  if (isOwner.value) {
+    auth.loginAsOwner({ name: name.value, email: email.value, phone: phone.value })
+    void router.push('/owner/profile')
+    return
+  }
+  auth.loginAsSitter()
+  void router.push('/sitter/profile')
 }
 
 function continueWith(provider: 'Facebook' | 'Google') {

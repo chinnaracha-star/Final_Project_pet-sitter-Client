@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import AddressMap from "./AddressMap.vue";
 import ProfileGallery from "./ProfileGallery.vue";
@@ -26,10 +26,14 @@ const demoStatuses: Record<string, ApprovalStatus> = {
   rejected: "Rejected",
 };
 const status = ref<ApprovalStatus>(demoStatuses[String(route.query.status)] || "Unverified");
-const isWaiting = computed(() => status.value.startsWith("Waiting for"));
-const showFullProfile = computed(() => !["Unverified", "Waiting for verify"].includes(status.value));
+const showIdentityOnly = computed(() =>
+  status.value === "Waiting for approve" || status.value === "Rejected",
+);
+const showFullProfile = computed(
+  () => !showIdentityOnly.value && !["Unverified", "Waiting for verify"].includes(status.value),
+);
 const actionText = computed(() =>
-  isWaiting.value ? "Waiting for approval" : status.value === "Approved" ? "Update Profile" : "Request for approval",
+  status.value === "Approved" ? "Update Profile" : "Request for approval",
 );
 const statusClass = computed(() => status.value.toLowerCase().replaceAll(" ", "-"));
 
@@ -166,6 +170,14 @@ function removePetType(pet: string) {
   petTypes.value = petTypes.value.filter((selectedPet) => selectedPet !== pet);
 }
 
+watch(
+  () => route.query.status,
+  (value) => {
+    const next = demoStatuses[String(value)];
+    if (next) status.value = next;
+  },
+);
+
 onMounted(async () => {
   if (!userId) return;
   loading.value = true;
@@ -190,16 +202,14 @@ onMounted(async () => {
         type="submit"
         form="profile-form"
         class="approval-button"
-        :disabled="isWaiting || loading"
+        :disabled="loading"
       >
         {{ actionText }}
       </button>
     </div>
-    <p v-if="status === 'Rejected' || rejectionReason" class="rejection" role="status">
-      Your request has not been approved. {{ rejectionReason || "Please revise your information and request approval again." }}
-    </p>
-    <p v-if="isWaiting" class="pending" role="status">
-      Your profile is waiting for Admin approval.
+    <p v-if="status === 'Rejected'" class="rejection" role="status">
+      <img src="/icon/info-circle.svg" alt="" width="20" height="20" />
+      Your request has not been approved: '{{ rejectionReason || "Admin's suggestion here" }}'
     </p>
     <p v-if="status === 'Approved'" class="approved-note">
       Your sitter profile is listed. New edits will need approval before they
@@ -208,7 +218,7 @@ onMounted(async () => {
     <p v-if="notice" class="demo-notice" role="status">{{ notice }}</p>
 
     <form id="profile-form" @submit.prevent="submitProfile">
-      <fieldset class="profile-fields" :disabled="isWaiting || loading">
+      <fieldset class="profile-fields" :disabled="loading">
       <section class="card">
         <h2>Basic Information</h2>
         <label class="image-label">Profile Image</label>
@@ -235,7 +245,7 @@ onMounted(async () => {
           />
         </div>
         <div class="fields">
-          <div class="field">
+          <div class="field" :class="{ wide: showIdentityOnly }">
             <label for="full-name">Your full name <b>*</b></label>
             <input
               id="full-name"
@@ -244,7 +254,7 @@ onMounted(async () => {
               required
             />
           </div>
-          <div class="field">
+          <div v-if="!showIdentityOnly" class="field">
             <label for="experience">Experience <b>*</b></label>
             <select id="experience" v-model="experience" required>
               <option value="" disabled>Select experience</option>
@@ -274,11 +284,11 @@ onMounted(async () => {
               required
             />
           </div>
-          <div class="field">
+          <div v-if="!showIdentityOnly" class="field">
             <label for="dob">Date of Birth <b>*</b></label>
             <input id="dob" v-model="dateOfBirth" type="date" required />
           </div>
-          <div class="field">
+          <div v-if="!showIdentityOnly" class="field">
             <label for="id-number">ID Number <b>*</b></label>
             <input
               id="id-number"
@@ -385,8 +395,8 @@ onMounted(async () => {
         />
       </section>
       </fieldset>
-      <div class="form-actions">
-        <button type="submit" :disabled="isWaiting || loading">{{ actionText }}</button>
+      <div v-if="!showIdentityOnly" class="form-actions">
+        <button type="submit" :disabled="loading">{{ actionText }}</button>
       </div>
     </form>
   </main>
@@ -415,8 +425,18 @@ h1 {
   font-size: 26px;
 }
 .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   color: #ec6d85;
+}
+.status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 .status.approved {
   color: #16a86f;
@@ -434,16 +454,21 @@ h1 {
   font-weight: 700;
 }
 .rejection,
-.pending,
 .approved-note,
 .demo-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 14px 18px;
   border-radius: 7px;
   background: #e8ebf8;
   color: #dc4451;
 }
-.pending {
-  color: #626a7c;
+.rejection img {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  filter: invert(32%) sepia(63%) saturate(2148%) hue-rotate(330deg) brightness(96%);
 }
 .approved-note {
   color: #168e62;
@@ -541,6 +566,12 @@ legend b {
   color: #30343f;
   background: white;
 }
+.field select {
+  appearance: none;
+  padding-right: 42px;
+  background: white url("/icon/chevron-down.svg") no-repeat right 16px center;
+  background-size: 14px 8px;
+}
 .field textarea {
   resize: vertical;
 }
@@ -577,10 +608,16 @@ legend b {
   display: none;
 }
 .pet-type-select summary::after {
-  content: "▾";
+  content: "";
   position: absolute;
-  right: 14px;
-  color: #9299ad;
+  right: 16px;
+  width: 14px;
+  height: 8px;
+  background: url("/icon/chevron-down.svg") no-repeat center / contain;
+  transition: transform 0.15s ease;
+}
+.pet-type-select[open] summary::after {
+  transform: rotate(180deg);
 }
 .pet-placeholder {
   padding-left: 6px;

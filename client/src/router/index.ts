@@ -8,6 +8,7 @@ export default createRouter({
     { path: '/register', component: () => import('../views/RegisterView.vue') },
     { path: '/owner/profile', component: () => import('../views/OwnerProfileView.vue') },
     { path: '/sitter/profile', component: () => import('../views/SitterProfileView.vue') },
-    { path: '/admin/petsitters', component: () => import('../views/Admin/AdminPetSitterView.vue') },
+    { path: '/sitters', component: () => import('../views/FindSitterView.vue') },
+    { path: '/admin/petsitters', alias: '/admin/sitters', component: () => import('../views/Admin/AdminPetSitterView.vue') },
   ],
 })

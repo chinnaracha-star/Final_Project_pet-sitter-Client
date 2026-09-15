@@ -16,3 +16,21 @@
 | 8 | ผู้ใช้ที่ Approved แล้วกด Update | `Waiting for approve` | `true` ค้าง | ข้อมูลใหม่เก็บที่ pending, live ไม่ทับ | Admin เห็นของใหม่, owner ยังเห็นของเก่าและจองได้ |
 | 9 | Admin Approve ของข้อ 8 | `Approved` | `true` | คัดลอก pending ทับ live แล้วล้าง | Owner เพิ่งเห็นข้อมูลใหม่ |
 | 10 | Admin Reject ของข้อ 8 | `Rejected` | `false` | ไม่ทับ live | หลุดจากหน้าจอง, owner ยังเห็นข้อมูลบริการเก่า |
+
+## Sitter approval API contract
+
+ระหว่างที่ระบบ authentication ยังไม่เชื่อม API ใช้ `X-User-Id` สำหรับ Sitter/Owner และ `X-Admin-Id` สำหรับ Admin โดย Backend ตรวจ `users.is_admin` ก่อนอนุญาตการอนุมัติ เมื่อ Auth พร้อมให้ middleware สร้างค่าเดียวกันจาก token โดยไม่เปลี่ยน payload
+
+Header เหล่านี้เป็นวิธีทดสอบในเครื่องเท่านั้น ผู้ใช้ปลอมค่าได้ จึงห้ามเปิด API นี้สู่ production ก่อนเชื่อม authentication จริง
+
+| Method | Endpoint | หน้าที่ |
+|---|---|---|
+| `GET` | `/api/sitter/profile` | อ่าน live profile, pending profile และสถานะ |
+| `POST` | `/api/sitter/profile/submit` | ส่งข้อมูลเข้าคิว Verify/Approve |
+| `GET` | `/api/admin/sitter-approvals` | อ่านรายการที่รอ Admin |
+| `PATCH` | `/api/admin/sitter-approvals/approve?sitterId={uuid}` | อนุมัติและคัดลอก pending ไป live |
+| `PATCH` | `/api/admin/sitter-approvals/reject?sitterId={uuid}` | Reject พร้อม `{ "reason": "..." }` |
+| `GET` | `/api/sitters` | คืนเฉพาะ Sitter ที่ `is_listed=true` |
+| `POST` | `/api/bookings` | สร้าง Booking เมื่อ Sitter ยัง listed เท่านั้น |
+
+`pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร

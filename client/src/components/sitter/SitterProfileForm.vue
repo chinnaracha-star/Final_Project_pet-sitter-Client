@@ -1,31 +1,37 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import AddressMap from "./AddressMap.vue";
 import ProfileGallery from "./ProfileGallery.vue";
+import {
+  currentSitterId,
+  getOwnProfile,
+  submitProfile as submitSitterProfile,
+  type ApprovalStatus,
+  type ProfilePayload,
+  type ProfileResponse,
+} from "../../services/sitterApproval";
 
-type ApprovalStatus = "unverified" | "waiting" | "approved" | "rejected";
+const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 
 const fullName = defineModel<string>("fullName", { required: true });
 
 const route = useRoute();
-const initialStatus = route.query.status;
-const status = ref<ApprovalStatus>(
-  initialStatus === "waiting" ||
-    initialStatus === "approved" ||
-    initialStatus === "rejected"
-    ? initialStatus
-    : "unverified",
+const demoStatuses: Record<string, ApprovalStatus> = {
+  unverified: "Unverified",
+  waiting: "Waiting for approve",
+  "waiting-for-verify": "Waiting for verify",
+  verified: "Verified",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+const status = ref<ApprovalStatus>(demoStatuses[String(route.query.status)] || "Unverified");
+const isWaiting = computed(() => status.value.startsWith("Waiting for"));
+const showFullProfile = computed(() => !["Unverified", "Waiting for verify"].includes(status.value));
+const actionText = computed(() =>
+  isWaiting.value ? "Waiting for approval" : status.value === "Approved" ? "Update Profile" : "Request for approval",
 );
-const statusText = computed(
-  () =>
-    ({
-      unverified: "Unverified",
-      waiting: "Waiting for approval",
-      approved: "Approved",
-      rejected: "Rejected",
-    })[status.value],
-);
+const statusClass = computed(() => status.value.toLowerCase().replaceAll(" ", "-"));
 
 const phone = ref("");
 const email = ref("");
@@ -42,29 +48,135 @@ const district = ref("");
 const subDistrict = ref("");
 const province = ref("");
 const postCode = ref("");
+const latitude = ref<number | null>(null);
+const longitude = ref<number | null>(null);
+const bankName = ref("");
+const accountName = ref("");
+const accountNumber = ref("");
+const bankCode = ref("");
+const bookBankImageUrl = ref("");
 const avatarUrl = ref("");
+const photoUrls = ref<string[]>([]);
 const notice = ref("");
 const photoInput = ref<HTMLInputElement | null>(null);
+const rejectionReason = ref("");
+const loading = ref(false);
+const userId = currentSitterId();
 
 function changeAvatar(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
-  if (avatarUrl.value) URL.revokeObjectURL(avatarUrl.value);
-  avatarUrl.value = URL.createObjectURL(file);
+  if (!file.type.startsWith("image/") || file.size > 5_000_000) {
+    notice.value = "รองรับเฉพาะไฟล์รูปภาพขนาดไม่เกิน 5 MB";
+    input.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => (avatarUrl.value = String(reader.result));
+  reader.readAsDataURL(file);
+  input.value = "";
 }
 
-onUnmounted(() => {
-  if (avatarUrl.value) URL.revokeObjectURL(avatarUrl.value);
-});
+function fillForm(payload: ProfilePayload) {
+  fullName.value = payload.fullName || "";
+  phone.value = payload.phone || "";
+  email.value = payload.email || "";
+  experience.value = payload.experienceYears || "";
+  dateOfBirth.value = payload.dateOfBirth || "";
+  idNumber.value = payload.idNumber || "";
+  avatarUrl.value = payload.avatarUrl || "";
+  introduction.value = payload.introduction || "";
+  sitterName.value = payload.displayName || "";
+  petTypes.value = [...payload.petTypes];
+  services.value = payload.services || "";
+  myPlace.value = payload.myPlace || "";
+  photoUrls.value = [...payload.photoUrls];
+  address.value = payload.addressDetail || "";
+  district.value = payload.district || "";
+  subDistrict.value = payload.subDistrict || "";
+  province.value = payload.province || "";
+  postCode.value = payload.postCode || "";
+  latitude.value = payload.latitude;
+  longitude.value = payload.longitude;
+  bankName.value = payload.bankName || "";
+  accountName.value = payload.accountName || "";
+  accountNumber.value = payload.accountNumber || "";
+  bankCode.value = payload.bankCode || "";
+  bookBankImageUrl.value = payload.bookBankImageUrl || "";
+}
 
-function submitProfile() {
-  if (petTypes.value.length === 0) {
+function applyResponse(response: ProfileResponse) {
+  status.value = response.approvalStatus;
+  rejectionReason.value = response.rejectionReason || "";
+  fillForm(response.pendingProfile || response.profile);
+}
+
+function payload(): ProfilePayload {
+  return {
+    fullName: fullName.value,
+    phone: phone.value,
+    email: email.value,
+    experienceYears: experience.value,
+    dateOfBirth: dateOfBirth.value || null,
+    idNumber: idNumber.value,
+    avatarUrl: avatarUrl.value,
+    introduction: introduction.value,
+    displayName: sitterName.value,
+    petTypes: petTypes.value,
+    services: services.value,
+    myPlace: myPlace.value,
+    photoUrls: photoUrls.value,
+    addressDetail: address.value,
+    district: district.value,
+    subDistrict: subDistrict.value,
+    province: province.value,
+    postCode: postCode.value,
+    latitude: latitude.value,
+    longitude: longitude.value,
+    bankName: bankName.value,
+    accountName: accountName.value,
+    accountNumber: accountNumber.value,
+    bankCode: bankCode.value,
+    bookBankImageUrl: bookBankImageUrl.value,
+  };
+}
+
+async function submitProfile() {
+  if (showFullProfile.value && petTypes.value.length === 0) {
     notice.value = "เลือก Pet type อย่างน้อย 1 ประเภท";
     return;
   }
-  notice.value =
-    "ตรวจข้อมูลฝั่งหน้าเว็บแล้ว แต่ยังไม่ได้บันทึกหรือส่งให้ Admin จนกว่าจะเชื่อม API ของ Spring Boot";
+  if (!userId) {
+    notice.value = "ตั้งค่า petSitterUserId ใน localStorage หรือส่ง ?userId=UUID เพื่อเชื่อม API";
+    return;
+  }
+  loading.value = true;
+  try {
+    applyResponse(await submitSitterProfile(userId, payload()));
+    notice.value = "ส่งข้อมูลให้ Admin ตรวจสอบแล้ว";
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้";
+  } finally {
+    loading.value = false;
+  }
 }
+
+function removePetType(pet: string) {
+  petTypes.value = petTypes.value.filter((selectedPet) => selectedPet !== pet);
+}
+
+onMounted(async () => {
+  if (!userId) return;
+  loading.value = true;
+  try {
+    applyResponse(await getOwnProfile(userId));
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : "ไม่สามารถโหลดโปรไฟล์ได้";
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -72,30 +184,31 @@ function submitProfile() {
     <div class="page-heading">
       <div>
         <h1 class="text-2xl font-bold">Pet Sitter Profile</h1>
-        <span class="status" :class="status">{{ statusText }}</span>
+        <span class="status" :class="statusClass">{{ status }}</span>
       </div>
-      <button type="submit" form="profile-form" class="approval-button">
-        {{
-          status === "unverified" || status === "rejected"
-            ? "Request for approval"
-            : "Update Profile"
-        }}
+      <button
+        type="submit"
+        form="profile-form"
+        class="approval-button"
+        :disabled="isWaiting || loading"
+      >
+        {{ actionText }}
       </button>
     </div>
-    <p v-if="status === 'rejected'" class="rejection" role="status">
-      Your request has not been approved. Please revise your information and
-      request approval again.
+    <p v-if="status === 'Rejected' || rejectionReason" class="rejection" role="status">
+      Your request has not been approved. {{ rejectionReason || "Please revise your information and request approval again." }}
     </p>
-    <p v-if="status === 'waiting'" class="pending" role="status">
+    <p v-if="isWaiting" class="pending" role="status">
       Your profile is waiting for Admin approval.
     </p>
-    <p v-if="status === 'approved'" class="approved-note">
+    <p v-if="status === 'Approved'" class="approved-note">
       Your sitter profile is listed. New edits will need approval before they
       appear publicly.
     </p>
     <p v-if="notice" class="demo-notice" role="status">{{ notice }}</p>
 
     <form id="profile-form" @submit.prevent="submitProfile">
+      <fieldset class="profile-fields" :disabled="isWaiting || loading">
       <section class="card">
         <h2>Basic Information</h2>
         <label class="image-label">Profile Image</label>
@@ -183,7 +296,7 @@ function submitProfile() {
         </div>
       </section>
 
-      <section class="card">
+      <section v-if="showFullProfile" class="card">
         <h2>Pet Sitter</h2>
         <div class="fields">
           <div class="field">
@@ -194,9 +307,31 @@ function submitProfile() {
           </div>
           <fieldset class="field wide pet-types">
             <legend>Pet type <b>*</b></legend>
-            <label v-for="pet in ['Dog', 'Cat', 'Bird', 'Rabbit']" :key="pet">
-              <input v-model="petTypes" type="checkbox" :value="pet" />{{ pet }}
-            </label>
+            <details class="pet-type-select">
+              <summary>
+                <span v-if="petTypes.length === 0" class="pet-placeholder">
+                  Select pet type
+                </span>
+                <span v-else class="pet-chips">
+                  <span v-for="pet in petTypes" :key="pet" class="pet-chip">
+                    {{ pet }}
+                    <button
+                      type="button"
+                      :aria-label="`Remove ${pet}`"
+                      @click.stop.prevent="removePetType(pet)"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </span>
+              </summary>
+              <div class="pet-options">
+                <label v-for="pet in PET_TYPES" :key="pet">
+                  <input v-model="petTypes" type="checkbox" :value="pet" />
+                  {{ pet }}
+                </label>
+              </div>
+            </details>
           </fieldset>
           <div class="field wide">
             <label for="services"
@@ -208,11 +343,11 @@ function submitProfile() {
             <label for="my-place">My Place (Describe your place)</label>
             <textarea id="my-place" v-model.trim="myPlace" rows="4" />
           </div>
-          <ProfileGallery />
+          <ProfileGallery v-model="photoUrls" />
         </div>
       </section>
 
-      <section class="card">
+      <section v-if="showFullProfile" class="card">
         <h2>Address</h2>
         <div class="fields">
           <div class="field wide">
@@ -249,8 +384,9 @@ function submitProfile() {
           :post-code="postCode"
         />
       </section>
+      </fieldset>
       <div class="form-actions">
-        <button type="submit">Update Profile</button>
+        <button type="submit" :disabled="isWaiting || loading">{{ actionText }}</button>
       </div>
     </form>
   </main>
@@ -409,20 +545,92 @@ legend b {
   resize: vertical;
 }
 .pet-types {
-  display: flex;
-  flex-direction: row;
-  gap: 18px;
-  flex-wrap: wrap;
   padding: 0;
   border: 0;
+}
+.profile-fields {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.profile-fields:disabled {
+  opacity: 0.75;
 }
 .pet-types legend {
   margin-bottom: 9px;
 }
-.pet-types label {
-  display: inline-flex;
-  gap: 5px;
+.pet-type-select {
+  position: relative;
+}
+.pet-type-select summary {
+  display: flex;
   align-items: center;
+  min-height: 48px;
+  padding: 7px 42px 7px 8px;
+  border: 1px solid #d8ddef;
+  border-radius: 7px;
+  background: white;
+  cursor: pointer;
+  list-style: none;
+}
+.pet-type-select summary::-webkit-details-marker {
+  display: none;
+}
+.pet-type-select summary::after {
+  content: "▾";
+  position: absolute;
+  right: 14px;
+  color: #9299ad;
+}
+.pet-placeholder {
+  padding-left: 6px;
+  color: #9299ad;
+}
+.pet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.pet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: 18px;
+  color: #f4512c;
+  background: #fff0eb;
+}
+.pet-chip button {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pet-options {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 5px);
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #d8ddef;
+  border-radius: 7px;
+  background: white;
+  box-shadow: 0 8px 20px rgb(48 52 63 / 12%);
+}
+.pet-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.pet-options label:hover {
+  background: #fff7f3;
 }
 .visually-hidden {
   position: absolute;

@@ -16,7 +16,7 @@ const socialNotice = ref("");
 function submitLogin() {
   submitted.value = true;
   socialNotice.value = "";
-  void router.push(isOwner.value ? "/owner/profile" : "/sitter/profile");
+  void router.push(isOwner.value ? "/search" : "/sitter/profile");
 }
 
 function continueWith(provider: "Facebook" | "Google") {

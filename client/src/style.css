@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Satoshi", Arial, Helvetica, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Satoshi", Arial, Helvetica, sans-serif;
 
   --text-display: 5.5rem;
   --text-display--line-height: 6rem;

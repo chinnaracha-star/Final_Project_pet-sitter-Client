@@ -1,52 +1,137 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import SocialLoginButtons from "../components/SocialLoginButtons.vue";
+import { useAuthRole } from "../composables/useAuthRole";
 
-const email = ref('')
-const password = ref('')
-const submitted = ref(false)
+const router = useRouter();
+const { isOwner, registerTo, setRole } = useAuthRole();
+
+const email = ref("");
+const password = ref("");
+const rememberMe = ref(false);
+const submitted = ref(false);
+const socialNotice = ref("");
+
+function submitLogin() {
+  submitted.value = true;
+  socialNotice.value = "";
+  void router.push(isOwner.value ? "/search" : "/sitter/profile");
+}
+
+function continueWith(provider: "Facebook" | "Google") {
+  socialNotice.value = `${provider} login is ready on this screen, but OAuth is not connected yet.`;
+}
 </script>
 
 <template>
-  <main class="login-page">
-    <div class="login-card">
-      <div class="login-brand">S<span>i</span>tter<strong>✦</strong></div>
-      <form class="login-form" @submit.prevent="submitted = true">
-        <h1>Welcome Back!</h1>
-        <p>Become the best Pet Sitter with us</p>
+  <main class="auth-page">
+    <form class="auth-form" @submit.prevent="submitLogin">
+      
+      <h1 class="auth-title">
+        {{ isOwner ? "Welcome back!" : "Welcome Back!" }}
+      </h1>
+      <p class="auth-subtitle">
+        {{
+          isOwner
+            ? "Find your perfect pet sitter with us"
+            : "Become the best Pet Sitter with us"
+        }}
+      </p>
 
-        <label for="login-email">Email</label>
-        <input id="login-email" v-model.trim="email" type="email" autocomplete="email" placeholder="email@company.com" required />
+      <div
+        class="mb-8 flex w-full rounded-full bg-primary-100/40 p-1"
+        aria-label="Account type"
+      >
+        <button
+          type="button"
+          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          :class="
+            isOwner
+              ? 'border border-orange-700 bg-white text-orange-700'
+              : 'text-primary-500'
+          "
+          :aria-current="isOwner ? 'page' : undefined"
+          @click="setRole('owner')"
+        >
+          Owner
+        </button>
+        <button
+          type="button"
+          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          :class="
+            !isOwner
+              ? 'border border-orange-700 bg-white text-orange-700'
+              : 'text-primary-500'
+          "
+          :aria-current="!isOwner ? 'page' : undefined"
+          @click="setRole('sitter')"
+        >
+          Sitter
+        </button>
+      </div>
 
-        <label for="login-password">Password</label>
-        <input id="login-password" v-model="password" type="password" autocomplete="current-password" required />
+      <label class="auth-label" for="login-email">Email</label>
+      <input
+        id="login-email"
+        v-model.trim="email"
+        class="auth-input"
+        type="email"
+        autocomplete="email"
+        placeholder="email@company.com"
+        required
+      />
 
-        <span class="forgot-password">Forgot Password?</span>
-        <button type="submit">Login</button>
-        <p v-if="submitted" class="login-notice" role="status">
-          หน้า Login พร้อมแล้ว แต่ยังไม่ได้เชื่อม API ของ Spring Boot
-          <RouterLink to="/sitter/profile">ดูหน้า Sitter Profile ตัวอย่าง</RouterLink>
-        </p>
-        <p class="register-link">Don't have a Pet Sitter account? <RouterLink to="/register">Register</RouterLink></p>
-      </form>
-    </div>
+      <label class="auth-label" for="login-password">Password</label>
+      <input
+        id="login-password"
+        v-model="password"
+        class="auth-input"
+        type="password"
+        autocomplete="current-password"
+        :placeholder="isOwner ? 'email@company.com' : undefined"
+        required
+      />
+
+      <div class="mt-3.5 mb-[22px] flex items-center justify-between">
+        <label
+          v-if="isOwner"
+          class="inline-flex items-center gap-2 text-body-3 text-primary-500"
+        >
+          <input
+            v-model="rememberMe"
+            class="size-[15px] accent-orange-700"
+            type="checkbox"
+          />
+          Remember?
+        </label>
+        <span v-else></span>
+        <span class="text-body-3 text-orange-700">{{
+          isOwner ? "Forget Password?" : "Forgot Password?"
+        }}</span>
+      </div>
+
+      <button class="auth-submit" type="submit">Login</button>
+      <SocialLoginButtons
+        @facebook="continueWith('Facebook')"
+        @google="continueWith('Google')"
+      />
+      <p v-if="submitted || socialNotice" class="auth-notice" role="status">
+        {{
+          socialNotice ||
+          (isOwner
+            ? "Owner login is ready. Next screens can use this session after the Spring Boot API is connected."
+            : "Sitter login is ready, but it is not connected to the Spring Boot API yet.")
+        }}
+      </p>
+      <p class="auth-switch">
+        {{
+          isOwner
+            ? "Don't have any account?"
+            : "Don't have a Pet Sitter account?"
+        }}
+        <RouterLink :to="registerTo">Register</RouterLink>
+      </p>
+    </form>
   </main>
 </template>
-
-<style scoped>
-.login-page { min-height: 100svh; display: grid; place-items: center; padding: 24px; background: #eeeeef; }
-.login-card { width: min(100%, 920px); min-height: 640px; position: relative; display: grid; place-items: center; background: white; }
-.login-brand { position: absolute; top: 28px; left: 32px; color: #161616; font-size: 26px; font-weight: 800; }
-.login-brand span { color: #ff713e; font-style: italic; }.login-brand strong { color: #18bd83; font-size: 20px; vertical-align: top; }
-.login-form { width: min(100% - 48px, 380px); display: flex; flex-direction: column; }
-h1 { margin: 0; color: #141414; text-align: center; font-size: clamp(30px, 4vw, 38px); }
-p { margin: 6px 0 30px; color: #707687; text-align: center; font-size: 14px; }
-label { margin: 13px 0 7px; color: #151515; font-size: 13px; font-weight: 700; }
-input { width: 100%; height: 44px; padding: 0 14px; border: 1px solid #dce0f2; border-radius: 7px; color: #222; background: white; }
-.forgot-password { align-self: flex-end; margin: 12px 0 18px; color: #ff713e; font-size: 12px; }
-button { min-height: 45px; border: 0; border-radius: 24px; background: #ff713e; color: white; font-weight: 700; }
-.register-link { margin: 17px 0 0; color: #292929; font-size: 13px; }
-.register-link a { margin-left: 3px; font-weight: 700; text-decoration: none; }
-.login-notice { margin: 18px 0 0; line-height: 1.5; }
-.login-notice a { display: block; }
-@media (max-width: 600px) { .login-page { padding: 0; background: white; }.login-card { min-height: 100svh; }.login-brand { top: 20px; left: 24px; } }
-</style>

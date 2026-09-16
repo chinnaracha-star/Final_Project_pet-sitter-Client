@@ -3,9 +3,11 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import SocialLoginButtons from '../components/SocialLoginButtons.vue'
 import { useAuthRole } from '../composables/useAuthRole'
+import { useAuthStore } from '../stores/auth'
 
-const router = useRouter()
 const { isOwner, loginTo, setRole } = useAuthRole()
+const auth = useAuthStore()
+const router = useRouter()
 
 const showPassword = ref(false)
 const submitted = ref(false)
@@ -18,7 +20,13 @@ const password = ref('')
 function submitRegister() {
   submitted.value = true
   socialNotice.value = ''
-  void router.push(isOwner.value ? '/owner/profile' : '/sitter/profile')
+  if (isOwner.value) {
+    auth.loginAsOwner({ name: name.value, email: email.value, phone: phone.value })
+    void router.push('/owner/profile')
+    return
+  }
+  auth.loginAsSitter()
+  void router.push('/sitter/profile')
 }
 
 function continueWith(provider: 'Facebook' | 'Google') {
@@ -53,18 +61,16 @@ function continueWith(provider: 'Facebook' | 'Google') {
         </button>
       </div>
 
-      <template v-if="!isOwner">
-        <label class="auth-label" for="register-name">Name</label>
-        <input
-          id="register-name"
-          v-model.trim="name"
-          class="auth-input"
-          type="text"
-          autocomplete="name"
-          placeholder="Your name"
-          required
-        />
-      </template>
+      <label class="auth-label" for="register-name">Name</label>
+      <input
+        id="register-name"
+        v-model.trim="name"
+        class="auth-input"
+        type="text"
+        autocomplete="name"
+        placeholder="Your name"
+        required
+      />
 
       <label class="auth-label" for="register-email">Email</label>
       <input
@@ -89,11 +95,11 @@ function continueWith(provider: 'Facebook' | 'Google') {
       />
 
       <label class="auth-label" for="register-password">Password</label>
-      <div v-if="!isOwner" class="relative">
+      <div class="relative">
         <input
           id="register-password"
           v-model="password"
-          class="auth-input pr-[72px]"
+          class="auth-input pr-12"
           :type="showPassword ? 'text' : 'password'"
           autocomplete="new-password"
           placeholder="Create your password"
@@ -102,27 +108,16 @@ function continueWith(provider: 'Facebook' | 'Google') {
         />
         <button
           type="button"
-          class="absolute top-1 right-2 h-10 border-0 bg-white text-body-3 text-primary-500"
+          class="absolute inset-y-0 right-2 grid w-10 place-items-center border-0 bg-transparent p-0"
           :aria-label="showPassword ? 'Hide password' : 'Show password'"
           @click="showPassword = !showPassword"
         >
-          {{ showPassword ? 'Hide' : 'Show' }}
+          <img :src="showPassword ? '/icon/eye-off.svg' : '/icon/eye.svg'" alt="" class="size-5" />
         </button>
       </div>
-      <input
-        v-else
-        id="register-password"
-        v-model="password"
-        class="auth-input"
-        type="password"
-        autocomplete="new-password"
-        placeholder="Create your password"
-        minlength="8"
-        required
-      />
 
       <button class="auth-submit mt-7" type="submit">
-        {{ isOwner ? 'Register' : 'Register as Sitter' }}
+        {{ isOwner ? 'Register as Owner' : 'Register as Sitter' }}
       </button>
       <SocialLoginButtons @facebook="continueWith('Facebook')" @google="continueWith('Google')" />
       <p v-if="submitted || socialNotice" class="auth-notice" role="status">

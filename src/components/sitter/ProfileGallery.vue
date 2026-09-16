@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 
-type GalleryImage = { name: string; url: string }
-
-const images = ref<GalleryImage[]>([])
+const images = defineModel<string[]>({ required: true })
+defineProps<{ readonly?: boolean }>()
 const imageError = ref('')
 
-function addImages(event: Event) {
+function readImage(file: File) {
+  // ponytail: data URLs keep v1 self-contained; use object storage when production upload volume matters.
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+async function addImages(event: Event) {
   const input = event.target as HTMLInputElement
   const selected = Array.from(input.files ?? [])
   if (images.value.length + selected.length > 10) {
@@ -14,31 +23,40 @@ function addImages(event: Event) {
     input.value = ''
     return
   }
-  imageError.value = ''
-  images.value.push(...selected.map(file => ({ name: file.name, url: URL.createObjectURL(file) })))
+  if (selected.some(file => !file.type.startsWith('image/') || file.size > 5_000_000)) {
+    imageError.value = 'รองรับเฉพาะไฟล์รูปภาพขนาดไม่เกิน 5 MB ต่อรูป'
+    input.value = ''
+    return
+  }
+  try {
+    images.value.push(...await Promise.all(selected.map(readImage)))
+    imageError.value = ''
+  } catch {
+    imageError.value = 'ไม่สามารถอ่านไฟล์รูปภาพได้'
+  }
   input.value = ''
 }
 
 function removeImage(index: number) {
-  const removed = images.value.splice(index, 1)[0]
-  if (removed) URL.revokeObjectURL(removed.url)
+  images.value.splice(index, 1)
   imageError.value = ''
 }
-
-onUnmounted(() => {
-  images.value.forEach(image => URL.revokeObjectURL(image.url))
-})
 </script>
 
 <template>
   <div class="field wide">
     <label>Image Gallery (Maximum 10 images)</label>
     <div class="gallery">
-      <div v-for="(image, index) in images" :key="image.url" class="gallery-image">
-        <img :src="image.url" :alt="image.name" />
-        <button type="button" :aria-label="`Remove ${image.name}`" @click="removeImage(index)">×</button>
+      <div v-for="(image, index) in images" :key="image" class="gallery-image">
+        <img :src="image" :alt="`Gallery image ${index + 1}`" />
+        <button
+          v-if="!readonly"
+          type="button"
+          :aria-label="`Remove image ${index + 1}`"
+          @click="removeImage(index)"
+        >×</button>
       </div>
-      <label class="upload-tile">
+      <label v-if="!readonly" class="upload-tile">
         <span class="upload-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />

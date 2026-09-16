@@ -7,6 +7,7 @@ import { useAuthRole } from "../composables/useAuthRole";
 const router = useRouter();
 const { isOwner, registerTo, setRole } = useAuthRole();
 
+const showPassword = ref(false);
 const email = ref("");
 const password = ref("");
 const rememberMe = ref(false);
@@ -83,15 +84,24 @@ function continueWith(provider: "Facebook" | "Google") {
       />
 
       <label class="auth-label" for="login-password">Password</label>
-      <input
-        id="login-password"
-        v-model="password"
-        class="auth-input"
-        type="password"
-        autocomplete="current-password"
-        :placeholder="isOwner ? 'email@company.com' : undefined"
-        required
-      />
+      <div class="relative">
+        <input
+          id="login-password"
+          v-model="password"
+          class="auth-input pr-12"
+          :type="showPassword ? 'text' : 'password'"
+          autocomplete="current-password"
+          required
+        />
+        <button
+          type="button"
+          class="absolute inset-y-0 right-2 grid w-10 place-items-center border-0 bg-transparent p-0"
+          :aria-label="showPassword ? 'Hide password' : 'Show password'"
+          @click="showPassword = !showPassword"
+        >
+          <img :src="showPassword ? '/icon/eye-off.svg' : '/icon/eye.svg'" alt="" class="size-5" />
+        </button>
+      </div>
 
       <div class="mt-3.5 mb-[22px] flex items-center justify-between">
         <label

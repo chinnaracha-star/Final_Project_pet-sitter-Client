@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 const images = defineModel<string[]>({ required: true })
+defineProps<{ readonly?: boolean }>()
 const imageError = ref('')
 
 function readImage(file: File) {
@@ -48,9 +49,14 @@ function removeImage(index: number) {
     <div class="gallery">
       <div v-for="(image, index) in images" :key="image" class="gallery-image">
         <img :src="image" :alt="`Gallery image ${index + 1}`" />
-        <button type="button" :aria-label="`Remove image ${index + 1}`" @click="removeImage(index)">×</button>
+        <button
+          v-if="!readonly"
+          type="button"
+          :aria-label="`Remove image ${index + 1}`"
+          @click="removeImage(index)"
+        >×</button>
       </div>
-      <label class="upload-tile">
+      <label v-if="!readonly" class="upload-tile">
         <span class="upload-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />

@@ -1,106 +1,52 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { Footer, Navbar } from '../components'
-
-type Sitter = {
-  name: string
-  owner: string
-  location: string
-  image: string
-  avatar: string
-  rating: number
-  experience: string
-  petTypes: string[]
-}
+import { getListedSitters, type ListedSitter } from '../services/sitterApproval'
 
 const petTypeOptions = ['Dog', 'Cat', 'Bird', 'Rabbit']
-const experienceOptions = ['0-2 Years', '3-5 Years', '5+ Years']
-const ratingOptions = [5, 4, 3, 2, 1]
-
-const sitters: Sitter[] = [
-  {
-    name: 'Happy House!',
-    owner: 'Jane Maison',
-    location: 'Sena Nikhom, Bangkok',
-    image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=520&q=85',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=85',
-    rating: 5,
-    experience: '3-5 Years',
-    petTypes: ['Dog', 'Cat', 'Rabbit'],
-  },
-  {
-    name: 'We love cat and your cat',
-    owner: 'Cat Lover',
-    location: 'Sena Nikhom, Bangkok',
-    image: 'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?auto=format&fit=crop&w=520&q=85',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=85',
-    rating: 5,
-    experience: '0-2 Years',
-    petTypes: ['Cat'],
-  },
-  {
-    name: 'Gentle >< for all pet! (Kid friendly)',
-    owner: 'Umai',
-    location: 'Sena Nikhom, Bangkok',
-    image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=520&q=85',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=85',
-    rating: 5,
-    experience: '5+ Years',
-    petTypes: ['Dog', 'Cat', 'Bird', 'Rabbit'],
-  },
-  {
-    name: 'Happy energetic pup',
-    owner: 'Nanny Black',
-    location: 'Sena Nikhom, Bangkok',
-    image: 'https://images.unsplash.com/photo-1601979031925-424e53b6caaa?auto=format&fit=crop&w=520&q=85',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=85',
-    rating: 4,
-    experience: '3-5 Years',
-    petTypes: ['Dog'],
-  },
-  {
-    name: 'Cat Mom',
-    owner: 'Mother of Cat',
-    location: 'Sena Nikhom, Bangkok',
-    image: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=520&q=85',
-    avatar: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=100&q=85',
-    rating: 4,
-    experience: '0-2 Years',
-    petTypes: ['Dog', 'Cat', 'Rabbit'],
-  },
-]
+const sitters = ref<ListedSitter[]>([])
+const loading = ref(true)
+const notice = ref('')
 
 const filters = reactive({
   keyword: '',
   petTypes: [] as string[],
-  rating: null as number | null,
-  experience: '',
 })
-const currentPage = ref(1)
 
 const filteredSitters = computed(() => {
   const keyword = filters.keyword.trim().toLowerCase()
 
-  return sitters.filter((sitter) => {
-    const matchesKeyword = !keyword || `${sitter.name} ${sitter.owner}`.toLowerCase().includes(keyword)
+  return sitters.value.filter((sitter) => {
+    const searchable = [
+      sitter.displayName,
+      sitter.services,
+      sitter.introduction,
+      sitter.province,
+    ].filter(Boolean).join(' ').toLowerCase()
+    const matchesKeyword = !keyword || searchable.includes(keyword)
     const matchesPet = !filters.petTypes.length || filters.petTypes.some((pet) => sitter.petTypes.includes(pet))
-    const matchesRating = filters.rating === null || sitter.rating >= filters.rating
-    const matchesExperience = !filters.experience || sitter.experience === filters.experience
-    return matchesKeyword && matchesPet && matchesRating && matchesExperience
+    return matchesKeyword && matchesPet
   })
 })
 
 function clearFilters() {
   filters.keyword = ''
   filters.petTypes = []
-  filters.rating = null
-  filters.experience = ''
-  currentPage.value = 1
 }
 
 function petTypeClass(petType: string) {
   return `tag-${petType.toLowerCase()}`
 }
+
+onMounted(async () => {
+  try {
+    sitters.value = await getListedSitters()
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : 'ไม่สามารถโหลดข้อมูล Pet Sitter ได้'
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
@@ -118,7 +64,7 @@ function petTypeClass(petType: string) {
 
       <div class="search-layout">
         <aside class="filter-column">
-          <form class="filter-card" @submit.prevent="currentPage = 1">
+          <form class="filter-card" @submit.prevent>
             <label for="search-input">Search</label>
             <div class="search-input-wrap">
               <input id="search-input" v-model="filters.keyword" type="search" />
@@ -135,29 +81,6 @@ function petTypeClass(petType: string) {
               </div>
             </fieldset>
 
-            <fieldset>
-              <legend>Rating:</legend>
-              <div class="rating-options">
-                <button
-                  v-for="rating in ratingOptions"
-                  :key="rating"
-                  type="button"
-                  :class="{ selected: filters.rating === rating }"
-                  @click="filters.rating = filters.rating === rating ? null : rating"
-                >
-                  {{ rating }} <span>{{ '★'.repeat(rating) }}</span>
-                </button>
-              </div>
-            </fieldset>
-
-            <label for="experience">Experience:</label>
-            <select id="experience" v-model="filters.experience">
-              <option value="">0-2 Years</option>
-              <option v-for="experience in experienceOptions.slice(1)" :key="experience" :value="experience">
-                {{ experience }}
-              </option>
-            </select>
-
             <div class="filter-actions">
               <button class="clear-button" type="button" @click="clearFilters">Clear</button>
               <button class="search-button" type="submit">Search</button>
@@ -166,41 +89,35 @@ function petTypeClass(petType: string) {
         </aside>
 
         <section class="results" aria-live="polite">
-          <article v-for="sitter in filteredSitters" :key="sitter.name" class="sitter-card">
-            <img class="place-image" :src="sitter.image" :alt="sitter.name" />
-            <div class="sitter-info">
-              <div class="card-heading">
-                <div class="identity">
-                  <img :src="sitter.avatar" alt="" />
-                  <div>
-                    <h2>{{ sitter.name }}</h2>
-                    <p>By {{ sitter.owner }}</p>
+          <div v-if="loading" class="empty-state">Loading pet sitters...</div>
+          <div v-else-if="notice" class="empty-state error-state" role="alert">{{ notice }}</div>
+          <div v-else-if="!filteredSitters.length" class="empty-state">No pet sitter found.</div>
+          <template v-else>
+            <article v-for="sitter in filteredSitters" :key="sitter.userId" class="sitter-card">
+              <img
+                class="place-image"
+                :src="sitter.avatarUrl || '/image/services-cat.png'"
+                :alt="sitter.displayName"
+              />
+              <div class="sitter-info">
+                <div class="card-heading">
+                  <div class="identity">
+                    <img :src="sitter.avatarUrl || '/icon/user.svg'" alt="" />
+                    <div>
+                      <h2>{{ sitter.displayName }}</h2>
+                      <p>{{ sitter.services || sitter.introduction || 'Pet sitting service' }}</p>
+                    </div>
                   </div>
                 </div>
-                <div class="stars" :aria-label="`${sitter.rating} stars`">
-                  <img v-for="star in sitter.rating" :key="star" src="/icon/star.svg" alt="" />
+                <p class="location">
+                  <img src="/icon/map-pin.svg" alt="" />{{ sitter.province || 'Location not specified' }}
+                </p>
+                <div class="pet-tags">
+                  <span v-for="pet in sitter.petTypes" :key="pet" :class="petTypeClass(pet)">{{ pet }}</span>
                 </div>
               </div>
-              <p class="location"><img src="/icon/map-pin.svg" alt="" />{{ sitter.location }}</p>
-              <div class="pet-tags">
-                <span v-for="pet in sitter.petTypes" :key="pet" :class="petTypeClass(pet)">{{ pet }}</span>
-              </div>
-            </div>
-          </article>
-
-          <div v-if="!filteredSitters.length" class="empty-state">No pet sitter found.</div>
-
-          <nav v-else class="pagination" aria-label="Pagination">
-            <button type="button" aria-label="Previous page">‹</button>
-            <button
-              v-for="page in [1, 2, 3, 4]"
-              :key="page"
-              type="button"
-              :class="{ active: currentPage === page }"
-              @click="currentPage = page"
-            >{{ page }}</button>
-            <button type="button" aria-label="Next page">›</button>
-          </nav>
+            </article>
+          </template>
         </section>
       </div>
     </main>
@@ -219,10 +136,8 @@ function petTypeClass(petType: string) {
 .view-switch,
 .filter-actions,
 .identity,
-.stars,
 .location,
-.pet-tags,
-.pagination {
+.pet-tags {
   display: flex;
   align-items: center;
 }
@@ -298,8 +213,7 @@ function petTypeClass(petType: string) {
 
 .search-input-wrap { position: relative; }
 
-.search-input-wrap input,
-.filter-card select {
+.search-input-wrap input {
   width: 100%;
   height: 35px;
   border: 1px solid #dde0ef;
@@ -335,27 +249,6 @@ function petTypeClass(petType: string) {
 }
 
 .pet-options input { width: 11px; height: 11px; margin: 0; accent-color: #ff6525; }
-
-.rating-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.rating-options button {
-  height: 20px;
-  padding: 0 5px;
-  border: 1px solid #dde0ef;
-  border-radius: 7px;
-  background: #fff;
-  color: #82869b;
-  font-size: 8px;
-}
-
-.rating-options button span { color: #1ccd83; letter-spacing: 1px; }
-.rating-options button.selected { border-color: #1ccd83; background: #edfbf5; }
-.filter-card > label[for="experience"] { margin-top: 24px; }
-.filter-card select { padding: 0 9px; }
 
 .filter-actions {
   gap: 12px;
@@ -408,9 +301,6 @@ function petTypeClass(petType: string) {
 .identity > img { width: 37px; height: 37px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
 .identity h2 { margin: 0; color: #161616; font-size: 13px; font-weight: 700; line-height: 1.25; }
 .identity p { margin: 3px 0 0; color: #30343f; font-size: 9px; }
-.stars { flex: 0 0 auto; gap: 1px; padding-top: 2px; }
-.stars img { width: 12px; height: 12px; }
-
 .location {
   gap: 4px;
   margin: 18px 0 0;
@@ -442,10 +332,7 @@ function petTypeClass(petType: string) {
   text-align: center;
   font-size: 12px;
 }
-
-.pagination { justify-content: center; gap: 5px; margin-top: 10px; }
-.pagination button { width: 25px; height: 25px; border: 0; border-radius: 50%; background: transparent; color: #adb1c6; font-size: 10px; }
-.pagination button.active { background: #ffeae3; color: #ff6525; }
+.error-state { color: #b42318; }
 
 @media (max-width: 760px) {
   .search-main { width: min(100% - 28px, 900px); }
@@ -457,7 +344,6 @@ function petTypeClass(petType: string) {
   .sitter-card { grid-template-columns: 125px minmax(0, 1fr); }
   .place-image { width: 125px; }
   .identity > img { display: none; }
-  .stars img { width: 10px; height: 10px; }
 }
 
 @media (max-width: 480px) {

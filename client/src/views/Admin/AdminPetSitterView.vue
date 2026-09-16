@@ -2,6 +2,7 @@
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
+import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
 
 type SitterStatus =
   | 'Unverified'
@@ -33,6 +34,8 @@ interface SitterProfilePageResponse {
 }
 
 const API_BASE_URL = 'http://localhost:8081/api'
+
+const store = useAdminPetSitterStore()
 
 const sitters = ref<SitterProfile[]>([])
 const searchQuery = ref('')
@@ -129,6 +132,11 @@ const statusColor: Record<SitterStatus, string> = {
 }
 
 const avatarUrl = (sitter: SitterProfile) => sitter.user.avatarUrl || '/image/dog1.jpg'
+
+// share userId and status of the clicked row with AdminPetSitterView-Profile via the store
+const handleSelectSitter = (sitter: SitterProfile) => {
+  store.selectSitter(sitter.userId, sitter.approvalStatus, sitter.user.name ?? sitter.displayName)
+}
 </script>
 
 <template>
@@ -181,6 +189,7 @@ const avatarUrl = (sitter: SitterProfile) => sitter.user.avatarUrl || '/image/do
             :key="sitter.userId"
             :to="{ path: '/admin/petsitters/profile', query: { id: sitter.userId } }"
             class="grid h-[56px] grid-cols-[1.25fr_1fr_1.6fr_0.75fr] items-center border-b border-[#e5e7ef] px-2.5 text-[10px] text-[#242633] last:border-b-0 hover:bg-[#fcfcfe]"
+            @click="handleSelectSitter(sitter)"
           >
 
             <div class="flex items-center gap-2">

@@ -1,11 +1,102 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import axios from 'axios'
 import { useAdminPetSitterStore, type SitterStatus, type AdminTab } from '../../stores/adminPetSitter'
 
 const store = useAdminPetSitterStore()
+const route = useRoute()
+
+const API_BASE_URL = 'http://localhost:8081/api'
+
+interface SitterUser {
+	name: string | null
+	email: string
+	phone: string | null
+	idNumber: string | null
+	dateOfBirth: string | null
+	avatarUrl: string | null
+}
+
+interface PetType {
+	id: number
+	name: string
+}
+
+interface SitterProfileDetail {
+	userId: string
+	displayName: string
+	introduction: string | null
+	myPlace: string | null
+	services: string | null
+	addressDetail: string | null
+	district: string | null
+	subDistrict: string | null
+	province: string | null
+	postCode: string | null
+	experienceYears: string | null
+	approvalStatus: SitterStatus
+}
+
+interface SitterProfileDetailResponse {
+	sitterProfile: SitterProfileDetail
+	user: SitterUser
+	petTypes: PetType[]
+}
+
+const profile = ref<SitterProfileDetail | null>(null)
+const sitterUser = ref<SitterUser | null>(null)
+const petTypes = ref<PetType[]>([])
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const fetchSitterDetail = async (id: string) => {
+	isLoading.value = true
+	errorMessage.value = ''
+	try {
+		const response = await axios.get<SitterProfileDetailResponse>(`${API_BASE_URL}/sitterprofile/${id}`)
+		profile.value = response.data.sitterProfile
+		sitterUser.value = response.data.user
+		petTypes.value = response.data.petTypes || []
+	} catch (error) {
+		console.error('Failed to fetch pet sitter profile:', error)
+		errorMessage.value = 'Unable to load pet sitter profile.'
+	} finally {
+		isLoading.value = false
+	}
+}
+
+// fall back to the userId in the URL (e.g. after a page refresh) when the store hasn't been populated yet
+onMounted(() => {
+	const queryId = route.query.id
+	if (!store.selectedSitterId && typeof queryId === 'string') {
+		store.selectedSitterId = queryId
+	}
+	if (store.selectedSitterId) fetchSitterDetail(store.selectedSitterId)
+})
+
+watch(
+	() => store.selectedSitterId,
+	(id) => {
+		if (id) fetchSitterDetail(id)
+	},
+)
 
 const setApprovalStatus = (status: Exclude<SitterStatus, 'Waiting for approve'>) => {
-	if (store.selectedSitterId !== null) store.setApprovalStatus(store.selectedSitterId, status)
+	if (store.selectedSitterId !== null) store.setApprovalStatus(status)
+}
+
+const formatDate = (value: string | null) => {
+	if (!value) return '-'
+	return new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+const fullAddress = () => {
+	if (!profile.value) return ''
+	return [profile.value.addressDetail, profile.value.subDistrict, profile.value.district, profile.value.province, profile.value.postCode]
+		.filter(Boolean)
+		.join(', ')
 }
 </script>
 
@@ -18,10 +109,10 @@ const setApprovalStatus = (status: Exclude<SitterStatus, 'Waiting for approve'>)
 				<header class="flex flex-wrap items-center justify-between gap-4 px-1">
 					<div class="flex min-w-0 items-center gap-3">
 						<RouterLink to="/admin/petsitters" class="text-xl leading-none text-[#9298ab]" aria-label="Back to pet sitters">‹</RouterLink>
-						<h1 class="truncate text-[15px] font-bold text-[#252733]">{{ store.selectedSitter?.name ?? 'Jane Maison' }}</h1>
+						<h1 class="truncate text-[15px] font-bold text-[#252733]">{{ sitterUser?.name ?? store.selectedSitterName ?? profile?.displayName ?? 'Unnamed user' }}</h1>
 						<span class="flex shrink-0 items-center gap-1.5 text-[10px] text-[#ef82b6]">
 							<span class="h-1 w-1 rounded-full bg-current"></span>
-							{{ store.selectedSitter?.status ?? 'Waiting for approve' }}
+							{{ profile?.approvalStatus ?? store.selectedSitterStatus ?? 'Waiting for approve' }}
 						</span>
 					</div>
 
@@ -44,57 +135,50 @@ const setApprovalStatus = (status: Exclude<SitterStatus, 'Waiting for approve'>)
 					</button>
 				</nav>
 
-				<section v-if="store.activeTab === 'Profile'" class="rounded-xl bg-white p-5 shadow-[0_1px_3px_rgba(40,45,70,0.02)] sm:p-7">
+				<div v-if="isLoading" class="mt-4 rounded-xl bg-white p-8 text-center text-[10px] text-[#9297a9] shadow-[0_1px_3px_rgba(40,45,70,0.02)]">Loading pet sitter profile...</div>
+				<div v-else-if="errorMessage" class="mt-4 rounded-xl bg-white p-8 text-center text-[10px] text-[#f04444] shadow-[0_1px_3px_rgba(40,45,70,0.02)]">{{ errorMessage }}</div>
+
+				<section v-else-if="store.activeTab === 'Profile'" class="rounded-xl bg-white p-5 shadow-[0_1px_3px_rgba(40,45,70,0.02)] sm:p-7">
 					<div class="grid gap-7 md:grid-cols-[125px_minmax(0,1fr)]">
-						<img src="/image/dog2.jpg" alt="Jane Maison" class="mx-auto h-32 w-32 rounded-full object-cover md:mx-0" />
+						<img :src="sitterUser?.avatarUrl || '/image/dog2.jpg'" :alt="sitterUser?.name || 'Pet sitter'" class="mx-auto h-32 w-32 rounded-full object-cover md:mx-0" />
 
 						<div class="rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 							<dl class="grid gap-4 sm:grid-cols-2">
-								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Full Name</dt><dd class="mt-1 text-[10px]">Jane Maison</dd></div>
-								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Experience</dt><dd class="mt-1 text-[10px]">1.5 Years</dd></div>
-								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Phone</dt><dd class="mt-1 text-[10px]">099 996 0090</dd></div>
-								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">ID Number</dt><dd class="mt-1 text-[10px]">1122 21 236 8566</dd></div>
-								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Date of Birth</dt><dd class="mt-1 text-[10px]">12 March 1996</dd></div>
+								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Full Name</dt><dd class="mt-1 text-[10px]">{{ sitterUser?.name || '-' }}</dd></div>
+								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Experience</dt><dd class="mt-1 text-[10px]">{{ profile?.experienceYears || '-' }}</dd></div>
+								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Phone</dt><dd class="mt-1 text-[10px]">{{ sitterUser?.phone || '-' }}</dd></div>
+								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">ID Number</dt><dd class="mt-1 text-[10px]">{{ sitterUser?.idNumber || '-' }}</dd></div>
+								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Date of Birth</dt><dd class="mt-1 text-[10px]">{{ formatDate(sitterUser?.dateOfBirth ?? null) }}</dd></div>
 							</dl>
 							<div class="mt-5">
 								<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Introduction</h2>
-								<p class="mt-1 max-w-3xl text-[10px] leading-[1.55] text-[#30343f]">Hello there! My name is Jane Maison, and I'm your friendly and reliable pet sitter in Senanikom, Bangkok. I am passionate about animals and have dedicated myself to ensuring the well-being and happiness of your furry, feathery, and hoppy companions. With a big heart and a spacious house, I provide a safe and loving environment for cats, dogs, and rabbits while you're away.</p>
+								<p class="mt-1 max-w-3xl text-[10px] leading-[1.55] text-[#30343f]">{{ profile?.introduction || 'No introduction provided.' }}</p>
 							</div>
 						</div>
 					</div>
 
 					<div class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Pet sitter name (Trade Name)</h2>
-						<p class="mt-1 text-[10px]">Happy House!</p>
+						<p class="mt-1 text-[10px]">{{ profile?.displayName || '-' }}</p>
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Pet type</h2>
-						<div class="mt-2 flex gap-2">
-							<span class="rounded-full border border-[#6fe0bc] px-2.5 py-0.5 text-[9px] text-[#20c995]">Dog</span>
-							<span class="rounded-full border border-[#f3a5c5] px-2.5 py-0.5 text-[9px] text-[#ed83b0]">Cat</span>
-							<span class="rounded-full border border-[#ffb493] px-2.5 py-0.5 text-[9px] text-[#f58d68]">Rabbit</span>
+						<div class="mt-2 flex flex-wrap gap-2">
+							<span v-for="petType in petTypes" :key="petType.id" class="rounded-full border border-[#6fe0bc] px-2.5 py-0.5 text-[9px] text-[#20c995]">{{ petType.name }}</span>
+							<span v-if="petTypes.length === 0" class="text-[9px] text-[#9297a9]">No pet types selected.</span>
 						</div>
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Services</h2>
 						<div class="mt-2 space-y-2 text-[10px] leading-[1.5]">
-							<p>🐱 Cat Sitting: Cats are fascinating creatures, and I take joy in catering to their independent yet affectionate nature.</p>
-							<p>🐶 Dog Sitting: Dogs are not just pets; they're family. From energetic walks and playtime to soothing belly rubs, I provide a balanced and fun experience for dogs of all sizes and breeds.</p>
-							<p>🐰 Rabbit Sitting: With their adorable antics and gentle personalities, rabbits require a special kind of care. I am well-versed in providing them with a comfortable environment, appropriate diet, and ample playtime.</p>
+							<p>{{ profile?.services || 'No services listed.' }}</p>
 						</div>
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">My Place</h2>
-						<p class="mt-1 text-[10px] leading-[1.5]">My residence is a spacious house nestled in the serene neighborhood of Senanikom. Your beloved pets will have plenty of room to roam and explore while enjoying a safe and secure environment. I have designated areas for play, relaxation, and sleep, ensuring your pets feel comfortable and at ease throughout their stay.</p>
-
-						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Image Gallery</h2>
-						<div class="mt-2 grid max-w-[520px] grid-cols-3 gap-2">
-							<img src="/image/dog1.jpg" alt="Pet care gallery" class="aspect-[1.35] w-full object-cover" />
-							<img src="/image/dog2.jpg" alt="Pet care gallery" class="aspect-[1.35] w-full object-cover" />
-							<img src="/image/cat.jpg" alt="Pet care gallery" class="aspect-[1.35] w-full object-cover" />
-						</div>
+						<p class="mt-1 text-[10px] leading-[1.5]">{{ profile?.myPlace || '-' }}</p>
 					</div>
 
 					<div class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Address</h2>
-						<p class="mt-1 text-[10px]">33/445 Phaholyothin 41 Rd.<br />Senanikom, Chatuchak, Bangkok, 10400</p>
+						<p class="mt-1 text-[10px]">{{ fullAddress() || '-' }}</p>
 						<div class="relative mt-5 h-52 overflow-hidden rounded-md bg-[#e5e9e9] bg-[linear-gradient(25deg,transparent_48%,#f4b93c_49%,#f4b93c_51%,transparent_52%),linear-gradient(105deg,transparent_45%,#f7c746_46%,#f7c746_48%,transparent_49%),linear-gradient(160deg,transparent_50%,#b7dbbf_51%,#b7dbbf_64%,transparent_65%)] bg-[length:220px_170px,180px_200px,240px_220px]">
 							<div class="absolute left-[52%] top-[48%] flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#ff7040] shadow-lg">
 								<img src="/image/Map_Pin_Selected.svg" alt="Location" class="h-6 w-6 brightness-0 invert" />

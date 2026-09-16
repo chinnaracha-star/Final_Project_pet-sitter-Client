@@ -1,44 +1,40 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
-export type SitterStatus = 'Waiting for approve' | 'Approved' | 'Rejected'
+export type SitterStatus =
+  | 'Unverified'
+  | 'Waiting for verify'
+  | 'Verified'
+  | 'Waiting for approve'
+  | 'Approved'
+  | 'Rejected'
+
 export type AdminTab = 'Profile' | 'Booking' | 'Reviews' | 'Report'
 
-export interface Sitter {
-  id: number
-  name: string
-  sitterName: string
-  email: string
-  status: SitterStatus
-}
-
 export const useAdminPetSitterStore = defineStore('adminPetSitter', () => {
-  const sitters = ref<Sitter[]>([
-    { id: 1, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Waiting for approve' },
-    { id: 2, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Waiting for approve' },
-    { id: 3, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Waiting for approve' },
-    { id: 4, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Approved' },
-    { id: 5, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Approved' },
-    { id: 6, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Approved' },
-    { id: 7, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Rejected' },
-    { id: 8, name: 'Jane Maison', sitterName: 'Happy House!', email: 'janemaison@gmail.com', status: 'Approved' },
-  ])
-
-  // id of the sitter currently opened from the list, shared across Admin sub-views
-  const selectedSitterId = ref<number | null>(null)
+  // userId and approval status shared from the sitter row clicked in AdminPetSitterView
+  const selectedSitterId = ref<string | null>(null)
+  const selectedSitterStatus = ref<SitterStatus | null>(null)
+  const selectedSitterName = ref<string | null>(null)
   const activeTab = ref<AdminTab>('Profile')
 
-  const selectedSitter = computed(() => sitters.value.find((sitter) => sitter.id === selectedSitterId.value) ?? null)
-
-  function selectSitter(id: number) {
-    selectedSitterId.value = id
+  function selectSitter(userId: string, status: SitterStatus, name: string | null = null) {
+    selectedSitterId.value = userId
+    selectedSitterStatus.value = status
+    selectedSitterName.value = name
     activeTab.value = 'Profile'
   }
 
-  function setApprovalStatus(id: number, status: Exclude<SitterStatus, 'Waiting for approve'>) {
-    const sitter = sitters.value.find((s) => s.id === id)
-    if (sitter) sitter.status = status
+  function setApprovalStatus(status: Exclude<SitterStatus, 'Waiting for approve'>) {
+    selectedSitterStatus.value = status
   }
 
-  return { sitters, selectedSitterId, selectedSitter, activeTab, selectSitter, setApprovalStatus }
+  return {
+    selectedSitterId,
+    selectedSitterStatus,
+    selectedSitterName,
+    activeTab,
+    selectSitter,
+    setApprovalStatus,
+  }
 })

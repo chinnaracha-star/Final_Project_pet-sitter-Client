@@ -14,7 +14,7 @@ const store = useAdminPetSitterStore()
 				<header class="flex flex-wrap items-center justify-between gap-4 px-1">
 					<div class="flex min-w-0 items-center gap-3">
 						<RouterLink to="/admin/petsitters" class="text-xl leading-none text-[#9298ab]" aria-label="Back to pet sitters">‹</RouterLink>
-						<h1 class="truncate text-[15px] font-bold text-[#252733]">{{ store.selectedSitter?.name ?? 'Jane Maison' }}</h1>
+						<h1 class="truncate text-[15px] font-bold text-[#252733]">{{ store.selectedSitterName ?? 'Jane Maison' }}</h1>
 					</div>
 				</header>
 

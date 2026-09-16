@@ -36,6 +36,7 @@ interface SitterProfileDetail {
 	province: string | null
 	postCode: string | null
 	experienceYears: string | null
+	pet_sitter_state: number | null
 	approvalStatus: SitterStatus
 }
 
@@ -142,7 +143,7 @@ const fullAddress = () => {
 					<div class="grid gap-7 md:grid-cols-[125px_minmax(0,1fr)]">
 						<img :src="sitterUser?.avatarUrl || '/image/dog2.jpg'" :alt="sitterUser?.name || 'Pet sitter'" class="mx-auto h-32 w-32 rounded-full object-cover md:mx-0" />
 
-						<div class="rounded-md bg-[#fbfbfd] p-4 sm:p-5">
+						<div v-if="profile?.pet_sitter_state === 2 || profile?.pet_sitter_state === 3" class="rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 							<dl class="grid gap-4 sm:grid-cols-2">
 								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Full Name</dt><dd class="mt-1 text-[10px]">{{ sitterUser?.name || '-' }}</dd></div>
 								<div><dt class="text-[11px] font-semibold text-[#aeb4c7]">Experience</dt><dd class="mt-1 text-[10px]">{{ profile?.experienceYears || '-' }}</dd></div>
@@ -157,9 +158,11 @@ const fullAddress = () => {
 						</div>
 					</div>
 
-					<div class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
-						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Pet sitter name (Trade Name)</h2>
-						<p class="mt-1 text-[10px]">{{ profile?.displayName || '-' }}</p>
+					<div v-if="profile?.pet_sitter_state === 3" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
+						<div>
+							<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Pet sitter name (Trade Name)</h2>
+							<p class="mt-1 text-[10px]">{{ profile?.displayName || '-' }}</p>
+						</div>
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Pet type</h2>
 						<div class="mt-2 flex flex-wrap gap-2">
@@ -176,7 +179,7 @@ const fullAddress = () => {
 						<p class="mt-1 text-[10px] leading-[1.5]">{{ profile?.myPlace || '-' }}</p>
 					</div>
 
-					<div class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
+					<div v-if="profile?.pet_sitter_state === 3" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Address</h2>
 						<p class="mt-1 text-[10px]">{{ fullAddress() || '-' }}</p>
 						<div class="relative mt-5 h-52 overflow-hidden rounded-md bg-[#e5e9e9] bg-[linear-gradient(25deg,transparent_48%,#f4b93c_49%,#f4b93c_51%,transparent_52%),linear-gradient(105deg,transparent_45%,#f7c746_46%,#f7c746_48%,transparent_49%),linear-gradient(160deg,transparent_50%,#b7dbbf_51%,#b7dbbf_64%,transparent_65%)] bg-[length:220px_170px,180px_200px,240px_220px]">

@@ -1,14 +1,75 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
-import { useAdminPetSitterStore, type SitterStatus } from '../../stores/adminPetSitter'
+import { computed, onMounted, ref } from 'vue'
+import axios from 'axios'
 
-const store = useAdminPetSitterStore()
+type SitterStatus =
+  | 'Unverified'
+  | 'Waiting for verify'
+  | 'Verified'
+  | 'Waiting for approve'
+  | 'Approved'
+  | 'Rejected'
+
+interface SitterUser {
+  name: string | null
+  email: string
+  avatarUrl: string | null
+}
+
+interface SitterProfile {
+  userId: string
+  user: SitterUser
+  displayName: string
+  approvalStatus: SitterStatus
+}
+
+const sitters = ref<SitterProfile[]>([])
+const searchQuery = ref('')
+const selectedStatus = ref<'All status' | SitterStatus>('All status')
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const filteredSitters = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+
+  return sitters.value.filter((sitter) => {
+    const matchesSearch = !query || [
+      sitter.user.name,
+      sitter.displayName,
+      sitter.user.email,
+    ].some((value) => value?.toLowerCase().includes(query))
+    const matchesStatus = selectedStatus.value === 'All status' || sitter.approvalStatus === selectedStatus.value
+
+    return matchesSearch && matchesStatus
+  })
+})
+
+onMounted(async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await axios.get<SitterProfile[]>('http://localhost:8081/api/sitterprofile')
+    sitters.value = response.data
+  } catch (error) {
+    console.error('Failed to fetch pet sitters:', error)
+    errorMessage.value = 'Unable to load pet sitters. Please try again.'
+  } finally {
+    isLoading.value = false
+  }
+})
 
 const statusColor: Record<SitterStatus, string> = {
+  Unverified: 'text-[#9297a9]',
+  'Waiting for verify': 'text-[#f783bb]',
+  Verified: 'text-[#16a3c7]',
   'Waiting for approve': 'text-[#f783bb]',
   Approved: 'text-[#16c784]',
   Rejected: 'text-[#f04444]',
 }
+
+const avatarUrl = (sitter: SitterProfile) => sitter.user.avatarUrl || '/image/dog1.jpg'
 </script>
 
 <template>
@@ -22,21 +83,21 @@ const statusColor: Record<SitterStatus, string> = {
         <div class="flex w-full gap-3 sm:w-auto">
           <label class="relative min-w-0 flex-1 sm:w-37.5 sm:flex-none">
             <span class="sr-only">Search pet sitters</span>
-            <input type="search" placeholder="Search..." class="h-8 w-full rounded-md border border-[#e0e3ed] bg-white px-2.5 pr-8 text-[10px] text-[#30343f] outline-none placeholder:text-[#a2a6b5] focus:border-[#afb5ca]" />
+            <input v-model="searchQuery" type="search" placeholder="Search..." class="h-8 w-full rounded-md border border-[#e0e3ed] bg-white px-2.5 pr-8 text-[10px] text-[#30343f] outline-none placeholder:text-[#a2a6b5] focus:border-[#afb5ca]" />
             <svg class="pointer-events-none absolute right-2.5 top-2 h-4 w-4 text-[#9aa0b4]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" aria-hidden="true">
               <circle cx="10.8" cy="10.8" r="6.3" /><path d="m16 16 4.2 4.2" />
             </svg>
           </label>
           <label class="relative w-37.5 shrink-0">
             <span class="sr-only">Filter by status</span>
-            <select class="h-8 w-full appearance-none rounded-md border border-[#e0e3ed] bg-white px-2.5 pr-7 text-[10px] text-[#9297a9] outline-none focus:border-[#afb5ca]">
-              <option>All status</option>
-              <option>Unverified</option>
-              <option>Waiting for verify</option>
-              <option>Verified</option>
-              <option>Waiting for approve</option>
-              <option>Approved</option>
-              <option>Rejected</option>
+            <select v-model="selectedStatus" class="h-8 w-full appearance-none rounded-md border border-[#e0e3ed] bg-white px-2.5 pr-7 text-[10px] text-[#9297a9] outline-none focus:border-[#afb5ca]">
+              <option value="All status">All status</option>
+              <option value="Unverified">Unverified</option>
+              <option value="Waiting for verify">Waiting for verify</option>
+              <option value="Verified">Verified</option>
+              <option value="Waiting for approve">Waiting for approve</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
             </select>
             <svg class="pointer-events-none absolute right-2.5 top-3 h-2.5 w-2.5 text-[#8d93a7]" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="m1 1 5 5 5-5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </label>
@@ -53,23 +114,25 @@ const statusColor: Record<SitterStatus, string> = {
             <span>Status</span>
           </div>
 
+          <div v-if="isLoading" class="px-2.5 py-8 text-center text-[10px] text-[#9297a9]">Loading pet sitters...</div>
+          <div v-else-if="errorMessage" class="px-2.5 py-8 text-center text-[10px] text-[#f04444]">{{ errorMessage }}</div>
+          <div v-else-if="filteredSitters.length === 0" class="px-2.5 py-8 text-center text-[10px] text-[#9297a9]">No pet sitters found.</div>
           <RouterLink
-            v-for="sitter in store.sitters"
-            :key="sitter.id"
-            to="/admin/petsitters/profile"
+            v-for="sitter in filteredSitters"
+            :key="sitter.userId"
+            :to="{ path: '/admin/petsitters/profile', query: { id: sitter.userId } }"
             class="grid h-[56px] grid-cols-[1.25fr_1fr_1.6fr_0.75fr] items-center border-b border-[#e5e7ef] px-2.5 text-[10px] text-[#242633] last:border-b-0 hover:bg-[#fcfcfe]"
-            @click="store.selectSitter(sitter.id)"
           >
 
             <div class="flex items-center gap-2">
-              <img src="/image/dog1.jpg" alt="" class="h-7 w-7 rounded-full object-cover" />
-              <span>{{ sitter.name }}</span>
+              <img :src="avatarUrl(sitter)" :alt="sitter.user.name || 'Pet sitter'" class="h-7 w-7 rounded-full object-cover" />
+              <span>{{ sitter.user.name || 'Unnamed user' }}</span>
             </div>
-            <span>{{ sitter.sitterName }}</span>
-            <span>{{ sitter.email }}</span>
-            <span class="flex items-center gap-1.5" :class="statusColor[sitter.status]">
+            <span>{{ sitter.displayName }}</span>
+            <span>{{ sitter.user.email }}</span>
+            <span class="flex items-center gap-1.5" :class="statusColor[sitter.approvalStatus]">
               <span class="h-1 w-1 rounded-full bg-current"></span>
-              {{ sitter.status }}
+              {{ sitter.approvalStatus }}
             </span>
           </RouterLink>
         </div>

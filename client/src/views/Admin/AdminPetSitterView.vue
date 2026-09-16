@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 
 type SitterStatus =
@@ -24,6 +24,16 @@ interface SitterProfile {
   approvalStatus: SitterStatus
 }
 
+interface SitterProfilePageResponse {
+  sitters: SitterProfile[]
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  limit: number
+}
+
+const API_BASE_URL = 'http://localhost:8081/api'
+
 const sitters = ref<SitterProfile[]>([])
 const searchQuery = ref('')
 const debouncedSearch = ref('')
@@ -32,9 +42,10 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 const page = ref(1)
-const pageSize = 10
+const totalPages = ref(1)
+const limit = 10
 
-// Debounce search input so filtering doesn't run on every keystroke
+// Debounce search input so a request isn't fired on every keystroke
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 watch(searchQuery, (newValue) => {
@@ -45,33 +56,55 @@ watch(searchQuery, (newValue) => {
   }, 300)
 })
 
-// "All status" behaves like the example's "Highlight" (no status filter applied)
-const filteredSitters = computed(() => {
-  const query = debouncedSearch.value.trim().toLowerCase()
-
-  return sitters.value.filter((sitter) => {
-    const matchesSearch = !query || [
-      sitter.user.name,
-      sitter.displayName,
-      sitter.user.email,
-    ].some((value) => value?.toLowerCase().includes(query))
-    const matchesStatus = selectedStatus.value === 'All status' || sitter.approvalStatus === selectedStatus.value
-
-    return matchesSearch && matchesStatus
-  })
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredSitters.value.length / pageSize)))
-
-const paginatedSitters = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filteredSitters.value.slice(start, start + pageSize)
-})
-
 // Reset to first page whenever the search or status filter changes
 watch([debouncedSearch, selectedStatus], () => {
   page.value = 1
 })
+
+// Cancel the previous in-flight request when a newer one is fired
+let abortController: AbortController | null = null
+
+const fetchSitters = async (pageNum: number, currentSearch: string, currentStatus: 'All status' | SitterStatus) => {
+  if (abortController) abortController.abort()
+  abortController = new AbortController()
+
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    // "All status" behaves like the example's "Highlight" (no status filter applied)
+    const statusParam = currentStatus === 'All status' ? '' : currentStatus
+
+    const response = await axios.get<SitterProfilePageResponse>(`${API_BASE_URL}/sitterprofile`, {
+      params: {
+        page: pageNum,
+        limit,
+        keyword: currentSearch.trim(),
+        status: statusParam,
+      },
+      signal: abortController.signal,
+    })
+
+    sitters.value = response.data.sitters || []
+    totalPages.value = Math.max(1, response.data.totalPages)
+  } catch (error) {
+    if (axios.isCancel(error)) return
+
+    console.error('Failed to fetch pet sitters:', error)
+    errorMessage.value = 'Unable to load pet sitters. Please try again.'
+    sitters.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+watch(
+  [page, debouncedSearch, selectedStatus],
+  () => {
+    fetchSitters(page.value, debouncedSearch.value, selectedStatus.value)
+  },
+  { immediate: true },
+)
 
 const handlePrevPage = () => {
   if (page.value > 1) page.value--
@@ -81,23 +114,9 @@ const handleNextPage = () => {
   if (page.value < totalPages.value) page.value++
 }
 
-onMounted(async () => {
-  isLoading.value = true
-  errorMessage.value = ''
-
-  try {
-    const response = await axios.get<SitterProfile[]>('http://localhost:8081/api/sitterprofile')
-    sitters.value = response.data
-  } catch (error) {
-    console.error('Failed to fetch pet sitters:', error)
-    errorMessage.value = 'Unable to load pet sitters. Please try again.'
-  } finally {
-    isLoading.value = false
-  }
-})
-
 onUnmounted(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
+  if (abortController) abortController.abort()
 })
 
 const statusColor: Record<SitterStatus, string> = {
@@ -156,9 +175,9 @@ const avatarUrl = (sitter: SitterProfile) => sitter.user.avatarUrl || '/image/do
 
           <div v-if="isLoading" class="px-2.5 py-8 text-center text-[10px] text-[#9297a9]">Loading pet sitters...</div>
           <div v-else-if="errorMessage" class="px-2.5 py-8 text-center text-[10px] text-[#f04444]">{{ errorMessage }}</div>
-          <div v-else-if="filteredSitters.length === 0" class="px-2.5 py-8 text-center text-[10px] text-[#9297a9]">No pet sitters found.</div>
+          <div v-else-if="sitters.length === 0" class="px-2.5 py-8 text-center text-[10px] text-[#9297a9]">No pet sitters found.</div>
           <RouterLink
-            v-for="sitter in paginatedSitters"
+            v-for="sitter in sitters"
             :key="sitter.userId"
             :to="{ path: '/admin/petsitters/profile', query: { id: sitter.userId } }"
             class="grid h-[56px] grid-cols-[1.25fr_1fr_1.6fr_0.75fr] items-center border-b border-[#e5e7ef] px-2.5 text-[10px] text-[#242633] last:border-b-0 hover:bg-[#fcfcfe]"
@@ -178,7 +197,7 @@ const avatarUrl = (sitter: SitterProfile) => sitter.user.avatarUrl || '/image/do
         </div>
       </section>
 
-      <nav v-if="filteredSitters.length > 0" class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pagination">
+      <nav v-if="sitters.length > 0" class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pagination">
         <button type="button" class="p-1.5 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Previous page" :disabled="page === 1" @click="handlePrevPage">
           <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m7.5 2.5-3.5 3.5 3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>

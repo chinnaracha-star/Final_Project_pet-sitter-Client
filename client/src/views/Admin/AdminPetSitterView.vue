@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 
 type SitterStatus =
@@ -26,12 +26,28 @@ interface SitterProfile {
 
 const sitters = ref<SitterProfile[]>([])
 const searchQuery = ref('')
+const debouncedSearch = ref('')
 const selectedStatus = ref<'All status' | SitterStatus>('All status')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
+const page = ref(1)
+const pageSize = 10
+
+// Debounce search input so filtering doesn't run on every keystroke
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(searchQuery, (newValue) => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+
+  debounceTimer = setTimeout(() => {
+    debouncedSearch.value = newValue
+  }, 300)
+})
+
+// "All status" behaves like the example's "Highlight" (no status filter applied)
 const filteredSitters = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
+  const query = debouncedSearch.value.trim().toLowerCase()
 
   return sitters.value.filter((sitter) => {
     const matchesSearch = !query || [
@@ -44,6 +60,26 @@ const filteredSitters = computed(() => {
     return matchesSearch && matchesStatus
   })
 })
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredSitters.value.length / pageSize)))
+
+const paginatedSitters = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return filteredSitters.value.slice(start, start + pageSize)
+})
+
+// Reset to first page whenever the search or status filter changes
+watch([debouncedSearch, selectedStatus], () => {
+  page.value = 1
+})
+
+const handlePrevPage = () => {
+  if (page.value > 1) page.value--
+}
+
+const handleNextPage = () => {
+  if (page.value < totalPages.value) page.value++
+}
 
 onMounted(async () => {
   isLoading.value = true
@@ -58,6 +94,10 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+})
+
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
 })
 
 const statusColor: Record<SitterStatus, string> = {
@@ -118,7 +158,7 @@ const avatarUrl = (sitter: SitterProfile) => sitter.user.avatarUrl || '/image/do
           <div v-else-if="errorMessage" class="px-2.5 py-8 text-center text-[10px] text-[#f04444]">{{ errorMessage }}</div>
           <div v-else-if="filteredSitters.length === 0" class="px-2.5 py-8 text-center text-[10px] text-[#9297a9]">No pet sitters found.</div>
           <RouterLink
-            v-for="sitter in filteredSitters"
+            v-for="sitter in paginatedSitters"
             :key="sitter.userId"
             :to="{ path: '/admin/petsitters/profile', query: { id: sitter.userId } }"
             class="grid h-[56px] grid-cols-[1.25fr_1fr_1.6fr_0.75fr] items-center border-b border-[#e5e7ef] px-2.5 text-[10px] text-[#242633] last:border-b-0 hover:bg-[#fcfcfe]"
@@ -138,14 +178,14 @@ const avatarUrl = (sitter: SitterProfile) => sitter.user.avatarUrl || '/image/do
         </div>
       </section>
 
-      <nav class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pagination">
-        <button type="button" class="p-1.5" aria-label="Previous page"><svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m7.5 2.5-3.5 3.5 3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-        <button type="button" class="h-6 w-6 rounded-full bg-[#fff0eb] text-[#ff7955]" aria-current="page">1</button>
-        <button type="button" class="h-6 w-6 rounded-full bg-white text-[#aab0c1]">2</button>
-        <span>...</span>
-        <button type="button" class="h-6 w-6 rounded-full bg-white text-[#aab0c1]">44</button>
-        <button type="button" class="h-6 w-6 rounded-full bg-white text-[#aab0c1]">45</button>
-        <button type="button" class="p-1.5" aria-label="Next page"><svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m4.5 2.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+      <nav v-if="filteredSitters.length > 0" class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pagination">
+        <button type="button" class="p-1.5 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Previous page" :disabled="page === 1" @click="handlePrevPage">
+          <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m7.5 2.5-3.5 3.5 3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+        <span class="px-2">Page {{ page }} of {{ totalPages }}</span>
+        <button type="button" class="p-1.5 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Next page" :disabled="page === totalPages" @click="handleNextPage">
+          <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m4.5 2.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
       </nav>
     </main>
   </div>

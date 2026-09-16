@@ -99,7 +99,7 @@ function continueWith(provider: 'Facebook' | 'Google') {
         <input
           id="register-password"
           v-model="password"
-          class="auth-input pr-[72px]"
+          class="auth-input pr-12"
           :type="showPassword ? 'text' : 'password'"
           autocomplete="new-password"
           placeholder="Create your password"
@@ -108,7 +108,7 @@ function continueWith(provider: 'Facebook' | 'Google') {
         />
         <button
           type="button"
-          class="absolute top-1 right-2 grid size-10 place-items-center border-0 bg-white text-primary-500"
+          class="absolute inset-y-0 right-2 grid w-10 place-items-center border-0 bg-transparent p-0"
           :aria-label="showPassword ? 'Hide password' : 'Show password'"
           @click="showPassword = !showPassword"
         >

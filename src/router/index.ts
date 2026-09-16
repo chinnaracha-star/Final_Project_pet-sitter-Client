@@ -15,7 +15,7 @@ const router = createRouter({
     { path: '/owner/bookings', component: () => import('../views/OwnerBookingsView.vue'), meta: { owner: true } },
     { path: '/owner/password', component: () => import('../views/OwnerPasswordView.vue'), meta: { owner: true } },
     { path: '/sitter/profile', component: () => import('../views/SitterProfileView.vue') },
-    { path: '/sitters', component: () => import('../views/FindSitterView.vue') },
+    { path: '/sitters', redirect: '/search' },
     { path: '/admin/petsitters', alias: '/admin/sitters', component: () => import('../views/Admin/AdminPetSitterView.vue') },
     { path: '/admin/petsitters/profile', component: () => import('../views/Admin/AdminPetSitterView-Profile.vue') },
     { path: '/admin/petsitters/profile/reject', component: () => import('../views/Admin/AdminPetSitterView-Profile-RejectComfirmation.vue') },

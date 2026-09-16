@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import AddressMap from "./AddressMap.vue";
 import ProfileGallery from "./ProfileGallery.vue";
+import { getProfileUiState } from "./profileFlow";
 import {
   currentSitterId,
   getOwnProfile,
@@ -17,25 +18,22 @@ const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 const fullName = defineModel<string>("fullName", { required: true });
 
 const route = useRoute();
+const userId = currentSitterId();
 const demoStatuses: Record<string, ApprovalStatus> = {
   unverified: "Unverified",
   waiting: "Waiting for approve",
   "waiting-for-verify": "Waiting for verify",
   verified: "Verified",
   approved: "Approved",
+  "rejected-first": "Unverified",
   rejected: "Rejected",
 };
-const status = ref<ApprovalStatus>(demoStatuses[String(route.query.status)] || "Unverified");
-const showIdentityOnly = computed(() =>
-  status.value === "Waiting for approve" || status.value === "Rejected",
+const demoStatusKey = String(route.query.status);
+const status = ref<ApprovalStatus>(
+  !userId && demoStatuses[demoStatusKey]
+    ? demoStatuses[demoStatusKey]
+    : "Unverified",
 );
-const showFullProfile = computed(
-  () => !showIdentityOnly.value && !["Unverified", "Waiting for verify"].includes(status.value),
-);
-const actionText = computed(() =>
-  status.value === "Approved" ? "Update Profile" : "Request for approval",
-);
-const statusClass = computed(() => status.value.toLowerCase().replaceAll(" ", "-"));
 
 const phone = ref("");
 const email = ref("");
@@ -63,9 +61,17 @@ const avatarUrl = ref("");
 const photoUrls = ref<string[]>([]);
 const notice = ref("");
 const photoInput = ref<HTMLInputElement | null>(null);
-const rejectionReason = ref("");
+const rejectionReason = ref(
+  !userId && demoStatusKey.startsWith("rejected")
+    ? "Please update the information and submit it again."
+    : "",
+);
 const loading = ref(false);
-const userId = currentSitterId();
+const uiState = computed(() => getProfileUiState(status.value, rejectionReason.value));
+const showFullProfile = computed(() => uiState.value.showFullProfile);
+const statusClass = computed(() =>
+  uiState.value.displayStatus.toLowerCase().replaceAll(" ", "-"),
+);
 
 function changeAvatar(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -173,8 +179,15 @@ function removePetType(pet: string) {
 watch(
   () => route.query.status,
   (value) => {
-    const next = demoStatuses[String(value)];
-    if (next) status.value = next;
+    if (userId) return;
+    const key = String(value);
+    const next = demoStatuses[key];
+    if (next) {
+      status.value = next;
+      rejectionReason.value = key.startsWith("rejected")
+        ? "Please update the information and submit it again."
+        : "";
+    }
   },
 );
 
@@ -196,20 +209,21 @@ onMounted(async () => {
     <div class="page-heading">
       <div>
         <h1 class="text-2xl font-bold">Pet Sitter Profile</h1>
-        <span class="status" :class="statusClass">{{ status }}</span>
+        <span class="status" :class="statusClass">{{ uiState.displayStatus }}</span>
       </div>
       <button
+        v-if="uiState.canSubmit"
         type="submit"
         form="profile-form"
         class="approval-button"
         :disabled="loading"
       >
-        {{ actionText }}
+        {{ uiState.actionText }}
       </button>
     </div>
-    <p v-if="status === 'Rejected'" class="rejection" role="status">
+    <p v-if="rejectionReason" class="rejection" role="status">
       <img src="/icon/info-circle.svg" alt="" width="20" height="20" />
-      Your request has not been approved: '{{ rejectionReason || "Admin's suggestion here" }}'
+      Your request has not been approved: '{{ rejectionReason }}'
     </p>
     <p v-if="status === 'Approved'" class="approved-note">
       Your sitter profile is listed. New edits will need approval before they
@@ -218,7 +232,7 @@ onMounted(async () => {
     <p v-if="notice" class="demo-notice" role="status">{{ notice }}</p>
 
     <form id="profile-form" @submit.prevent="submitProfile">
-      <fieldset class="profile-fields" :disabled="loading">
+      <fieldset class="profile-fields" :disabled="loading || uiState.readOnly">
       <section class="card">
         <h2>Basic Information</h2>
         <label class="image-label">Profile Image</label>
@@ -228,6 +242,7 @@ onMounted(async () => {
             <img v-else class="avatar-fallback" src="/icon/user.svg" alt="" />
           </div>
           <button
+            v-if="!uiState.readOnly"
             type="button"
             class="add-avatar"
             aria-label="Choose profile image"
@@ -245,7 +260,7 @@ onMounted(async () => {
           />
         </div>
         <div class="fields">
-          <div class="field" :class="{ wide: showIdentityOnly }">
+          <div class="field">
             <label for="full-name">Your full name <b>*</b></label>
             <input
               id="full-name"
@@ -254,7 +269,7 @@ onMounted(async () => {
               required
             />
           </div>
-          <div v-if="!showIdentityOnly" class="field">
+          <div class="field">
             <label for="experience">Experience <b>*</b></label>
             <select id="experience" v-model="experience" required>
               <option value="" disabled>Select experience</option>
@@ -284,11 +299,11 @@ onMounted(async () => {
               required
             />
           </div>
-          <div v-if="!showIdentityOnly" class="field">
+          <div class="field">
             <label for="dob">Date of Birth <b>*</b></label>
             <input id="dob" v-model="dateOfBirth" type="date" required />
           </div>
-          <div v-if="!showIdentityOnly" class="field">
+          <div class="field">
             <label for="id-number">ID Number <b>*</b></label>
             <input
               id="id-number"
@@ -317,7 +332,11 @@ onMounted(async () => {
           </div>
           <fieldset class="field wide pet-types">
             <legend>Pet type <b>*</b></legend>
-            <details class="pet-type-select">
+            <details
+              class="pet-type-select"
+              :class="{ 'is-disabled': uiState.readOnly }"
+              @click="uiState.readOnly && $event.preventDefault()"
+            >
               <summary>
                 <span v-if="petTypes.length === 0" class="pet-placeholder">
                   Select pet type
@@ -353,7 +372,7 @@ onMounted(async () => {
             <label for="my-place">My Place (Describe your place)</label>
             <textarea id="my-place" v-model.trim="myPlace" rows="4" />
           </div>
-          <ProfileGallery v-model="photoUrls" />
+          <ProfileGallery v-model="photoUrls" :readonly="uiState.readOnly" />
         </div>
       </section>
 
@@ -395,8 +414,8 @@ onMounted(async () => {
         />
       </section>
       </fieldset>
-      <div v-if="!showIdentityOnly" class="form-actions">
-        <button type="submit" :disabled="loading">{{ actionText }}</button>
+      <div v-if="uiState.canSubmit" class="form-actions">
+        <button type="submit" :disabled="loading">{{ uiState.actionText }}</button>
       </div>
     </form>
   </main>
@@ -592,6 +611,9 @@ legend b {
 }
 .pet-type-select {
   position: relative;
+}
+.pet-type-select.is-disabled summary {
+  cursor: default;
 }
 .pet-type-select summary {
   display: flex;

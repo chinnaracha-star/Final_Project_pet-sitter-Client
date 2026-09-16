@@ -212,7 +212,10 @@ function petTypeClass(petType: string) {
 <style scoped>
 .search-page {
   min-height: 100vh;
-  background: #f7f8fb;
+  background:
+    radial-gradient(circle at 2% 20%, rgb(255 202 98 / 18%) 0 80px, transparent 81px),
+    radial-gradient(circle at 98% 8%, rgb(110 210 250 / 13%) 0 120px, transparent 121px),
+    #f8f9fc;
   color: #292a36;
 }
 
@@ -228,14 +231,14 @@ function petTypeClass(petType: string) {
 }
 
 .search-main {
-  width: min(100% - 40px, 940px);
-  min-height: 900px;
+  width: min(100% - 48px, 1120px);
+  min-height: 920px;
   margin: 0 auto;
-  padding-top: 56px;
+  padding: 72px 0 96px;
 }
 
 .title-row {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -244,33 +247,34 @@ function petTypeClass(petType: string) {
 .title-row h1 {
   margin: 0;
   color: #161616;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   letter-spacing: -.02em;
 }
 
 .view-switch { gap: 8px; }
 
 .view-switch button {
-  height: 27px;
-  padding: 0 10px;
+  height: 36px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
   gap: 5px;
   border: 1px solid #dde0ef;
-  border-radius: 8px;
+  border-radius: 11px;
   background: #fff;
   color: #adb1c6;
-  font-size: 9px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.view-switch button img { width: 12px; height: 12px; opacity: .65; }
+.view-switch button img { width: 15px; height: 15px; opacity: .65; }
 .view-switch button.active { border-color: #ff6525; color: #ff6525; }
 
 .search-layout {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 30px;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 36px;
   align-items: start;
 }
 
@@ -280,11 +284,11 @@ function petTypeClass(petType: string) {
 }
 
 .filter-card {
-  padding: 22px 18px 18px;
+  padding: 28px 24px 24px;
   border: 1px solid #e2e7f0;
-  border-radius: 18px;
+  border-radius: 26px;
   background: #fff;
-  box-shadow: 0 16px 44px -18px rgb(0 0 0 / 12%);
+  box-shadow: 0 16px 44px -10px rgb(0 0 0 / 8%);
 }
 
 .filter-card > label,
@@ -292,7 +296,7 @@ function petTypeClass(petType: string) {
   display: block;
   margin-bottom: 10px;
   color: #232733;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -301,73 +305,72 @@ function petTypeClass(petType: string) {
 .search-input-wrap input,
 .filter-card select {
   width: 100%;
-  height: 35px;
+  height: 44px;
   border: 1px solid #dde0ef;
-  border-radius: 9px;
+  border-radius: 11px;
   background: #fff;
   color: #82869b;
-  font-size: 10px;
+  font-size: 13px;
   outline: 0;
 }
 
-.search-input-wrap input { padding: 0 32px 0 10px; }
-.search-input-wrap img { position: absolute; top: 11px; right: 10px; width: 13px; height: 13px; }
+.search-input-wrap input { padding: 0 40px 0 13px; }
+.search-input-wrap img { position: absolute; top: 14px; right: 13px; width: 16px; height: 16px; }
 
 .filter-card fieldset {
-  margin: 24px 0 0;
+  margin: 28px 0 0;
   padding: 0;
   border: 0;
 }
 
 .pet-options {
   display: grid;
-  grid-template-columns: repeat(4, auto);
-  justify-content: space-between;
-  gap: 5px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 18px;
 }
 
 .pet-options label {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   color: #565a6c;
-  font-size: 8px;
+  font-size: 13px;
 }
 
-.pet-options input { width: 11px; height: 11px; margin: 0; accent-color: #ff6525; }
+.pet-options input { width: 16px; height: 16px; margin: 0; accent-color: #ff6525; }
 
 .rating-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 8px;
 }
 
 .rating-options button {
-  height: 20px;
-  padding: 0 5px;
+  height: 30px;
+  padding: 0 8px;
   border: 1px solid #dde0ef;
-  border-radius: 7px;
+  border-radius: 9px;
   background: #fff;
   color: #82869b;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .rating-options button span { color: #1ccd83; letter-spacing: 1px; }
 .rating-options button.selected { border-color: #1ccd83; background: #edfbf5; }
-.filter-card > label[for="experience"] { margin-top: 24px; }
-.filter-card select { padding: 0 9px; }
+.filter-card > label[for="experience"] { margin-top: 28px; }
+.filter-card select { padding: 0 12px; }
 
 .filter-actions {
   gap: 12px;
-  margin-top: 25px;
+  margin-top: 30px;
 }
 
 .filter-actions button {
   width: 50%;
-  height: 32px;
+  height: 42px;
   border: 0;
-  border-radius: 18px;
-  font-size: 9px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -377,17 +380,17 @@ function petTypeClass(petType: string) {
 .results {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .sitter-card {
-  min-height: 131px;
-  padding: 11px;
+  min-height: 164px;
+  padding: 12px;
   display: grid;
-  grid-template-columns: 164px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 20px;
   border: 1px solid #e7ecf3;
-  border-radius: 16px;
+  border-radius: 22px;
   background: #fff;
   box-shadow: 0 12px 32px -22px rgb(0 0 0 / 18%);
   transition: transform 150ms ease, box-shadow 150ms ease;
@@ -396,36 +399,36 @@ function petTypeClass(petType: string) {
 .sitter-card:hover { transform: translateY(-2px); box-shadow: 0 18px 38px -22px rgb(0 0 0 / 24%); }
 
 .place-image {
-  width: 164px;
-  height: 111px;
-  border-radius: 11px;
+  width: 210px;
+  height: 140px;
+  border-radius: 16px;
   object-fit: cover;
 }
 
-.sitter-info { min-width: 0; padding: 4px 2px 0 0; }
+.sitter-info { min-width: 0; padding: 8px 5px 0 0; }
 .card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.identity { min-width: 0; gap: 10px; }
-.identity > img { width: 37px; height: 37px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
-.identity h2 { margin: 0; color: #161616; font-size: 13px; font-weight: 700; line-height: 1.25; }
-.identity p { margin: 3px 0 0; color: #30343f; font-size: 9px; }
+.identity { min-width: 0; gap: 12px; }
+.identity > img { width: 44px; height: 44px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
+.identity h2 { margin: 0; color: #161616; font-size: 16px; font-weight: 700; line-height: 1.25; }
+.identity p { margin: 4px 0 0; color: #565a6c; font-size: 11px; }
 .stars { flex: 0 0 auto; gap: 1px; padding-top: 2px; }
-.stars img { width: 12px; height: 12px; }
+.stars img { width: 15px; height: 15px; }
 
 .location {
   gap: 4px;
-  margin: 18px 0 0;
+  margin: 20px 0 0;
   color: #82869b;
-  font-size: 8px;
+  font-size: 10px;
 }
 
-.location img { width: 10px; height: 10px; opacity: .7; }
-.pet-tags { gap: 5px; margin-top: 12px; }
+.location img { width: 13px; height: 13px; opacity: .7; }
+.pet-tags { gap: 7px; margin-top: 13px; }
 
 .pet-tags span {
-  padding: 3px 7px;
+  padding: 4px 9px;
   border: 1px solid;
   border-radius: 10px;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1;
 }
 
@@ -443,17 +446,17 @@ function petTypeClass(petType: string) {
   font-size: 12px;
 }
 
-.pagination { justify-content: center; gap: 5px; margin-top: 10px; }
-.pagination button { width: 25px; height: 25px; border: 0; border-radius: 50%; background: transparent; color: #adb1c6; font-size: 10px; }
+.pagination { justify-content: center; gap: 6px; margin-top: 16px; }
+.pagination button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #adb1c6; font-size: 12px; }
 .pagination button.active { background: #ffeae3; color: #ff6525; }
 
 @media (max-width: 760px) {
   .search-main { width: min(100% - 28px, 900px); }
-  .search-main { min-height: auto; padding: 28px 0 60px; }
+  .search-main { min-height: auto; padding: 42px 0 70px; }
   .title-row { margin-bottom: 20px; }
   .search-layout { grid-template-columns: 1fr; gap: 20px; }
   .filter-column { position: static; }
-  .pet-options { justify-content: start; gap: 18px; }
+  .pet-options { grid-template-columns: repeat(4, auto); justify-content: start; gap: 18px; }
   .sitter-card { grid-template-columns: 125px minmax(0, 1fr); }
   .place-image { width: 125px; }
   .identity > img { display: none; }
@@ -462,8 +465,11 @@ function petTypeClass(petType: string) {
 
 @media (max-width: 480px) {
   .view-switch { display: none; }
-  .sitter-card { grid-template-columns: 100px minmax(0, 1fr); gap: 10px; }
-  .place-image { width: 100px; }
+  .title-row h1 { font-size: 23px; }
+  .filter-card { padding: 22px 18px; border-radius: 20px; }
+  .pet-options { grid-template-columns: repeat(2, 1fr); }
+  .sitter-card { grid-template-columns: 105px minmax(0, 1fr); min-height: 138px; gap: 11px; border-radius: 18px; }
+  .place-image { width: 105px; height: 112px; border-radius: 13px; }
   .identity h2 { white-space: normal; }
   .location { margin-top: 14px; }
 }

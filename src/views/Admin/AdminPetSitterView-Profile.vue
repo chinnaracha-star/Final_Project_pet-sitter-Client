@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import SitterLocationMap from '../../components/admin/SitterLocationMap.vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
@@ -38,6 +39,8 @@ interface SitterProfileDetail {
 	experienceYears: string | null
 	pet_sitter_state: number | null
 	approvalStatus: SitterStatus
+	latitude: number | null
+	longitude: number | null
 }
 
 interface SitterProfileDetailResponse {
@@ -182,10 +185,8 @@ const fullAddress = () => {
 					<div v-if="profile?.pet_sitter_state === 3" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Address</h2>
 						<p class="mt-1 text-[10px]">{{ fullAddress() || '-' }}</p>
-						<div class="relative mt-5 h-52 overflow-hidden rounded-md bg-[#e5e9e9] bg-[linear-gradient(25deg,transparent_48%,#f4b93c_49%,#f4b93c_51%,transparent_52%),linear-gradient(105deg,transparent_45%,#f7c746_46%,#f7c746_48%,transparent_49%),linear-gradient(160deg,transparent_50%,#b7dbbf_51%,#b7dbbf_64%,transparent_65%)] bg-[length:220px_170px,180px_200px,240px_220px]">
-							<div class="absolute left-[52%] top-[48%] flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#ff7040] shadow-lg">
-								<img src="/image/Map_Pin_Selected.svg" alt="Location" class="h-6 w-6 brightness-0 invert" />
-							</div>
+						<div class="mt-5">
+							<SitterLocationMap :latitude="profile?.latitude ?? null" :longitude="profile?.longitude ?? null" />
 						</div>
 					</div>
 				</section>

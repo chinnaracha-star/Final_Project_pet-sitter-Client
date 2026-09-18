@@ -42,6 +42,7 @@ interface SitterProfileDetail {
 	approvalStatus: SitterStatus
 	latitude: number | null
 	longitude: number | null
+	listed: boolean
 }
 
 interface SitterProfileDetailResponse {
@@ -56,6 +57,7 @@ const petTypes = ref<PetType[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const approvalStatus = ref<SitterStatus | null>(null)
+const isListed = ref(false)
 const showRejectConfirmation = ref(false)
 
 const fetchSitterDetail = async (id: string) => {
@@ -67,6 +69,7 @@ const fetchSitterDetail = async (id: string) => {
 		sitterUser.value = response.data.user
 		petTypes.value = response.data.petTypes || []
 		approvalStatus.value = response.data.sitterProfile.approvalStatus
+		isListed.value = response.data.sitterProfile.listed
 	} catch (error) {
 		console.error('Failed to fetch pet sitter profile:', error)
 		errorMessage.value = 'Unable to load pet sitter profile.'
@@ -93,32 +96,55 @@ watch(
 
 const handleRejectConfirm = async (reason: string) => {
 	showRejectConfirmation.value = false
-	if (approvalStatus.value !== 'Waiting for verify') return
 	if (!store.selectedSitterId) return
 
-	try {
-		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
-		approvalStatus.value = 'Unverified'
-		store.setApprovalStatus('Unverified')
-		await fetchSitterDetail(store.selectedSitterId)
-	} catch (error) {
-		console.error('Failed to reject pet sitter profile:', error)
-		errorMessage.value = 'Unable to reject pet sitter profile.'
+	if (approvalStatus.value === 'Waiting for verify') {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			approvalStatus.value = 'Unverified'
+			store.setApprovalStatus('Unverified')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to reject pet sitter profile:', error)
+			errorMessage.value = 'Unable to reject pet sitter profile.'
+		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			approvalStatus.value = 'Rejected'
+			store.setApprovalStatus('Rejected')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to reject pet sitter profile:', error)
+			errorMessage.value = 'Unable to reject pet sitter profile.'
+		}
 	}
 }
 
 const handleApprove = async () => {
-	if (approvalStatus.value !== 'Waiting for verify') return
 	if (!store.selectedSitterId) return
 
-	try {
-		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/verify`)
-		approvalStatus.value = 'Verified'
-		store.setApprovalStatus('Verified')
-		await fetchSitterDetail(store.selectedSitterId)
-	} catch (error) {
-		console.error('Failed to verify pet sitter profile:', error)
-		errorMessage.value = 'Unable to verify pet sitter profile.'
+	if (approvalStatus.value === 'Waiting for verify') {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/verify`)
+			approvalStatus.value = 'Verified'
+			store.setApprovalStatus('Verified')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to verify pet sitter profile:', error)
+			errorMessage.value = 'Unable to verify pet sitter profile.'
+		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
+			approvalStatus.value = 'Approved'
+			isListed.value = true
+			store.setApprovalStatus('Approved')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to approve pet sitter profile:', error)
+			errorMessage.value = 'Unable to approve pet sitter profile.'
+		}
 	}
 }
 

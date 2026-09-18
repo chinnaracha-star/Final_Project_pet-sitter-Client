@@ -1,51 +1,76 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { Footer, Navbar } from '../components'
 import { getListedSitters, type ListedSitter } from '../services/sitterApproval'
 
 const petTypeOptions = ['Dog', 'Cat', 'Bird', 'Rabbit']
+const experienceOptions = ['0-2 Years', '3-5 Years', '5+ Years']
+const ratingOptions = [5, 4, 3, 2, 1]
+const pageSize = 6
 const sitters = ref<ListedSitter[]>([])
 const loading = ref(true)
 const notice = ref('')
+const currentPage = ref(1)
+const totalPages = ref(0)
 
 const filters = reactive({
   keyword: '',
   petTypes: [] as string[],
+  minRating: null as number | null,
+  experience: '',
 })
 
-const filteredSitters = computed(() => {
-  const keyword = filters.keyword.trim().toLowerCase()
+async function loadSitters(page = 1) {
+  loading.value = true
+  notice.value = ''
+  try {
+    const response = await getListedSitters({
+      keyword: filters.keyword,
+      petTypes: filters.petTypes,
+      minRating: filters.minRating,
+      experience: filters.experience,
+      page,
+      limit: pageSize,
+    })
+    sitters.value = response.sitters
+    currentPage.value = response.currentPage
+    totalPages.value = response.totalPages
+  } catch (error) {
+    sitters.value = []
+    totalPages.value = 0
+    notice.value = error instanceof Error ? error.message : 'ไม่สามารถโหลดข้อมูล Pet Sitter ได้'
+  } finally {
+    loading.value = false
+  }
+}
 
-  return sitters.value.filter((sitter) => {
-    const searchable = [
-      sitter.displayName,
-      sitter.services,
-      sitter.introduction,
-      sitter.province,
-    ].filter(Boolean).join(' ').toLowerCase()
-    const matchesKeyword = !keyword || searchable.includes(keyword)
-    const matchesPet = !filters.petTypes.length || filters.petTypes.some((pet) => sitter.petTypes.includes(pet))
-    return matchesKeyword && matchesPet
-  })
-})
+function search() {
+  void loadSitters(1)
+}
+
+function goToPage(page: number) {
+  if (page < 1 || page > totalPages.value || page === currentPage.value) return
+  void loadSitters(page)
+}
 
 function clearFilters() {
   filters.keyword = ''
   filters.petTypes = []
+  filters.minRating = null
+  filters.experience = ''
+  search()
 }
 
 function petTypeClass(petType: string) {
   return `tag-${petType.toLowerCase()}`
 }
 
-onMounted(async () => {
-  try {
-    sitters.value = await getListedSitters()
-  } catch (error) {
-    notice.value = error instanceof Error ? error.message : 'ไม่สามารถโหลดข้อมูล Pet Sitter ได้'
-  } finally {
-    loading.value = false
-  }
+function ratingStars(sitter: ListedSitter) {
+  return Math.round(Math.max(0, Math.min(5, sitter.ratingAvg)))
+}
+
+onMounted(() => {
+  void loadSitters()
 })
 </script>
 
@@ -64,7 +89,7 @@ onMounted(async () => {
 
       <div class="search-layout">
         <aside class="filter-column">
-          <form class="filter-card" @submit.prevent>
+          <form class="filter-card" @submit.prevent="search">
             <label for="search-input">Search</label>
             <div class="search-input-wrap">
               <input id="search-input" v-model="filters.keyword" type="search" />
@@ -81,6 +106,29 @@ onMounted(async () => {
               </div>
             </fieldset>
 
+            <fieldset>
+              <legend>Rating:</legend>
+              <div class="rating-options">
+                <button
+                  v-for="rating in ratingOptions"
+                  :key="rating"
+                  type="button"
+                  :class="{ selected: filters.minRating === rating }"
+                  @click="filters.minRating = filters.minRating === rating ? null : rating"
+                >
+                  {{ rating }} <span>{{ '★'.repeat(rating) }}</span>
+                </button>
+              </div>
+            </fieldset>
+
+            <label for="experience">Experience:</label>
+            <select id="experience" v-model="filters.experience">
+              <option value="">Any experience</option>
+              <option v-for="experience in experienceOptions" :key="experience" :value="experience">
+                {{ experience }}
+              </option>
+            </select>
+
             <div class="filter-actions">
               <button class="clear-button" type="button" @click="clearFilters">Clear</button>
               <button class="search-button" type="submit">Search</button>
@@ -91,12 +139,12 @@ onMounted(async () => {
         <section class="results" aria-live="polite">
           <div v-if="loading" class="empty-state">Loading pet sitters...</div>
           <div v-else-if="notice" class="empty-state error-state" role="alert">{{ notice }}</div>
-          <div v-else-if="!filteredSitters.length" class="empty-state">No pet sitter found.</div>
+          <div v-else-if="!sitters.length" class="empty-state">No pet sitter found.</div>
           <template v-else>
-            <article v-for="sitter in filteredSitters" :key="sitter.userId" class="sitter-card">
+            <article v-for="sitter in sitters" :key="sitter.userId" class="sitter-card">
               <img
                 class="place-image"
-                :src="sitter.avatarUrl || '/image/services-cat.png'"
+                :src="sitter.imageUrl || '/image/services-cat.png'"
                 :alt="sitter.displayName"
               />
               <div class="sitter-info">
@@ -105,8 +153,11 @@ onMounted(async () => {
                     <img :src="sitter.avatarUrl || '/icon/user.svg'" alt="" />
                     <div>
                       <h2>{{ sitter.displayName }}</h2>
-                      <p>{{ sitter.services || sitter.introduction || 'Pet sitting service' }}</p>
+                      <p>{{ sitter.ownerName ? 'By ' + sitter.ownerName : sitter.services || 'Pet sitting service' }}</p>
                     </div>
+                  </div>
+                  <div class="stars" :aria-label="`${ratingStars(sitter)} stars`">
+                    <img v-for="star in ratingStars(sitter)" :key="star" src="/icon/star.svg" alt="" />
                   </div>
                 </div>
                 <p class="location">
@@ -118,6 +169,17 @@ onMounted(async () => {
               </div>
             </article>
           </template>
+          <nav v-if="!loading && !notice && totalPages > 1" class="pagination" aria-label="Pagination">
+            <button type="button" aria-label="Previous page" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
+            <button
+              v-for="page in totalPages"
+              :key="page"
+              type="button"
+              :class="{ active: currentPage === page }"
+              @click="goToPage(page)"
+            >{{ page }}</button>
+            <button type="button" aria-label="Next page" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">›</button>
+          </nav>
         </section>
       </div>
     </main>
@@ -136,8 +198,10 @@ onMounted(async () => {
 .view-switch,
 .filter-actions,
 .identity,
+.stars,
 .location,
-.pet-tags {
+.pet-tags,
+.pagination {
   display: flex;
   align-items: center;
 }
@@ -250,6 +314,36 @@ onMounted(async () => {
 
 .pet-options input { width: 11px; height: 11px; margin: 0; accent-color: #ff6525; }
 
+.rating-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rating-options button {
+  height: 26px;
+  padding: 0 7px;
+  border: 1px solid #dde0ef;
+  border-radius: 8px;
+  background: #fff;
+  color: #82869b;
+  font-size: 9px;
+}
+
+.rating-options button span { color: #1ccd83; letter-spacing: 1px; }
+.rating-options button.selected { border-color: #1ccd83; background: #edfbf5; }
+.filter-card > label[for="experience"] { margin-top: 24px; }
+.filter-card select {
+  width: 100%;
+  height: 35px;
+  padding: 0 10px;
+  border: 1px solid #dde0ef;
+  border-radius: 9px;
+  background: #fff;
+  color: #82869b;
+  font-size: 10px;
+}
+
 .filter-actions {
   gap: 12px;
   margin-top: 25px;
@@ -301,6 +395,8 @@ onMounted(async () => {
 .identity > img { width: 37px; height: 37px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
 .identity h2 { margin: 0; color: #161616; font-size: 13px; font-weight: 700; line-height: 1.25; }
 .identity p { margin: 3px 0 0; color: #30343f; font-size: 9px; }
+.stars { flex: 0 0 auto; gap: 1px; padding-top: 2px; }
+.stars img { width: 12px; height: 12px; }
 .location {
   gap: 4px;
   margin: 18px 0 0;
@@ -333,6 +429,19 @@ onMounted(async () => {
   font-size: 12px;
 }
 .error-state { color: #b42318; }
+
+.pagination { justify-content: center; gap: 6px; margin-top: 6px; }
+.pagination button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #adb1c6;
+  font-size: 12px;
+}
+.pagination button.active { background: #ffeae3; color: #ff6525; }
+.pagination button:disabled { cursor: not-allowed; opacity: .45; }
 
 @media (max-width: 760px) {
   .search-main { width: min(100% - 28px, 900px); }

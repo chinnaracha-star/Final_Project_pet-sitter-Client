@@ -32,7 +32,15 @@ Header เหล่านี้เป็นวิธีทดสอบในเ�
 | `GET` | `/api/admin/sitter-approvals` | อ่านรายการที่รอ Admin |
 | `PATCH` | `/api/admin/sitter-approvals/approve?sitterId={uuid}` | อนุมัติและคัดลอก pending ไป live |
 | `PATCH` | `/api/admin/sitter-approvals/reject?sitterId={uuid}` | Reject พร้อม `{ "reason": "..." }` |
-| `GET` | `/api/sitters` | คืนเฉพาะ Sitter ที่ `is_listed=true` |
+| `GET` | `/api/sitters` | ค้นหาและคืนเฉพาะ Sitter ที่ `is_listed=true` |
 | `POST` | `/api/bookings` | สร้าง Booking เมื่อ Sitter ยัง listed เท่านั้น |
 
 `pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร
+
+หน้า `/search` เรียก `/api/sitters` โดยส่ง filter ไปที่ server ทั้งหมด:
+
+```text
+GET /api/sitters?keyword=cat&petType=Cat&petType=Dog&minRating=4&experience=3-5%20Years&page=1&limit=6
+```
+
+Response เป็น object ที่มี `sitters`, `currentPage`, `totalPages`, `totalItems` และ `limit` เพื่อรองรับ server-side pagination

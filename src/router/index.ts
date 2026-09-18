@@ -19,7 +19,7 @@ const router = createRouter({
     { path: '/admin/petsitters', alias: '/admin/sitters', component: () => import('../views/Admin/AdminPetSitterView.vue') },
     { path: '/admin/map', component: () => import('../views/Admin/MapView.vue') },
     { path: '/admin/petsitters/profile', component: () => import('../views/Admin/AdminPetSitterView-Profile.vue') },
-    { path: '/admin/petsitters/profile/reject', component: () => import('../views/Admin/AdminPetSitterView-Profile-RejectComfirmation.vue') },
+    { path: '/admin/petsitters/profile/reject', component: () => import('../views/Admin/AdminPetSitterView-Profile-RejectConfirmation.vue') },
   ],
 })
 

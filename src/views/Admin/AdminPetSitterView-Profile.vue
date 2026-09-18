@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import SitterLocationMap from '../../components/admin/SitterLocationMap.vue'
+import AdminPetSitterViewProfileRejectConfirmation from './AdminPetSitterView-Profile-RejectConfirmation.vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
@@ -54,6 +55,8 @@ const sitterUser = ref<SitterUser | null>(null)
 const petTypes = ref<PetType[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const approvalStatus = ref<SitterStatus | null>(null)
+const showRejectConfirmation = ref(false)
 
 const fetchSitterDetail = async (id: string) => {
 	isLoading.value = true
@@ -63,6 +66,7 @@ const fetchSitterDetail = async (id: string) => {
 		profile.value = response.data.sitterProfile
 		sitterUser.value = response.data.user
 		petTypes.value = response.data.petTypes || []
+		approvalStatus.value = response.data.sitterProfile.approvalStatus
 	} catch (error) {
 		console.error('Failed to fetch pet sitter profile:', error)
 		errorMessage.value = 'Unable to load pet sitter profile.'
@@ -87,8 +91,35 @@ watch(
 	},
 )
 
-const setApprovalStatus = (status: Exclude<SitterStatus, 'Waiting for approve'>) => {
-	if (store.selectedSitterId !== null) store.setApprovalStatus(status)
+const handleRejectConfirm = async (reason: string) => {
+	showRejectConfirmation.value = false
+	if (approvalStatus.value !== 'Waiting for verify') return
+	if (!store.selectedSitterId) return
+
+	try {
+		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+		approvalStatus.value = 'Unverified'
+		store.setApprovalStatus('Unverified')
+		await fetchSitterDetail(store.selectedSitterId)
+	} catch (error) {
+		console.error('Failed to reject pet sitter profile:', error)
+		errorMessage.value = 'Unable to reject pet sitter profile.'
+	}
+}
+
+const handleApprove = async () => {
+	if (approvalStatus.value !== 'Waiting for verify') return
+	if (!store.selectedSitterId) return
+
+	try {
+		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/verify`)
+		approvalStatus.value = 'Verified'
+		store.setApprovalStatus('Verified')
+		await fetchSitterDetail(store.selectedSitterId)
+	} catch (error) {
+		console.error('Failed to verify pet sitter profile:', error)
+		errorMessage.value = 'Unable to verify pet sitter profile.'
+	}
 }
 
 const formatDate = (value: string | null) => {
@@ -116,15 +147,21 @@ const fullAddress = () => {
 						<h1 class="truncate text-[15px] font-bold text-[#252733]">{{ sitterUser?.name ?? store.selectedSitterName ?? profile?.displayName ?? 'Unnamed user' }}</h1>
 						<span class="flex shrink-0 items-center gap-1.5 text-[10px] text-[#ef82b6]">
 							<span class="h-1 w-1 rounded-full bg-current"></span>
-							{{ profile?.approvalStatus ?? store.selectedSitterStatus ?? 'Waiting for approve' }}
+							{{ approvalStatus ?? store.selectedSitterStatus ?? 'Waiting for approve' }}
 						</span>
 					</div>
 
 					<div class="flex items-center gap-3">
-						<button type="button" class="rounded-full bg-[#fff4ef] px-5 py-2 text-[9px] font-semibold text-[#f47755] transition hover:bg-[#ffe6dc]" @click="setApprovalStatus('Rejected')">Reject</button>
-						<button type="button" class="rounded-full bg-[#ff7040] px-5 py-2 text-[9px] font-semibold text-white transition hover:bg-[#f25d2c]" @click="setApprovalStatus('Approved')">Approve</button>
+						<button type="button" class="rounded-full bg-[#fff4ef] px-5 py-2 text-[9px] font-semibold text-[#f47755] transition hover:bg-[#ffe6dc]" @click="showRejectConfirmation = true">Reject</button>
+						<button type="button" class="rounded-full bg-[#ff7040] px-5 py-2 text-[9px] font-semibold text-white transition hover:bg-[#f25d2c]" @click="handleApprove">Approve</button>
 					</div>
 				</header>
+
+				<AdminPetSitterViewProfileRejectConfirmation
+					v-if="showRejectConfirmation"
+					@cancel="showRejectConfirmation = false"
+					@reject="handleRejectConfirm"
+				/>
 
 				<nav class="mt-4 flex gap-2" aria-label="Sitter profile sections">
 					<button

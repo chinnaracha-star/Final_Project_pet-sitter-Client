@@ -5,7 +5,7 @@ import AdminPetSitterViewProfileRejectConfirmation from './AdminPetSitterView-Pr
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { useAdminPetSitterStore, type SitterStatus, type AdminTab } from '../../stores/adminPetSitter'
+import { useAdminPetSitterStore, type SitterStatus } from '../../stores/adminPetSitter'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
@@ -212,15 +212,29 @@ const fullAddress = () => {
 
 				<nav class="mt-4 flex gap-2" aria-label="Sitter profile sections">
 					<button
-						v-for="tab in (['Profile', 'Booking', 'Reviews', 'Report'] as AdminTab[])"
-						:key="tab"
 						type="button"
 						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
-						:class="store.activeTab === tab ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
-						@click="store.activeTab = tab"
+						:class="store.activeTab === 'Profile' ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
+						@click="store.activeTab = 'Profile'"
 					>
-						{{ tab }}
+						Profile
 					</button>
+					<RouterLink
+						:to="{ path: '/admin/petsitters/profile/booking', query: { id: store.selectedSitterId ?? undefined } }"
+						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
+						:class="store.activeTab === 'Booking' ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
+						@click="store.activeTab = 'Booking'"
+					>
+						Booking
+					</RouterLink>
+					<RouterLink
+						:to="{ path: '/admin/petsitters/profile/reviews', query: { id: store.selectedSitterId ?? undefined } }"
+						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
+						:class="store.activeTab === 'Reviews' ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
+						@click="store.activeTab = 'Reviews'"
+					>
+						Reviews
+					</RouterLink>
 				</nav>
 
 				<div v-if="isLoading" class="mt-4 rounded-xl bg-white p-8 text-center text-[10px] text-[#9297a9] shadow-[0_1px_3px_rgba(40,45,70,0.02)]">Loading pet sitter profile...</div>

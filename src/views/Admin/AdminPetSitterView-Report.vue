@@ -1,39 +1,99 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
-import { useAdminPetSitterStore, type AdminTab } from '../../stores/adminPetSitter'
+import { computed, ref } from 'vue'
 
-const store = useAdminPetSitterStore()
+type ReportStatus = 'New Report' | 'Pending' | 'Resolved' | 'Canceled'
+
+interface Report {
+	id: number
+	user: string
+	reportedPerson: string
+	issue: string
+	dateSubmitted: string
+	status: ReportStatus
+}
+
+const selectedStatus = ref<'All status' | ReportStatus>('All status')
+
+const reports: Report[] = [
+	{ id: 1, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'New Report' },
+	{ id: 2, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'New Report' },
+	{ id: 3, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Pending' },
+	{ id: 4, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Pending' },
+	{ id: 5, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Resolved' },
+	{ id: 6, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Canceled' },
+	{ id: 7, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Resolved' },
+]
+
+const filteredReports = computed(() => selectedStatus.value === 'All status'
+	? reports
+	: reports.filter((report) => report.status === selectedStatus.value))
+
+const statusClass: Record<ReportStatus, string> = {
+	'New Report': 'text-[#ef82b6]',
+	Pending: 'text-[#57b7ef]',
+	Resolved: 'text-[#16c98d]',
+	Canceled: 'text-[#ff4242]',
+}
 </script>
 
 <template>
 	<div class="flex min-h-screen bg-[#f7f8fc] text-[#30343f]">
 		<AdminSidebar />
 
-		<main class="min-w-0 flex-1 px-5 py-5 sm:px-8 sm:py-7">
+		<main class="min-w-0 flex-1 px-5 py-6 sm:px-6 sm:py-7">
 			<div class="mx-auto max-w-[1000px]">
-				<header class="flex flex-wrap items-center justify-between gap-4 px-1">
-					<div class="flex min-w-0 items-center gap-3">
-						<RouterLink to="/admin/petsitters" class="text-xl leading-none text-[#9298ab]" aria-label="Back to pet sitters">‹</RouterLink>
-						<h1 class="truncate text-[15px] font-bold text-[#252733]">{{ store.selectedSitterName ?? 'Jane Maison' }}</h1>
-					</div>
+				<header class="mb-3 flex items-center justify-between gap-4">
+					<h1 class="text-[15px] font-bold text-[#171923]">Report</h1>
+					<label class="relative">
+						<span class="sr-only">Filter reports by status</span>
+						<select v-model="selectedStatus" class="h-[30px] w-[138px] appearance-none rounded-[5px] border border-[#e0e4ed] bg-white px-3 pr-7 text-[9px] text-[#9298ab] outline-none transition focus:border-[#b8bfd0]">
+							<option>All status</option>
+							<option>New Report</option>
+							<option>Pending</option>
+							<option>Resolved</option>
+							<option>Canceled</option>
+						</select>
+						<span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[8px] text-[#9fa6b8]" aria-hidden="true">⌄</span>
+					</label>
 				</header>
 
-				<nav class="mt-4 flex gap-2" aria-label="Sitter profile sections">
-					<button
-						v-for="tab in (['Profile', 'Booking', 'Reviews', 'Report'] as AdminTab[])"
-						:key="tab"
-						type="button"
-						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
-						:class="store.activeTab === tab ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
-						@click="store.activeTab = tab"
-					>
-						{{ tab }}
-					</button>
-				</nav>
-
-				<section class="rounded-xl bg-white p-8 text-center shadow-[0_1px_3px_rgba(40,45,70,0.02)]">
-					<h2 class="text-sm font-semibold text-[#30343f]">Report</h2>
-					<p class="mt-2 text-xs text-[#9298ab]">No report records are available in this mock view.</p>
+				<section class="overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(40,45,70,0.02)]">
+					<div class="overflow-x-auto">
+						<table class="w-full min-w-[680px] table-fixed border-collapse text-left text-[10px] text-[#171923]">
+							<caption class="sr-only">Submitted reports</caption>
+							<colgroup>
+								<col class="w-[17%]" />
+								<col class="w-[18%]" />
+								<col class="w-[20%]" />
+								<col class="w-[25%]" />
+								<col class="w-[20%]" />
+							</colgroup>
+							<thead>
+								<tr class="bg-black text-[9px] font-medium text-white">
+									<th class="rounded-l-lg px-3 py-2.5 font-medium">User</th>
+									<th class="px-3 py-2.5 font-medium">Reported Person</th>
+									<th class="px-3 py-2.5 font-medium">Issue</th>
+									<th class="px-3 py-2.5 font-medium">Date Submitted</th>
+									<th class="rounded-r-lg px-3 py-2.5 font-medium">Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="report in filteredReports" :key="report.id" class="border-b border-[#e5e8f0] last:border-b-0">
+									<td class="px-3 py-[15px]">{{ report.user }}</td>
+									<td class="px-3 py-[15px]">{{ report.reportedPerson }}</td>
+									<td class="truncate px-3 py-[15px]">{{ report.issue }}</td>
+									<td class="whitespace-nowrap px-3 py-[15px]">{{ report.dateSubmitted }}</td>
+									<td class="whitespace-nowrap px-3 py-[15px]" :class="statusClass[report.status]">
+										<span class="mr-1 inline-block h-1 w-1 rounded-full bg-current align-middle"></span>{{ report.status }}
+									</td>
+								</tr>
+								<tr v-if="filteredReports.length === 0">
+									<td colspan="5" class="px-3 py-10 text-center text-[10px] text-[#9298ab]">No reports found.</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
 				</section>
 			</div>
 		</main>

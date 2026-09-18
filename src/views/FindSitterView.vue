@@ -7,7 +7,8 @@ const notice = ref('')
 
 onMounted(async () => {
   try {
-    sitters.value = await getListedSitters()
+    const response = await getListedSitters()
+    sitters.value = response.sitters
   } catch (error) {
     notice.value = error instanceof Error ? error.message : 'ไม่สามารถโหลดข้อมูล Pet Sitter ได้'
   }

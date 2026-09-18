@@ -51,6 +51,28 @@ export type ListedSitter = {
   services: string | null
   introduction: string | null
   province: string | null
+  ownerName: string | null
+  imageUrl: string | null
+  experienceYears: string | null
+  ratingAvg: number
+  reviewCount: number
+}
+
+export type ListedSitterSearchParams = {
+  keyword?: string
+  petTypes?: string[]
+  minRating?: number | null
+  experience?: string
+  page?: number
+  limit?: number
+}
+
+export type ListedSitterSearchResponse = {
+  sitters: ListedSitter[]
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  limit: number
 }
 
 async function request<T>(path: string, options: RequestInit = {}) {
@@ -97,4 +119,15 @@ export const rejectSitter = (adminId: string, sitterId: string, reason: string) 
     body: JSON.stringify({ reason }),
   })
 
-export const getListedSitters = () => request<ListedSitter[]>('/api/sitters')
+export const getListedSitters = (params: ListedSitterSearchParams = {}) => {
+  const query = new URLSearchParams()
+  if (params.keyword?.trim()) query.set('keyword', params.keyword.trim())
+  params.petTypes?.forEach(petType => query.append('petType', petType))
+  if (params.minRating !== null && params.minRating !== undefined) query.set('minRating', String(params.minRating))
+  if (params.experience) query.set('experience', params.experience)
+  if (params.page) query.set('page', String(params.page))
+  if (params.limit) query.set('limit', String(params.limit))
+
+  const suffix = query.toString() ? `?${query.toString()}` : ''
+  return request<ListedSitterSearchResponse>(`/api/sitters${suffix}`)
+}

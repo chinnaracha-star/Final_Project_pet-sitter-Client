@@ -118,6 +118,17 @@ const handleRejectConfirm = async (reason: string) => {
 			console.error('Failed to reject pet sitter profile:', error)
 			errorMessage.value = 'Unable to reject pet sitter profile.'
 		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			approvalStatus.value = 'Rejected'
+			isListed.value = false
+			store.setApprovalStatus('Rejected')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to reject pet sitter profile:', error)
+			errorMessage.value = 'Unable to reject pet sitter profile.'
+		}
 	}
 }
 
@@ -139,6 +150,16 @@ const handleApprove = async () => {
 			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
 			approvalStatus.value = 'Approved'
 			isListed.value = true
+			store.setApprovalStatus('Approved')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to approve pet sitter profile:', error)
+			errorMessage.value = 'Unable to approve pet sitter profile.'
+		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
+			approvalStatus.value = 'Approved'
 			store.setApprovalStatus('Approved')
 			await fetchSitterDetail(store.selectedSitterId)
 		} catch (error) {

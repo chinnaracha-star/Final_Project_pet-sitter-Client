@@ -20,6 +20,7 @@ const router = createRouter({
     { path: '/sitter/bookings', component: () => import('../views/SitterBookingsView.vue') },
     { path: '/sitter/bookings/:id', component: () => import('../views/SitterBookingDetailView.vue') },
     { path: '/sitter/calendar', component: () => import('../views/SitterCalendarView.vue') },
+    { path: '/sitter/payout', component: () => import('../views/SitterPayoutView.vue') },
     { path: '/sitters', redirect: '/search' },
     { path: '/admin/petsitters', alias: '/admin/sitters', component: () => import('../views/Admin/AdminPetSitterView.vue') },
     { path: '/admin/map', component: () => import('../views/Admin/MapView.vue') },

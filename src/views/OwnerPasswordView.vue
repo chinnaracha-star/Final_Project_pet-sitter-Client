@@ -2,14 +2,16 @@
 import { ref } from 'vue'
 import { Navbar } from '../components'
 import OwnerPageShell from '../components/owner/OwnerPageShell.vue'
+import { useAuthStore } from '../stores/auth'
 
+const auth = useAuthStore()
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const notice = ref('')
 const error = ref('')
 
-function submit() {
+async function submit() {
   error.value = ''
   notice.value = ''
   if (newPassword.value.length < 8) {
@@ -20,10 +22,15 @@ function submit() {
     error.value = 'New password and confirm password must match.'
     return
   }
-  currentPassword.value = ''
-  newPassword.value = ''
-  confirmPassword.value = ''
-  notice.value = 'Password updated in this mock session. The Spring Boot API is not connected yet.'
+  try {
+    await auth.changePassword(currentPassword.value, newPassword.value)
+    currentPassword.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+    notice.value = 'Password updated.'
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Could not update password'
+  }
 }
 </script>
 

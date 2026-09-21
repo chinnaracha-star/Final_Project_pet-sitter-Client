@@ -1,65 +1,142 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { ApiError } from '../services/http'
+import { bootstrapAccount, getMe, updateOwnerProfile as saveOwnerProfile, type AuthMe } from '../services/ownerApi'
 import type { AuthRole } from '../types/auth'
 import type { OwnerProfile } from '../types/owner'
 
-const STORAGE_KEY = 'petsetter-auth'
-
-const defaultOwner: OwnerProfile = {
-  name: 'John Wick',
-  email: 'johnwicklovedogs@dogorg.com',
-  phone: '099 996 6734',
-  idNumber: '1122 21 236 8654',
-  dateOfBirth: '1964-09-02',
-  avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+const emptyProfile: OwnerProfile = {
+  name: '',
+  email: '',
+  phone: '',
+  idNumber: '',
+  dateOfBirth: '',
+  avatarUrl: '',
 }
 
-function loadSession(): { role: AuthRole | null; profile: OwnerProfile } {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
-    if (!raw) return { role: null, profile: { ...defaultOwner } }
-    return JSON.parse(raw) as { role: AuthRole | null; profile: OwnerProfile }
-  } catch {
-    return { role: null, profile: { ...defaultOwner } }
+function toProfile(me: AuthMe): OwnerProfile {
+  return {
+    name: me.name || '',
+    email: me.email || '',
+    phone: me.phone || '',
+    idNumber: me.idNumber || '',
+    dateOfBirth: me.dateOfBirth || '',
+    avatarUrl: me.avatarUrl || '',
   }
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const saved = loadSession()
-  const role = ref<AuthRole | null>(saved.role)
-  const profile = ref<OwnerProfile>(saved.profile)
+  const role = ref<AuthRole | null>(null)
+  const profile = ref<OwnerProfile>({ ...emptyProfile })
+  const userId = ref<string | null>(null)
+  const profileComplete = ref(false)
+  const ready = ref(false)
 
   const isLoggedIn = computed(() => role.value !== null)
   const isOwnerLoggedIn = computed(() => role.value === 'owner')
 
-  function persist() {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ role: role.value, profile: profile.value }))
+  function applyMe(me: AuthMe) {
+    role.value = me.role
+    profile.value = toProfile(me)
+    userId.value = me.id
+    profileComplete.value = me.profileComplete
   }
 
-  function loginAsOwner(partial?: Partial<OwnerProfile>) {
-    role.value = 'owner'
-    profile.value = { ...defaultOwner, ...profile.value, ...partial }
-    persist()
-  }
-
-  function loginAsSitter() {
-    role.value = 'sitter'
-    persist()
-  }
-
-  function updateOwnerProfile(next: Omit<OwnerProfile, 'email'> & { email?: string }) {
-    profile.value = {
-      ...profile.value,
-      ...next,
-      email: profile.value.email,
-    }
-    persist()
-  }
-
-  function logout() {
+  function clear() {
     role.value = null
-    persist()
+    profile.value = { ...emptyProfile }
+    userId.value = null
+    profileComplete.value = false
   }
 
-  return { role, profile, isLoggedIn, isOwnerLoggedIn, loginAsOwner, loginAsSitter, updateOwnerProfile, logout }
+  async function restore() {
+    if (ready.value) return
+    try {
+      if (!isSupabaseConfigured) return
+      const { data } = await supabase.auth.getSession()
+      if (!data.session) return
+      applyMe(await getMe())
+    } catch {
+      await supabase.auth.signOut()
+      clear()
+    } finally {
+      ready.value = true
+    }
+  }
+
+  async function register(input: { name: string; email: string; phone: string; password: string; role: AuthRole }) {
+    if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+    const { data, error } = await supabase.auth.signUp({
+      email: input.email,
+      password: input.password,
+      options: { data: { name: input.name, phone: input.phone, role: input.role } },
+    })
+    if (error) throw new Error(error.message)
+    if (!data.session) {
+      throw new Error('Check your email to confirm the account, then log in.')
+    }
+    applyMe(await bootstrapAccount(input.name, input.phone, input.role))
+  }
+
+  async function login(email: string, password: string) {
+    if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw new Error(error.message)
+    const { data: userData } = await supabase.auth.getUser()
+    const meta = userData.user?.user_metadata || {}
+    try {
+      applyMe(await getMe())
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 404) {
+        applyMe(await bootstrapAccount(
+          String(meta.name || userData.user?.email || 'Owner'),
+          String(meta.phone || '0000000000'),
+          meta.role === 'sitter' ? 'sitter' : 'owner',
+        ))
+        return
+      }
+      await supabase.auth.signOut()
+      throw cause
+    }
+  }
+
+  async function changePassword(currentPassword: string, newPassword: string) {
+    const email = profile.value.email
+    const { error: reauthError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+    if (reauthError) throw new Error('Current password is incorrect.')
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw new Error(error.message)
+  }
+
+  async function updateOwnerProfile(next: Omit<OwnerProfile, 'email'> & { email?: string }) {
+    applyMe(await saveOwnerProfile({
+      name: next.name,
+      phone: next.phone,
+      idNumber: next.idNumber,
+      dateOfBirth: next.dateOfBirth,
+      avatarUrl: next.avatarUrl,
+    }))
+  }
+
+  async function logout() {
+    await supabase.auth.signOut()
+    clear()
+  }
+
+  return {
+    role,
+    profile,
+    userId,
+    profileComplete,
+    ready,
+    isLoggedIn,
+    isOwnerLoggedIn,
+    restore,
+    register,
+    login,
+    changePassword,
+    updateOwnerProfile,
+    logout,
+  }
 })

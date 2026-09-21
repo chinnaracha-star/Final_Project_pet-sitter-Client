@@ -13,30 +13,26 @@ const showPassword = ref(false);
 const email = ref("");
 const password = ref("");
 const rememberMe = ref(false);
-const submitted = ref(false);
-const socialNotice = ref("");
+const notice = ref("");
 
-function submitLogin() {
-  submitted.value = true;
-  socialNotice.value = "";
-  if (isOwner.value) {
-    auth.loginAsOwner({ email: email.value });
-    void router.push("/owner/profile");
-    return;
+async function submitLogin() {
+  notice.value = "";
+  try {
+    await auth.login(email.value, password.value);
+    void router.push(auth.role === "sitter" ? "/sitter/profile" : "/owner/profile");
+  } catch (cause) {
+    notice.value = cause instanceof Error ? cause.message : "Login failed";
   }
-  auth.loginAsSitter();
-  void router.push("/sitter/profile");
 }
 
 function continueWith(provider: "Facebook" | "Google") {
-  socialNotice.value = `${provider} login is ready on this screen, but OAuth is not connected yet.`;
+  notice.value = `${provider} login is ready on this screen, but OAuth is not connected yet.`;
 }
 </script>
 
 <template>
   <main class="auth-page">
     <form class="auth-form" @submit.prevent="submitLogin">
-      
       <h1 class="auth-title">
         {{ isOwner ? "Welcome back!" : "Welcome Back!" }}
       </h1>
@@ -135,14 +131,7 @@ function continueWith(provider: "Facebook" | "Google") {
         @facebook="continueWith('Facebook')"
         @google="continueWith('Google')"
       />
-      <p v-if="submitted || socialNotice" class="auth-notice" role="status">
-        {{
-          socialNotice ||
-          (isOwner
-            ? "Owner login is ready. Next screens can use this session after the Spring Boot API is connected."
-            : "Sitter login is ready, but it is not connected to the Spring Boot API yet.")
-        }}
-      </p>
+      <p v-if="notice" class="auth-notice" role="status">{{ notice }}</p>
       <p class="auth-switch">
         {{
           isOwner

@@ -10,7 +10,6 @@ const auth = useAuthStore()
 const router = useRouter()
 
 const showPassword = ref(false)
-const submitted = ref(false)
 const socialNotice = ref('')
 const name = ref('')
 const email = ref('')
@@ -18,15 +17,18 @@ const phone = ref('')
 const password = ref('')
 
 function submitRegister() {
-  submitted.value = true
   socialNotice.value = ''
-  if (isOwner.value) {
-    auth.loginAsOwner({ name: name.value, email: email.value, phone: phone.value })
-    void router.push('/owner/profile')
-    return
-  }
-  auth.loginAsSitter()
-  void router.push('/sitter/profile')
+  void auth.register({
+    name: name.value,
+    email: email.value,
+    phone: phone.value,
+    password: password.value,
+    role: isOwner.value ? 'owner' : 'sitter',
+  }).then(() => {
+    void router.push(isOwner.value ? '/owner/profile' : '/sitter/profile')
+  }).catch(cause => {
+    socialNotice.value = cause instanceof Error ? cause.message : 'Registration failed'
+  })
 }
 
 function continueWith(provider: 'Facebook' | 'Google') {
@@ -120,14 +122,7 @@ function continueWith(provider: 'Facebook' | 'Google') {
         {{ isOwner ? 'Register as Owner' : 'Register as Sitter' }}
       </button>
       <SocialLoginButtons @facebook="continueWith('Facebook')" @google="continueWith('Google')" />
-      <p v-if="submitted || socialNotice" class="auth-notice" role="status">
-        {{
-          socialNotice
-            || (isOwner
-              ? 'Owner registration is ready. An account will be created after the Spring Boot API is connected.'
-              : 'The sitter form is ready, but an account is not created until the Spring Boot API is connected.')
-        }}
-      </p>
+      <p v-if="socialNotice" class="auth-notice" role="status">{{ socialNotice }}</p>
       <p class="auth-switch">
         Already have an account?
         <RouterLink :to="loginTo">Login</RouterLink>

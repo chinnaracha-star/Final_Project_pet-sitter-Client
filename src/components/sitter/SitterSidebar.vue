@@ -11,23 +11,23 @@ const bookings = useSitterBookingsStore()
       <img class="star" src="/navbar/logo-star.svg" width="17" height="17" alt="" />
     </header>
     <nav aria-label="Sitter menu">
-      <RouterLink class="nav-item" active-class="active" to="/sitter/profile">
+      <RouterLink class="nav-item" to="/sitter/profile">
         <span class="nav-icon profile" aria-hidden="true"></span>
         <span class="label">Pet Sitter Profile</span>
       </RouterLink>
-      <RouterLink class="nav-item" active-class="active" to="/sitter/bookings">
+      <RouterLink class="nav-item" to="/sitter/bookings">
         <span class="nav-icon list" aria-hidden="true"></span>
         <span class="label">Booking List</span>
         <span v-if="bookings.hasNewBookings" class="badge" aria-label="New bookings"></span>
       </RouterLink>
-      <span class="nav-item">
+      <RouterLink class="nav-item" to="/sitter/calendar">
         <span class="nav-icon calendar" aria-hidden="true"></span>
         <span class="label">Calendar</span>
-      </span>
-      <span class="nav-item">
+      </RouterLink>
+      <RouterLink class="nav-item" to="/sitter/payout">
         <span class="nav-icon card" aria-hidden="true"></span>
         <span class="label">Payout Option</span>
-      </span>
+      </RouterLink>
     </nav>
     <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'sitter' } }">
       <span class="nav-icon exit" aria-hidden="true"></span>
@@ -65,7 +65,7 @@ const bookings = useSitterBookingsStore()
   font-weight: 500;
   text-decoration: none;
 }
-.nav-item.active {
+.nav-item.router-link-active {
   color: #ff7037;
   background: #fff1ec;
   font-weight: 600;

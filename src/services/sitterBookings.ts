@@ -16,7 +16,12 @@ async function request<T>(path: string, options: RequestInit = {}) {
   return response.json() as Promise<T>
 }
 
-export const getSitterBookings = (query = '') => request<SitterBooking[]>(`/api/bookings/sitter?query=${encodeURIComponent(query)}`)
+export const getSitterBookings = (query = '', from?: string, to?: string) => {
+  const params = new URLSearchParams({ query })
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  return request<SitterBooking[]>(`/api/bookings/sitter?${params}`)
+}
 export const getSitterBooking = (id: string | number) => request<SitterBooking>(`/api/bookings/sitter/${id}`)
 export const updateBookingStatus = (id: number, status: 'waiting_service' | 'cancelled' | 'success') =>
   request<SitterBooking>(`/api/bookings/sitter/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })

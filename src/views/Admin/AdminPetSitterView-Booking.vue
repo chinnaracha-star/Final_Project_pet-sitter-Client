@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import AdminPetSitterViewBookingDetail from './AdminPetSitterView-Booking-Detail.vue'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
 
 const store = useAdminPetSitterStore()
@@ -12,24 +13,42 @@ const API_BASE_URL = 'http://localhost:8081/api'
 
 type BookingStatus = 'Waiting for confirm' | 'Waiting for service' | 'In service' | 'Success' | 'Canceled'
 
+interface PetDetail {
+	name: string
+	type: string
+	image: string
+}
+
 interface Booking {
 	ownerName: string
 	petCount: number
 	duration: string
 	bookedDate: string
 	status: BookingStatus
+	pets: PetDetail[]
+	totalPaid: string
 }
 
-// raw shape returned by GET /api/bookings/sitter/{sitterId} (bookings joined with users + booking_pets)
+// raw shape returned by GET /api/bookings/sitter/{sitterId} (bookings joined with users, booking_pets and pets)
+interface BookingAdminPetItem {
+	id: number
+	name: string | null
+	type: string | null
+	avatarUrl: string | null
+}
+
 interface BookingAdminListItem {
 	id: number
 	ownerName: string | null
-	petCount: number
+	totalPrice: number
 	duration: number
 	durationUnit: string
 	startDate: string
 	startTime: string
+	endDate: string
+	endTime: string
 	status: string
+	pets: BookingAdminPetItem[]
 }
 
 const statusClass: Record<BookingStatus, string> = {
@@ -62,10 +81,12 @@ const formatBookedDate = (startDate: string, startTime: string) => {
 
 const mapBooking = (item: BookingAdminListItem): Booking => ({
 	ownerName: item.ownerName ?? 'Unknown',
-	petCount: item.petCount,
+	petCount: item.pets.length,
 	duration: `${item.duration} ${item.durationUnit}`,
 	bookedDate: formatBookedDate(item.startDate, item.startTime),
 	status: statusLabel[item.status] ?? 'Waiting for confirm',
+	pets: item.pets.map((pet) => ({ name: pet.name ?? 'Unknown', type: pet.type ?? 'Pet', image: pet.avatarUrl ?? '' })),
+	totalPaid: `${item.totalPrice.toFixed(2)} THB`,
 })
 
 const fetchBookings = async (sitterId: string) => {
@@ -81,6 +102,8 @@ const fetchBookings = async (sitterId: string) => {
 		isLoading.value = false
 	}
 }
+
+const selectedBooking = ref<Booking | null>(null)
 
 // fall back to the userId in the URL (e.g. after a page refresh) when the store hasn't been populated yet
 onMounted(() => {
@@ -167,7 +190,12 @@ watch(
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="booking in bookings" :key="`${booking.ownerName}-${booking.bookedDate}`" class="border-b border-[#e5e8f0] last:border-b-0">
+								<tr
+									v-for="booking in bookings"
+									:key="`${booking.ownerName}-${booking.bookedDate}`"
+									class="cursor-pointer border-b border-[#e5e8f0] last:border-b-0 hover:bg-[#f7f8fc]"
+									@click="selectedBooking = booking"
+								>
 									<td class="px-3 py-[15px] font-medium">
 										<span v-if="booking.status === 'Waiting for confirm'" class="mr-2 inline-block h-1 w-1 rounded-full bg-[#ff7040] align-middle"></span>
 										{{ booking.ownerName }}
@@ -185,5 +213,15 @@ watch(
 				</section>
 			</div>
 		</main>
+
+		<AdminPetSitterViewBookingDetail
+			v-if="selectedBooking"
+			:owner-name="selectedBooking.ownerName"
+			:pets="selectedBooking.pets"
+			:duration="selectedBooking.duration"
+			:booking-date="selectedBooking.bookedDate"
+			:total-paid="selectedBooking.totalPaid"
+			@close="selectedBooking = null"
+		/>
 	</div>
 </template>

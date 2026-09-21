@@ -20,11 +20,11 @@ let markerLayer: L.LayerGroup | null = null
 const bangkok: L.LatLngExpression = [13.7563, 100.5018]
 
 function markerIcon(selected: boolean) {
-  return L.divIcon({
+  return L.icon({
     className: 'sitter-marker-shell',
-    html: `<div class="sitter-marker ${selected ? 'is-selected' : ''}"><img src="/icon/paw.svg" alt="" /></div>`,
-    iconSize: selected ? [46, 54] : [38, 46],
-    iconAnchor: selected ? [23, 50] : [19, 42],
+    iconUrl: selected ? '/image/Map_Pin_Selected.svg' : '/image/Map_Pin_UnSelected.svg',
+    iconSize: selected ? [64, 64] : [48, 48],
+    iconAnchor: selected ? [32, 58] : [24, 44],
   })
 }
 
@@ -52,7 +52,7 @@ function renderMarkers() {
   } else if (points.length === 1) {
     map.setView(points[0]!, 13)
   } else {
-    map.fitBounds(L.latLngBounds(points).pad(0.16), { maxZoom: 13 })
+    map.fitBounds(L.latLngBounds(points).pad(0.16), { maxZoom: 13, paddingBottomRight: [24, 150] })
   }
 }
 
@@ -65,7 +65,8 @@ function updateSelection(selectedId: string | null) {
 
 onMounted(async () => {
   if (!mapElement.value) return
-  map = L.map(mapElement.value, { zoomControl: true, attributionControl: true }).setView(bangkok, 12)
+  map = L.map(mapElement.value, { zoomControl: false, attributionControl: true }).setView(bangkok, 12)
+  L.control.zoom({ position: 'topright' }).addTo(map)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
@@ -94,7 +95,7 @@ onBeforeUnmount(() => {
 <style>
 .sitter-map {
   width: 100%;
-  height: 590px;
+  height: 100%;
   background: #edf3ef;
 }
 
@@ -142,6 +143,8 @@ onBeforeUnmount(() => {
 .sitter-marker.is-selected img { filter: brightness(0) invert(1); }
 
 @media (max-width: 760px) {
-  .sitter-map { height: 470px; }
+  .sitter-map { height: 100%; }
 }
+.sitter-map .leaflet-control-zoom { display: flex; gap: 6px; border: 0; box-shadow: none; }
+.sitter-map .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; border: 0; border-radius: 6px; color: #adb1c6; font-weight: 400; }
 </style>

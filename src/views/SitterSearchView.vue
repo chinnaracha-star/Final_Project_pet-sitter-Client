@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Footer, Navbar } from '../components'
 import StarRating from '../components/common/StarRating.vue'
@@ -35,6 +35,108 @@ const totalPages = ref(0)
 const totalItems = ref(0)
 const viewMode = ref<ViewMode>('list')
 const selectedId = ref<string | null>(null)
+const mapCardTrack = ref<HTMLElement | null>(null)
+const draggingCards = ref(false)
+let cardDrag: { pointerId: number; startX: number; scrollLeft: number } | null = null
+let suppressCardClick = false
+let cardAnimation = 0
+let targetScroll = 0
+let dragVelocity = 0
+let lastDragX = 0
+let lastDragTime = 0
+let coastingCards = false
+
+function stopCardAnimation() {
+  cancelAnimationFrame(cardAnimation)
+  cardAnimation = 0
+  coastingCards = false
+}
+
+function coastCards() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  let previousTime = performance.now()
+  coastingCards = true
+  function frame(time: number) {
+    const track = mapCardTrack.value
+    if (!track || Math.abs(dragVelocity) < 0.02) {
+      stopCardAnimation()
+      return
+    }
+    const elapsed = Math.min(time - previousTime, 32)
+    previousTime = time
+    const before = track.scrollLeft
+    const decay = Math.exp(-elapsed / 240)
+    track.scrollLeft += dragVelocity * 240 * (1 - decay)
+    dragVelocity *= decay
+    if (Math.abs(track.scrollLeft - before) < 0.1) {
+      stopCardAnimation()
+      return
+    }
+    cardAnimation = requestAnimationFrame(frame)
+  }
+  cardAnimation = requestAnimationFrame(frame)
+}
+
+onBeforeUnmount(stopCardAnimation)
+watch(mapCardTrack, () => {
+  stopCardAnimation()
+  cardDrag = null
+  draggingCards.value = false
+})
+
+function startCardDrag(event: PointerEvent) {
+  stopCardAnimation()
+  suppressCardClick = false
+  if (event.pointerType !== 'mouse' || event.button !== 0 || !mapCardTrack.value) return
+  cardDrag = { pointerId: event.pointerId, startX: event.clientX, scrollLeft: mapCardTrack.value.scrollLeft }
+  dragVelocity = 0
+  lastDragX = event.clientX
+  lastDragTime = performance.now()
+}
+
+function moveCardDrag(event: PointerEvent) {
+  const track = mapCardTrack.value
+  if (!track || !cardDrag || event.pointerId !== cardDrag.pointerId) return
+  const distance = event.clientX - cardDrag.startX
+  if (!draggingCards.value && Math.abs(distance) < 6) return
+  if (!draggingCards.value) {
+    draggingCards.value = true
+    suppressCardClick = true
+    track.setPointerCapture(event.pointerId)
+  }
+  event.preventDefault()
+  const now = performance.now()
+  const elapsed = Math.max(now - lastDragTime, 1)
+  const velocity = (lastDragX - event.clientX) / elapsed
+  dragVelocity = elapsed > 80 ? velocity : dragVelocity * 0.35 + velocity * 0.65
+  dragVelocity = Math.max(-3, Math.min(3, dragVelocity))
+  lastDragX = event.clientX
+  lastDragTime = now
+  targetScroll = cardDrag.scrollLeft - distance
+  if (!cardAnimation) cardAnimation = requestAnimationFrame(() => {
+    track.scrollLeft = targetScroll
+    cardAnimation = 0
+  })
+}
+
+function endCardDrag(event: PointerEvent) {
+  if (cardDrag?.pointerId !== event.pointerId) return
+  const wasDragging = draggingCards.value
+  stopCardAnimation()
+  cardDrag = null
+  draggingCards.value = false
+  const track = mapCardTrack.value
+  if (track && wasDragging) track.scrollLeft = targetScroll
+  if (track?.hasPointerCapture(event.pointerId)) track.releasePointerCapture(event.pointerId)
+  if (wasDragging && event.type === 'pointerup' && performance.now() - lastDragTime < 80) coastCards()
+}
+
+function guardCardClick(event: MouseEvent) {
+  if (!suppressCardClick || event.detail === 0) return
+  event.preventDefault()
+  event.stopPropagation()
+  suppressCardClick = false
+}
 
 const filters = reactive({
   keyword: '',
@@ -150,6 +252,13 @@ function clearFilters() {
 function petTypeClass(petType: string) { return `tag-${petType.toLowerCase()}` }
 function ratingStars(sitter: ListedSitter) { return Math.max(0, Math.min(5, sitter.ratingAvg)) }
 function selectSitter(sitter: ListedSitter) { selectedId.value = sitter.userId }
+function selectMapMarker(sitter: ListedSitter) {
+  stopCardAnimation()
+  selectSitter(sitter)
+  const track = mapCardTrack.value
+  const card = track?.querySelector<HTMLElement>(`[data-sitter-id="${sitter.userId}"]`)
+  if (track && card) track.scrollTo({ left: card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2, behavior: 'smooth' })
+}
 function fallbackIndex(sitter: ListedSitter, length: number) {
   return [...sitter.userId].reduce((total, character) => total + character.charCodeAt(0), 0) % length
 }
@@ -186,7 +295,7 @@ watch(
   <div class="search-page">
     <Navbar />
 
-    <main class="search-main">
+    <main class="search-main" :class="{ 'map-view': viewMode === 'map' }">
       <div class="title-row">
         <h1>Search For Pet Sitter</h1>
         <div class="view-switch" aria-label="View mode">
@@ -254,43 +363,48 @@ watch(
           </div>
 
           <div v-else-if="viewMode === 'map'" class="map-stage">
-            <SitterMap :sitters="mapSitters" :selected-id="selectedId" @select="selectSitter" />
+            <SitterMap :sitters="mapSitters" :selected-id="selectedId" @select="selectMapMarker" />
             <div v-if="!mapSitters.length" class="map-empty">
               <img src="/icon/map-pin.svg" alt="" />
               <strong>No mapped pet sitters found</strong>
               <span>Try clearing a filter or switch to List view.</span>
             </div>
-            <div v-else class="map-card-track" aria-label="Pet sitters on map">
+            <div
+              v-else
+              ref="mapCardTrack"
+              class="map-card-track"
+              :class="{ 'is-dragging': draggingCards }"
+              aria-label="Pet sitters on map"
+              @pointerdown.stop="startCardDrag"
+              @pointermove="moveCardDrag"
+              @pointerup="endCardDrag"
+              @pointercancel="endCardDrag"
+              @lostpointercapture="endCardDrag"
+              @pointerleave="!draggingCards && endCardDrag($event)"
+              @click.capture="guardCardClick"
+              @dragstart.prevent
+              @wheel.passive="stopCardAnimation"
+            >
               <RouterLink
                 v-for="sitter in mapSitters"
                 :key="sitter.userId"
                 :to="`/sitters/${sitter.userId}`"
                 class="map-result-card"
+                :data-sitter-id="sitter.userId"
                 :class="{ selected: sitter.userId === selectedSitter?.userId }"
-                @mouseenter="selectSitter(sitter)"
-                @focus="selectSitter(sitter)"
+                @pointerenter="!cardDrag && !coastingCards && selectSitter(sitter)"
+                @focus="!cardDrag && !coastingCards && selectSitter(sitter)"
               >
                 <img class="map-card-photo" :src="sitterPhoto(sitter)" :alt="sitter.displayName" />
                 <div class="map-card-copy">
                   <div class="map-card-title">
-                    <img :src="sitterAvatar(sitter)" alt="" />
                     <div>
                       <strong>{{ sitter.displayName }}</strong>
                       <span>{{ sitter.ownerName ? `By ${sitter.ownerName}` : 'Pet sitting service' }}</span>
                     </div>
                   </div>
-                  <div class="map-card-meta">
-                    <span class="mini-rating">
-                      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path
-                          fill-rule="evenodd"
-                          clip-rule="evenodd"
-                          d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z"
-                        />
-                      </svg>
-                      {{ sitter.ratingAvg.toFixed(1) }}
-                    </span>
-                    <span>{{ sitter.province || 'Location not specified' }}</span>
+                  <div class="map-card-rating" :aria-label="`${sitter.ratingAvg} stars`">
+                    <StarRating :count="ratingStars(sitter)" show-empty />
                   </div>
                   <div class="pet-tags compact-tags">
                     <span v-for="pet in sitter.petTypes" :key="pet" :class="petTypeClass(pet)">{{ pet }}</span>
@@ -412,22 +526,31 @@ watch(
 .sitter-card .location img { width: 18px; height: 18px; opacity: .55; }
 .sitter-card .pet-tags { gap: 8px; margin: 0; }
 .sitter-card .pet-tags span { padding: 6px 12px; border-radius: 16px; font-size: 12px; }
-.map-stage { position: relative; min-height: 590px; overflow: hidden; border: 1px solid #e2e7f0; border-radius: 20px; background: #edf3ef; box-shadow: 0 20px 50px -32px rgb(0 0 0 / 34%); }
-.map-card-track { position: absolute; z-index: 500; right: 16px; bottom: 16px; left: 16px; display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; scrollbar-width: thin; }
-.map-result-card { width: 300px; min-width: 300px; padding: 8px; display: grid; grid-template-columns: 94px 1fr; gap: 10px; border: 2px solid transparent; border-radius: 14px; background: rgb(255 255 255 / 96%); color: inherit; text-decoration: none; box-shadow: 0 12px 34px rgb(38 42 54 / 18%); backdrop-filter: blur(8px); transition: border-color 150ms ease, transform 150ms ease; }
-.map-result-card:hover, .map-result-card.selected { border-color: #ff6525; transform: translateY(-2px); }
-.map-card-photo { width: 94px; height: 82px; border-radius: 9px; object-fit: cover; }
-.map-card-copy { min-width: 0; }
+.search-main.map-view { min-height: 0; padding-bottom: 72px; }
+.map-stage { position: relative; aspect-ratio: 1; min-height: 560px; overflow: hidden; border-radius: 12px; background: #edf3ef; }
+.map-stage :deep(.sitter-map) { position: absolute; inset: 0; }
+.map-card-track { position: absolute; z-index: 500; right: 0; bottom: 24px; left: 0; display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px; scroll-behavior: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.map-card-track::-webkit-scrollbar { display: none; }
+.map-card-track { cursor: grab; user-select: none; }
+.map-card-track .map-result-card { cursor: inherit; }
+.map-card-track.is-dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; }
+.map-result-card { position: relative; width: 420px; min-width: 420px; padding: 8px; display: grid; grid-template-columns: 124px 1fr; gap: 12px; border: 1px solid transparent; border-radius: 8px; background: #fff; color: inherit; text-decoration: none; scroll-snap-align: center; }
+.map-result-card:hover, .map-result-card.selected { border-color: #ff7037; }
+.map-result-card:focus-visible { outline: 2px solid #ff7037; outline-offset: 2px; }
+.map-card-photo { width: 124px; height: 104px; border-radius: 4px; object-fit: cover; }
+.map-card-copy { min-width: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 4px 0; }
 .map-card-title { display: flex; align-items: center; gap: 7px; }
 .map-card-title > img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
-.map-card-title strong, .map-card-title span { display: block; max-width: 135px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.map-card-title strong { color: #20232d; font-size: 10px; }
-.map-card-title span { margin-top: 2px; color: #8b90a2; font-size: 7px; }
+.map-card-title strong, .map-card-title span { display: block; max-width: 165px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map-card-rating { position: absolute; top: 10px; right: 8px; }
+.map-card-rating :deep(.star-rating) { --star-size: 10px; --star-gap: 1px; }
+.map-card-title strong { color: #20232d; font-size: 14px; }
+.map-card-title span { margin-top: 2px; color: #30343f; font-size: 10px; }
 .map-card-meta { margin-top: 8px; display: flex; align-items: center; gap: 7px; color: #858a9c; font-size: 7px; }
 .mini-rating { display: inline-flex; align-items: center; gap: 3px; color: #14a46d; font-weight: 700; }
 .mini-rating svg { width: 14px; height: 14px; fill: #1ccd83; }
 .compact-tags { margin-top: 7px; flex-wrap: nowrap; overflow: hidden; }
-.compact-tags span { padding: 3px 6px; font-size: 7px; }
+.compact-tags span { padding: 4px 8px; font-size: 10px; }
 .map-empty { position: absolute; z-index: 450; top: 50%; left: 50%; width: 250px; padding: 24px; display: grid; place-items: center; border-radius: 16px; background: rgb(255 255 255 / 92%); box-shadow: 0 18px 45px rgb(38 42 54 / 15%); text-align: center; transform: translate(-50%, -50%); }
 .map-empty img { width: 26px; opacity: .55; }
 .map-empty strong { margin-top: 10px; font-size: 12px; }
@@ -466,7 +589,7 @@ watch(
   .filter-column { position: static; }
   .title-row { margin-bottom: 24px; }
   .map-stage { min-height: 470px; }
-  .map-card-track { right: 10px; bottom: 10px; left: 10px; }
+  .map-card-track { bottom: 24px; }
 }
 
 @media (max-width: 560px) {
@@ -488,7 +611,12 @@ watch(
   .sitter-card .pet-tags span { padding: 4px 8px; font-size: 9px; }
   .identity p { max-width: 170px; }
   .location { margin-top: 15px; }
-  .map-result-card { min-width: min(300px, calc(100vw - 68px)); }
+  .map-result-card { width: 310px; min-width: 310px; grid-template-columns: 88px 1fr; gap: 8px; }
+  .map-card-photo { width: 88px; height: 88px; }
+  .map-card-title strong, .map-card-title span { max-width: 132px; }
+  .map-card-title strong { font-size: 12px; }
+  .map-card-rating { top: auto; bottom: 40px; }
+  .compact-tags span { padding: 3px 6px; font-size: 9px; }
 }
 @media (max-width: 400px) {
   .sitter-card .card-heading { flex-wrap: wrap; gap: 6px; }

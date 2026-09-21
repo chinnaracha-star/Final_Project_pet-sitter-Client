@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Navbar } from '../components'
 import ConfirmDeleteModal from '../components/owner/ConfirmDeleteModal.vue'
 import OwnerPageShell from '../components/owner/OwnerPageShell.vue'
 import PetForm from '../components/owner/PetForm.vue'
+import { uploadOwnerMedia } from '../services/ownerApi'
 import { useOwnerPetsStore } from '../stores/ownerPets'
 import type { OwnerPet } from '../types/owner'
 
@@ -12,24 +13,45 @@ const route = useRoute()
 const router = useRouter()
 const pets = useOwnerPetsStore()
 const showDelete = ref(false)
+const error = ref('')
+const pet = ref<OwnerPet | undefined>()
 
 const isCreate = computed(() => route.path === '/owner/pets/new')
 const petId = computed(() => Number(route.params.id))
-const pet = computed(() => (isCreate.value ? undefined : pets.getById(petId.value)))
 
-function save(payload: Omit<OwnerPet, 'id'>) {
-  if (isCreate.value) {
-    pets.createPet(payload)
-  } else {
-    pets.updatePet(petId.value, payload)
+onMounted(async () => {
+  if (isCreate.value) return
+  try {
+    pet.value = await pets.getById(petId.value)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'This pet was not found.'
   }
-  void router.push('/owner/pets')
+})
+
+async function save(payload: Omit<OwnerPet, 'id'>, photo: File | null) {
+  error.value = ''
+  try {
+    const avatarUrl = photo ? (await uploadOwnerMedia(photo, 'pet')).url : payload.avatarUrl
+    const next = { ...payload, avatarUrl }
+    if (isCreate.value) {
+      await pets.createPet(next)
+    } else {
+      await pets.updatePet(petId.value, next)
+    }
+    void router.push('/owner/pets')
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Could not save pet'
+  }
 }
 
-function confirmDelete() {
-  pets.deletePet(petId.value)
-  showDelete.value = false
-  void router.push('/owner/pets')
+async function confirmDelete() {
+  try {
+    await pets.removePet(petId.value)
+    showDelete.value = false
+    void router.push('/owner/pets')
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Could not delete pet'
+  }
 }
 </script>
 
@@ -39,7 +61,8 @@ function confirmDelete() {
       <Navbar />
     </template>
 
-    <p v-if="!isCreate && !pet" class="text-primary-500">This pet was not found.</p>
+    <p v-if="error" class="mb-6 auth-notice" role="alert">{{ error }}</p>
+    <p v-else-if="!isCreate && !pet" class="text-primary-500">This pet was not found.</p>
     <PetForm
       v-else
       :mode="isCreate ? 'create' : 'edit'"

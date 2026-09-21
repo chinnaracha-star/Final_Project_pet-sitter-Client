@@ -9,7 +9,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [payload: Omit<OwnerPet, 'id'>]
+  save: [payload: Omit<OwnerPet, 'id'>, photo: File | null]
   cancel: []
   remove: []
 }>()
@@ -28,6 +28,7 @@ const form = reactive({
 
 const photoInput = ref<HTMLInputElement | null>(null)
 const previewUrl = ref('')
+const photoFile = ref<File | null>(null)
 
 const isCreate = computed(() => props.mode === 'create')
 
@@ -43,6 +44,7 @@ function fillForm() {
     form.about = props.pet.about
     form.avatarUrl = props.pet.avatarUrl
     previewUrl.value = props.pet.avatarUrl
+    photoFile.value = null
   } else {
     form.name = ''
     form.petType = 'Dog'
@@ -54,6 +56,7 @@ function fillForm() {
     form.about = ''
     form.avatarUrl = ''
     previewUrl.value = ''
+    photoFile.value = null
   }
 }
 
@@ -63,11 +66,11 @@ function onPhoto(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
   previewUrl.value = URL.createObjectURL(file)
-  form.avatarUrl = previewUrl.value
+  photoFile.value = file
 }
 
 function submit() {
-  emit('save', { ...form, avatarUrl: previewUrl.value || form.avatarUrl })
+  emit('save', { ...form, avatarUrl: form.avatarUrl }, photoFile.value)
 }
 </script>
 

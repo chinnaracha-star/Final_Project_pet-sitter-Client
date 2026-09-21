@@ -8,6 +8,7 @@ const router = createRouter({
     { path: '/login', component: () => import('../views/LoginView.vue') },
     { path: '/register', component: () => import('../views/RegisterView.vue') },
     { path: '/search', component: () => import('../views/SitterSearchView.vue') },
+    { path: '/sitters/:id', component: () => import('../views/PublicSitterProfileView.vue') },
     { path: '/owner/profile', component: () => import('../views/OwnerProfileView.vue'), meta: { owner: true } },
     { path: '/owner/pets', component: () => import('../views/OwnerPetsView.vue'), meta: { owner: true } },
     { path: '/owner/pets/new', component: () => import('../views/OwnerPetFormView.vue'), meta: { owner: true } },

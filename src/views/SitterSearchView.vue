@@ -204,7 +204,7 @@ watch(
           <form class="filter-card" @submit.prevent="search">
             <label for="search-input">Search</label>
             <div class="search-input-wrap">
-              <input id="search-input" v-model="filters.keyword" type="search" placeholder="Name, service or location" />
+              <input id="search-input" v-model="filters.keyword" type="search" />
               <img src="/icon/search.svg" alt="" />
             </div>
 
@@ -221,7 +221,7 @@ watch(
               <legend>Rating:</legend>
               <div class="rating-options">
                 <div v-for="(row, rowIndex) in ratingRows" :key="rowIndex" class="rating-row">
-                  <button v-for="rating in row" :key="rating" type="button" :class="{ selected: filters.minRating === rating }" @click="filters.minRating = filters.minRating === rating ? null : rating">
+                  <button v-for="rating in row" :key="rating" type="button" :aria-label="`${rating} stars and above`" :aria-pressed="filters.minRating === rating" :class="{ selected: filters.minRating === rating }" @click="filters.minRating = filters.minRating === rating ? null : rating">
                     {{ rating }} <StarRating :count="rating" />
                   </button>
                 </div>
@@ -315,7 +315,7 @@ watch(
                     <img :src="sitterAvatar(sitter)" alt="" />
                     <div>
                       <h2>{{ sitter.displayName }}</h2>
-                      <p>{{ sitter.ownerName ? 'By ' + sitter.ownerName : sitter.services || 'Pet sitting service' }}</p>
+                      <p v-if="sitter.ownerName">By {{ sitter.ownerName }}</p>
                     </div>
                   </div>
                   <div class="stars" :aria-label="`${ratingStars(sitter)} stars`">
@@ -332,7 +332,7 @@ watch(
 
           <nav v-if="viewMode === 'list' && !loading && !notice && totalPages > 1" class="pagination" aria-label="Pagination">
             <button type="button" aria-label="Previous page" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹</button>
-            <button v-for="page in totalPages" :key="page" type="button" :class="{ active: currentPage === page }" @click="goToPage(page)">{{ page }}</button>
+            <button v-for="page in totalPages" :key="page" type="button" :aria-current="currentPage === page ? 'page' : undefined" :class="{ active: currentPage === page }" @click="goToPage(page)">{{ page }}</button>
             <button type="button" aria-label="Next page" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">›</button>
           </nav>
         </section>
@@ -344,45 +344,48 @@ watch(
 </template>
 
 <style scoped>
-.search-page { min-height: 100vh; background: #f7f8fb; color: #292a36; }
-.search-main { width: min(100% - 40px, 1216px); min-height: 800px; margin: 0 auto; padding: 54px 0 92px; }
-.title-row { margin-bottom: 28px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
-.title-row h1 { margin: 0; color: #161616; font-size: clamp(24px, 3vw, 30px); font-weight: 750; letter-spacing: -.035em; }
+.search-page { min-height: 100vh; background: #f8f8fa; color: #292a36; }
+.search-main { width: min(100% - 48px, 1232px); min-height: 800px; margin: 0 auto; padding: 64px 0 184px; }
+.title-row { margin-bottom: 40px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.title-row h1 { margin: 0; color: #30343f; font-size: 20px; line-height: 28px; font-weight: 600; }
 .view-switch, .filter-actions, .identity, .stars, .location, .pet-tags, .pagination { display: flex; align-items: center; }
-.view-switch { gap: 8px; padding: 4px; border: 1px solid #e4e7ef; border-radius: 11px; background: #fff; }
-.view-switch button { height: 34px; padding: 0 13px; display: flex; align-items: center; gap: 6px; border: 0; border-radius: 8px; background: transparent; color: #a2a7b8; font-size: 11px; font-weight: 650; cursor: pointer; }
+.view-switch { gap: 8px; padding: 0; }
+.view-switch button { height: 34px; padding: 0 12px; display: flex; align-items: center; gap: 6px; border: 1px solid #dde0ef; border-radius: 6px; background: transparent; color: #a2a7b8; font-size: 12px; font-weight: 500; cursor: pointer; }
 .view-switch button img { width: 14px; height: 14px; opacity: .65; }
-.view-switch button.active { background: #fff0ea; color: #ff6525; }
+.view-switch button.active { border-color: #ffbda3; background: #fff3ed; color: #ff6525; }
 .view-switch button.active img { opacity: 1; filter: invert(48%) sepia(97%) saturate(2761%) hue-rotate(344deg) brightness(103%) contrast(101%); }
-.search-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 32px; align-items: start; }
+.search-layout { display: grid; grid-template-columns: 31% minmax(0, 1fr); gap: 32px; align-items: start; }
 .filter-column { position: sticky; top: 96px; z-index: 3; }
-.filter-card { padding: 23px 18px 18px; border: 1px solid #e2e7f0; border-radius: 18px; background: #fff; box-shadow: 0 16px 44px -28px rgb(0 0 0 / 20%); }
-.filter-card > label, .filter-card legend { display: block; margin-bottom: 10px; color: #232733; font-size: 11px; font-weight: 700; }
+.filter-card { padding: 24px 22px 22px; border: 0; border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgb(38 42 54 / 3%); }
+.filter-card > label, .filter-card legend { display: block; margin-bottom: 8px; color: #30343f; font-size: 14px; line-height: 20px; font-weight: 500; }
 .search-input-wrap { position: relative; }
-.search-input-wrap input, .filter-card select { width: 100%; height: 38px; border: 1px solid #dde0ef; border-radius: 9px; background: #fff; color: #565a6c; font-size: 10px; outline: 0; }
+.search-input-wrap input, .filter-card select { width: 100%; height: 44px; border: 1px solid #dde0ef; border-radius: 6px; background: #fff; color: #82869b; font-size: 14px; outline: 0; }
 .search-input-wrap input { padding: 0 34px 0 11px; }
 .search-input-wrap input:focus, .filter-card select:focus { border-color: #ff9b73; box-shadow: 0 0 0 3px #fff0ea; }
-.search-input-wrap img { position: absolute; top: 12px; right: 11px; width: 13px; height: 13px; }
-.filter-card fieldset { margin: 24px 0 0; padding: 0; border: 0; }
-.pet-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 12px; }
-.pet-options label { display: flex; align-items: center; gap: 6px; color: #565a6c; font-size: 9px; }
-.pet-options input { width: 13px; height: 13px; margin: 0; accent-color: #ff6525; }
+.search-input-wrap img { position: absolute; top: 12px; right: 14px; width: 20px; height: 20px; opacity: .45; pointer-events: none; }
+.filter-card fieldset { margin: 38px 0 0; padding: 0; border: 0; }
+.pet-options { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pet-options label { display: flex; align-items: center; gap: 8px; color: #30343f; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.pet-options input { appearance: none; width: 20px; height: 20px; flex: 0 0 20px; margin: 0; border: 1px solid #dde0ef; border-radius: 5px; background: #fff; cursor: pointer; }
+.pet-options input:checked { border-color: #ff7037; background: #ff7037 url('/icon/check.svg') center / 15px no-repeat; }
+.pet-options input:focus-visible, .rating-options button:focus-visible { outline: 2px solid #ff7037; outline-offset: 3px; }
 .rating-options { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .rating-row { display: flex; gap: 6px; }
-.rating-options button { height: 28px; padding: 0 7px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #dde0ef; border-radius: 8px; background: #fff; color: #82869b; font-size: 9px; cursor: pointer; }
-.rating-options :deep(.star-rating) { --star-size: 10px; --star-gap: 1px; }
+.rating-options button { height: 32px; padding: 0 8px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #dde0ef; border-radius: 5px; background: #fff; color: #82869b; font-size: 14px; cursor: pointer; }
+.rating-options :deep(.star-rating) { --star-size: 19px; --star-gap: 1px; }
 .rating-options button.selected { border-color: #1ccd83; background: #edfbf5; color: #30343f; }
-.filter-card > label[for='experience'] { margin-top: 24px; }
-.filter-card select { padding: 0 10px; }
-.filter-actions { gap: 10px; margin-top: 25px; }
-.filter-actions button { width: 50%; height: 34px; border: 0; border-radius: 18px; font-size: 10px; font-weight: 700; cursor: pointer; }
-.clear-button { background: #ffeae3; color: #ff6525; }
-.search-button { background: #ff6525; color: #fff; box-shadow: 0 7px 18px -9px #ff6525; }
-.results { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.sitter-card { min-height: 174px; padding: 10px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; border: 1px solid #e7ecf3; border-radius: 14px; background: #fff; color: inherit; text-decoration: none; box-shadow: 0 12px 32px -25px rgb(0 0 0 / 22%); transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease; }
-.sitter-card:hover { transform: translateY(-2px); border-color: #ffc2a9; box-shadow: 0 18px 38px -24px rgb(0 0 0 / 25%); }
-.place-image { width: 220px; height: 154px; border-radius: 10px; object-fit: cover; }
-.sitter-info { min-width: 0; padding: 5px 5px 0 0; }
+.filter-card > label[for='experience'] { margin-top: 38px; }
+.filter-card select { appearance: none; padding: 0 36px 0 10px; background: #fff url('/icon/chevron-down.svg') right 12px center / 12px no-repeat; }
+.filter-actions { gap: 12px; margin-top: 34px; }
+.filter-actions button { width: 50%; height: 44px; border: 0; border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.clear-button { background: #fff1ec; color: #ff7037; }
+.search-button { background: #ff7037; color: #fff; }
+.results { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.sitter-card { padding: 16px; display: grid; grid-template-columns: 30% minmax(0, 1fr); gap: 32px; border: 0; border-radius: 16px; background: #fff; color: inherit; text-decoration: none; transition: background-color 150ms ease; }
+.sitter-card:hover { background: #fffaf7; }
+.sitter-card:focus-visible { outline: 2px solid #ff7037; outline-offset: 3px; }
+.place-image { width: 100%; height: 100%; min-height: 0; aspect-ratio: 4 / 3; border-radius: 6px; object-fit: cover; }
+.sitter-info { min-width: 0; padding: 6px 4px 2px 0; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; }
 .card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .identity { min-width: 0; gap: 10px; }
 .identity > img { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
@@ -398,6 +401,17 @@ watch(
 .tag-cat { border-color: #f6abc9; background: #fff0f6; color: #d96391; }
 .tag-bird { border-color: #a7dcf7; background: #eef9ff; color: #4ba7d9; }
 .tag-rabbit { border-color: #ffbda3; background: #fff3ed; color: #e9693e; }
+.sitter-card .identity { align-items: flex-start; gap: 14px; }
+.sitter-card .identity > img { width: 56px; height: 56px; }
+.sitter-card .identity > div { min-width: 0; }
+.sitter-card .identity h2 { font-size: 20px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.sitter-card .identity p { margin-top: 4px; color: #161616; font-size: 14px; }
+.sitter-card .stars { padding-top: 3px; }
+.sitter-card .stars :deep(.star-rating) { --star-size: 18px; --star-gap: 2px; }
+.sitter-card .location { margin: 0; gap: 6px; font-size: 13px; }
+.sitter-card .location img { width: 18px; height: 18px; opacity: .55; }
+.sitter-card .pet-tags { gap: 8px; margin: 0; }
+.sitter-card .pet-tags span { padding: 6px 12px; border-radius: 16px; font-size: 12px; }
 .map-stage { position: relative; min-height: 590px; overflow: hidden; border: 1px solid #e2e7f0; border-radius: 20px; background: #edf3ef; box-shadow: 0 20px 50px -32px rgb(0 0 0 / 34%); }
 .map-card-track { position: absolute; z-index: 500; right: 16px; bottom: 16px; left: 16px; display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; scrollbar-width: thin; }
 .map-result-card { width: 300px; min-width: 300px; padding: 8px; display: grid; grid-template-columns: 94px 1fr; gap: 10px; border: 2px solid transparent; border-radius: 14px; background: rgb(255 255 255 / 96%); color: inherit; text-decoration: none; box-shadow: 0 12px 34px rgb(38 42 54 / 18%); backdrop-filter: blur(8px); transition: border-color 150ms ease, transform 150ms ease; }
@@ -424,8 +438,9 @@ watch(
 .empty-state span { margin-top: 6px; font-size: 10px; }
 .empty-state button { margin-top: 16px; padding: 8px 16px; border: 0; border-radius: 18px; background: #ff6525; color: white; font-size: 10px; font-weight: 700; }
 .error-state strong { color: #b42318; }
-.pagination { justify-content: center; gap: 6px; margin-top: 8px; }
-.pagination button { width: 30px; height: 30px; border: 0; border-radius: 50%; background: transparent; color: #adb1c6; font-size: 12px; cursor: pointer; }
+.pagination { justify-content: flex-start; gap: 10px; margin-top: 8px; padding-left: 48px; }
+.pagination button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: #fff; color: #adb1c6; font-size: 14px; cursor: pointer; }
+.pagination button:first-child, .pagination button:last-child { background: transparent; font-size: 24px; }
 .pagination button.active { background: #ffeae3; color: #ff6525; }
 .pagination button:disabled { cursor: not-allowed; opacity: .45; }
 .skeleton { position: relative; overflow: hidden; border-radius: 17px; background: #e9ebf1; }
@@ -434,11 +449,22 @@ watch(
 .map-skeleton { height: 590px; border-radius: 20px; }
 @keyframes shimmer { to { transform: translateX(100%); } }
 
+@media (min-width: 821px) and (max-width: 1100px) {
+  .search-layout { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; }
+  .filter-card { padding: 24px 16px; }
+  .pet-options label { gap: 5px; font-size: 11px; }
+  .rating-options :deep(.star-rating) { --star-size: 16px; }
+  .sitter-card { gap: 16px; }
+  .sitter-card .card-heading { flex-wrap: wrap; }
+  .sitter-card .identity h2 { font-size: 16px; }
+  .sitter-card .identity > img { width: 40px; height: 40px; }
+}
+
 @media (max-width: 820px) {
   .search-main { width: min(100% - 28px, 740px); min-height: auto; padding: 34px 0 64px; }
   .search-layout { grid-template-columns: 1fr; gap: 20px; }
   .filter-column { position: static; }
-  .pet-options { grid-template-columns: repeat(4, auto); justify-content: start; gap: 18px; }
+  .title-row { margin-bottom: 24px; }
   .map-stage { min-height: 470px; }
   .map-card-track { right: 10px; bottom: 10px; left: 10px; }
 }
@@ -448,11 +474,23 @@ watch(
   .view-switch button { padding: 0 10px; }
   .view-switch button img { width: 13px; }
   .result-count { display: none; }
-  .sitter-card { grid-template-columns: 108px minmax(0, 1fr); gap: 11px; }
-  .place-image { width: 108px; height: 112px; }
-  .identity > img { display: none; }
+  .sitter-card { grid-template-columns: 30% minmax(0, 1fr); gap: 14px; padding: 10px; }
+  .place-image { min-height: 110px; }
+  .sitter-info { gap: 14px; padding: 2px 0; }
+  .sitter-card .identity { gap: 7px; }
+  .sitter-card .identity > img { width: 32px; height: 32px; }
+  .sitter-card .identity h2 { font-size: 13px; }
+  .sitter-card .identity p { font-size: 10px; }
+  .sitter-card .stars :deep(.star-rating) { --star-size: 11px; --star-gap: 1px; }
+  .sitter-card .location { font-size: 9px; }
+  .sitter-card .location img { width: 12px; height: 12px; }
+  .sitter-card .pet-tags { gap: 5px; }
+  .sitter-card .pet-tags span { padding: 4px 8px; font-size: 9px; }
   .identity p { max-width: 170px; }
   .location { margin-top: 15px; }
   .map-result-card { min-width: min(300px, calc(100vw - 68px)); }
+}
+@media (max-width: 400px) {
+  .sitter-card .card-heading { flex-wrap: wrap; gap: 6px; }
 }
 </style>

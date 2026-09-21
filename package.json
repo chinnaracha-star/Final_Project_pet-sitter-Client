@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "test:profile-flow": "node --experimental-strip-types --test tests/profileFlow.test.mjs",
+    "test:ocr": "node --experimental-strip-types --test tests/accountNumberOcr.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
     "leaflet": "^1.9.4",
     "pinia": "^4.0.3",
     "tailwindcss": "^4.3.3",
+    "tesseract.js": "^7.0.0",
     "vue": "^3.5.42",
     "vue-router": "^5.3.1"
   },

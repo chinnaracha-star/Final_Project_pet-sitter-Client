@@ -33,6 +33,9 @@ Header เหล่านี้เป็นวิธีทดสอบในเ�
 | `PATCH` | `/api/admin/sitter-approvals/approve?sitterId={uuid}` | อนุมัติและคัดลอก pending ไป live |
 | `PATCH` | `/api/admin/sitter-approvals/reject?sitterId={uuid}` | Reject พร้อม `{ "reason": "..." }` |
 | `GET` | `/api/sitters` | ค้นหาและคืนเฉพาะ Sitter ที่ `is_listed=true` |
+| `GET` | `/api/sitters/map` | คืน Sitter ที่ตรง filter และมีพิกัดทั้งหมดสำหรับ Map mode |
+| `GET` | `/api/sitters/{id}` | อ่าน Public Sitter Profile โดยไม่ส่งข้อมูลส่วนตัว |
+| `GET` | `/api/sitters/{id}/reviews` | อ่านรีวิวที่ approved ล่าสุดสูงสุด 5 รายการ |
 | `POST` | `/api/bookings` | สร้าง Booking เมื่อ Sitter ยัง listed เท่านั้น |
 
 `pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร
@@ -44,3 +47,5 @@ GET /api/sitters?keyword=cat&petType=Cat&petType=Dog&minRating=4&experience=3-5%
 ```
 
 Response เป็น object ที่มี `sitters`, `currentPage`, `totalPages`, `totalItems` และ `limit` เพื่อรองรับ server-side pagination
+
+หน้า `/search?view=map` ใช้ `/api/sitters/map` และเก็บ filter/view ไว้ใน query string ส่วนหน้า Public Profile อยู่ที่ `/sitters/{id}` โดยแสดงที่อยู่และพิกัดจริงของ Sitter ตามข้อมูลที่ได้รับอนุมัติ

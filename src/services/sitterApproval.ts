@@ -56,6 +56,39 @@ export type ListedSitter = {
   experienceYears: string | null
   ratingAvg: number
   reviewCount: number
+  latitude: number | null
+  longitude: number | null
+}
+
+export type PublicSitterDetail = {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+  ownerName: string | null
+  introduction: string | null
+  services: string | null
+  myPlace: string | null
+  addressDetail: string | null
+  subDistrict: string | null
+  district: string | null
+  province: string | null
+  postCode: string | null
+  experienceYears: string | null
+  petTypes: string[]
+  photoUrls: string[]
+  ratingAvg: number
+  reviewCount: number
+  latitude: number | null
+  longitude: number | null
+}
+
+export type PublicReview = {
+  id: number
+  ownerName: string | null
+  ownerAvatarUrl: string | null
+  rating: number
+  comment: string | null
+  createdAt: string
 }
 
 export type ListedSitterSearchParams = {
@@ -131,3 +164,24 @@ export const getListedSitters = (params: ListedSitterSearchParams = {}) => {
   const suffix = query.toString() ? `?${query.toString()}` : ''
   return request<ListedSitterSearchResponse>(`/api/sitters${suffix}`)
 }
+
+function searchQuery(params: ListedSitterSearchParams = {}) {
+  const query = new URLSearchParams()
+  if (params.keyword?.trim()) query.set('keyword', params.keyword.trim())
+  params.petTypes?.forEach(petType => query.append('petType', petType))
+  if (params.minRating !== null && params.minRating !== undefined) query.set('minRating', String(params.minRating))
+  if (params.experience) query.set('experience', params.experience)
+  return query
+}
+
+export const getMapSitters = (params: ListedSitterSearchParams = {}) => {
+  const query = searchQuery(params)
+  const suffix = query.toString() ? `?${query.toString()}` : ''
+  return request<ListedSitter[]>(`/api/sitters/map${suffix}`)
+}
+
+export const getPublicSitter = (sitterId: string) =>
+  request<PublicSitterDetail>(`/api/sitters/${encodeURIComponent(sitterId)}`)
+
+export const getPublicSitterReviews = (sitterId: string) =>
+  request<PublicReview[]>(`/api/sitters/${encodeURIComponent(sitterId)}/reviews`)

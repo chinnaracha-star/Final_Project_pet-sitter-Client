@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import { useSitterBookingsStore } from '../../stores/sitterBookings'
+
+const bookings = useSitterBookingsStore()
+</script>
+
 <template>
   <aside class="sidebar">
     <header class="brand">
@@ -5,15 +11,15 @@
       <img class="star" src="/navbar/logo-star.svg" width="17" height="17" alt="" />
     </header>
     <nav aria-label="Sitter menu">
-      <RouterLink class="nav-item active" to="/sitter/profile">
+      <RouterLink class="nav-item" active-class="active" to="/sitter/profile">
         <span class="nav-icon profile" aria-hidden="true"></span>
         <span class="label">Pet Sitter Profile</span>
       </RouterLink>
-      <span class="nav-item">
+      <RouterLink class="nav-item" active-class="active" to="/sitter/bookings">
         <span class="nav-icon list" aria-hidden="true"></span>
         <span class="label">Booking List</span>
-        <span class="badge" aria-hidden="true"></span>
-      </span>
+        <span v-if="bookings.hasNewBookings" class="badge" aria-label="New bookings"></span>
+      </RouterLink>
       <span class="nav-item">
         <span class="nav-icon calendar" aria-hidden="true"></span>
         <span class="label">Calendar</span>
@@ -25,7 +31,7 @@
     </nav>
     <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'sitter' } }">
       <span class="nav-icon exit" aria-hidden="true"></span>
-      <span class="label">Back to Login</span>
+      <span class="label">Log Out</span>
     </RouterLink>
   </aside>
 </template>

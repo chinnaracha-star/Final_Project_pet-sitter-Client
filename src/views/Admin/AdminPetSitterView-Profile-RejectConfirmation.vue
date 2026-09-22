@@ -7,8 +7,14 @@ const emit = defineEmits<{
 }>()
 
 const reason = ref('')
+const showReasonWarning = ref(false)
 
 const handleReject = () => {
+	if (!reason.value.trim()) {
+		showReasonWarning.value = true
+		return
+	}
+	showReasonWarning.value = false
 	emit('reject', reason.value)
 }
 </script>
@@ -34,6 +40,7 @@ const handleReject = () => {
 					placeholder="Admin's suggestion here"
 					class="mt-2 w-full resize-none rounded-md border border-[#e0e3ed] px-3 py-2 text-[11px] text-[#30343f] outline-none placeholder:text-[#c2c5d1] focus:border-[#afb5ca]"
 				></textarea>
+				<p v-if="showReasonWarning" class="mt-1.5 text-[10px] font-semibold text-[#f04444]">Please fill in a reason before rejecting.</p>
 			</div>
 
 			<footer class="flex items-center justify-between px-5 pb-5">

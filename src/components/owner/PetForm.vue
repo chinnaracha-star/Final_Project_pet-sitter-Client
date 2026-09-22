@@ -75,7 +75,7 @@ function submit() {
 </script>
 
 <template>
-  <form class="max-w-[720px]" @submit.prevent="submit">
+  <form @submit.prevent="submit">
     <div class="relative mb-8 w-[180px]">
       <div class="grid size-[180px] place-items-center overflow-hidden rounded-full bg-primary-100">
         <img v-if="previewUrl" :src="previewUrl" alt="" class="size-full object-cover" />
@@ -93,42 +93,44 @@ function submit() {
     </div>
 
     <label class="auth-label" for="pet-name">Pet Name*</label>
-    <input id="pet-name" v-model.trim="form.name" class="auth-input" required />
+    <input id="pet-name" v-model.trim="form.name" class="auth-input rounded-lg!" required />
 
-    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+    <div class="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
       <div>
         <label class="auth-label" for="pet-type">Pet Type*</label>
-        <select id="pet-type" v-model="form.petType" class="auth-input" required>
+        <select id="pet-type" v-model="form.petType" class="auth-input rounded-lg!" required>
           <option v-for="type in PET_TYPES" :key="type" :value="type">{{ type }}</option>
         </select>
       </div>
       <div>
         <label class="auth-label" for="pet-breed">Breed*</label>
-        <input id="pet-breed" v-model.trim="form.breed" class="auth-input" required />
+        <input id="pet-breed" v-model.trim="form.breed" class="auth-input rounded-lg!" required />
       </div>
       <div>
         <label class="auth-label" for="pet-sex">Sex*</label>
-        <select id="pet-sex" v-model="form.sex" class="auth-input" required>
+        <select id="pet-sex" v-model="form.sex" class="auth-input rounded-lg!" required>
           <option value="Female">Female</option>
           <option value="Male">Male</option>
         </select>
       </div>
       <div>
         <label class="auth-label" for="pet-age">Age (Month)*</label>
-        <input id="pet-age" v-model.number="form.ageMonths" class="auth-input" type="number" min="0" step="1" required />
+        <input id="pet-age" v-model.number="form.ageMonths" class="auth-input rounded-lg!" type="number" min="0" step="1" required />
       </div>
       <div>
         <label class="auth-label" for="pet-color">Color*</label>
-        <input id="pet-color" v-model.trim="form.color" class="auth-input" required />
+        <input id="pet-color" v-model.trim="form.color" class="auth-input rounded-lg!" required />
       </div>
       <div>
         <label class="auth-label" for="pet-weight">Weight (Kilogram)*</label>
-        <input id="pet-weight" v-model.number="form.weightKg" class="auth-input" type="number" min="0" step="0.1" required />
+        <input id="pet-weight" v-model.number="form.weightKg" class="auth-input rounded-lg!" type="number" min="0" step="0.1" required />
       </div>
     </div>
 
-    <label class="auth-label" for="pet-about">About</label>
-    <textarea id="pet-about" v-model.trim="form.about" class="min-h-28 w-full rounded-2xl border border-primary-100 px-[18px] py-3" placeholder="Describe more about your pet..." />
+    <div class="mt-8 border-t border-primary-100 pt-6">
+      <label class="auth-label" for="pet-about">About</label>
+      <textarea id="pet-about" v-model.trim="form.about" class="min-h-36 w-full rounded-lg border border-primary-100 px-[18px] py-3" placeholder="Describe more about your pet..." />
+    </div>
 
     <button
       v-if="!isCreate"
@@ -140,11 +142,11 @@ function submit() {
       Delete Pet
     </button>
 
-    <div class="mt-10 flex justify-end gap-3">
+    <div class="mt-6 flex items-center justify-between gap-3">
       <button type="button" class="min-h-12 rounded-full bg-orange-100 px-8 font-bold text-orange-700" @click="emit('cancel')">
         Cancel
       </button>
-      <button class="auth-submit px-8" type="submit">
+      <button class="auth-submit w-auto px-8 whitespace-nowrap" type="submit">
         {{ isCreate ? 'Create Pet' : 'Update Pet' }}
       </button>
     </div>

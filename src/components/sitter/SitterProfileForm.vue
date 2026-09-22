@@ -72,6 +72,10 @@ const showFullProfile = computed(() => uiState.value.showFullProfile);
 const statusClass = computed(() =>
   uiState.value.displayStatus.toLowerCase().replaceAll(" ", "-"),
 );
+function setCoordinates(nextLatitude: number | null, nextLongitude: number | null) {
+  latitude.value = nextLatitude;
+  longitude.value = nextLongitude;
+}
 
 function changeAvatar(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -216,11 +220,14 @@ onMounted(async () => {
         type="submit"
         form="profile-form"
         class="approval-button"
-        :disabled="loading"
+        :disabled="loading || !userId"
       >
         {{ uiState.actionText }}
       </button>
     </div>
+    <p v-if="!userId" class="demo-notice" role="status">
+      {{ demoStatuses[demoStatusKey] ? 'Demo profile state. Saving requires the sitter API and a signed-in sitter account.' : 'Server integration pending. Sign in as a sitter to load and save a real profile.' }}
+    </p>
     <p v-if="rejectionReason" class="rejection" role="status">
       <img src="/icon/info-circle.svg" alt="" width="20" height="20" />
       Your request has not been approved: '{{ rejectionReason }}'
@@ -411,11 +418,14 @@ onMounted(async () => {
           :sub-district="subDistrict"
           :province="province"
           :post-code="postCode"
+          :latitude="latitude"
+          :longitude="longitude"
+          @coordinates="setCoordinates"
         />
       </section>
       </fieldset>
       <div v-if="uiState.canSubmit" class="form-actions">
-        <button type="submit" :disabled="loading">{{ uiState.actionText }}</button>
+        <button type="submit" :disabled="loading || !userId">{{ uiState.actionText }}</button>
       </div>
     </form>
   </main>

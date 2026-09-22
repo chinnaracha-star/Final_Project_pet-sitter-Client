@@ -5,6 +5,7 @@ import ChatInput from './ChatInput.vue'
 import MessageBubble from './MessageBubble.vue'
 
 const chat = useChatStore()
+withDefaults(defineProps<{ showClose?: boolean }>(), { showClose: true })
 const thread = ref<HTMLElement | null>(null)
 
 const emit = defineEmits<{
@@ -35,14 +36,18 @@ watch(() => chat.activeConversationId, scrollToLatest)
           {{ chat.activeConversation?.ownerName ?? 'Messages' }}
         </h2>
       </div>
-      <button
-        type="button"
-        class="grid size-9 place-items-center rounded-full hover:bg-primary-100"
-        aria-label="Close messages"
-        @click="emit('close')"
-      >
-        <img src="/icon/x.svg" alt="" width="14" height="14" />
-      </button>
+      <div class="flex items-center gap-2">
+        <span class="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-900">Demo data</span>
+        <button
+          v-if="showClose"
+          type="button"
+          class="grid size-9 place-items-center rounded-full hover:bg-primary-100"
+          aria-label="Close messages"
+          @click="emit('close')"
+        >
+          <img src="/icon/x.svg" alt="" width="14" height="14" />
+        </button>
+      </div>
     </header>
 
     <div ref="thread" class="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">

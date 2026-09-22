@@ -1,10 +1,12 @@
-import tailwindcss from '@tailwindcss/vite'
-import vue from '@vitejs/plugin-vue'
-import { defineConfig } from 'vite'
+import tailwindcss from "@tailwindcss/vite";
+import vue from "@vitejs/plugin-vue";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   server: {
-    proxy: { '/api': 'http://localhost:8081' },
+    port: 5174,
+    strictPort: true,
+    proxy: { "/api": "http://localhost:8081" },
   },
-})
+});

@@ -4,5 +4,14 @@ import App from "./App.vue";
 import { createPinia } from "pinia";
 import router from "./router";
 import 'leaflet/dist/leaflet.css'
+import { useAuthStore } from "./stores/auth";
 
-createApp(App).use(createPinia()).use(router).mount("#app");
+const app = createApp(App);
+const pinia = createPinia();
+app.use(pinia);
+
+const auth = useAuthStore();
+await auth.restore();
+
+app.use(router);
+app.mount("#app");

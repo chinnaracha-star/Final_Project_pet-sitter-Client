@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/auth'
+
 export type ApprovalStatus =
   | 'Unverified'
   | 'Waiting for verify'
@@ -51,6 +53,61 @@ export type ListedSitter = {
   services: string | null
   introduction: string | null
   province: string | null
+  ownerName: string | null
+  imageUrl: string | null
+  experienceYears: string | null
+  ratingAvg: number
+  reviewCount: number
+  latitude: number | null
+  longitude: number | null
+}
+
+export type PublicSitterDetail = {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+  ownerName: string | null
+  introduction: string | null
+  services: string | null
+  myPlace: string | null
+  addressDetail: string | null
+  subDistrict: string | null
+  district: string | null
+  province: string | null
+  postCode: string | null
+  experienceYears: string | null
+  petTypes: string[]
+  photoUrls: string[]
+  ratingAvg: number
+  reviewCount: number
+  latitude: number | null
+  longitude: number | null
+}
+
+export type PublicReview = {
+  id: number
+  ownerName: string | null
+  ownerAvatarUrl: string | null
+  rating: number
+  comment: string | null
+  createdAt: string
+}
+
+export type ListedSitterSearchParams = {
+  keyword?: string
+  petTypes?: string[]
+  minRating?: number | null
+  experience?: string
+  page?: number
+  limit?: number
+}
+
+export type ListedSitterSearchResponse = {
+  sitters: ListedSitter[]
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  limit: number
 }
 
 async function request<T>(path: string, options: RequestInit = {}) {
@@ -66,7 +123,8 @@ async function request<T>(path: string, options: RequestInit = {}) {
 }
 
 export const currentSitterId = () =>
-  localStorage.getItem('petSitterUserId') || new URLSearchParams(location.search).get('userId')
+  (useAuthStore().role === 'sitter' ? useAuthStore().userId : null)
+  || localStorage.getItem('petSitterUserId') || new URLSearchParams(location.search).get('userId')
 
 export const currentAdminId = () =>
   localStorage.getItem('petSitterAdminId') || new URLSearchParams(location.search).get('adminId')
@@ -97,4 +155,36 @@ export const rejectSitter = (adminId: string, sitterId: string, reason: string) 
     body: JSON.stringify({ reason }),
   })
 
-export const getListedSitters = () => request<ListedSitter[]>('/api/sitters')
+export const getListedSitters = (params: ListedSitterSearchParams = {}) => {
+  const query = new URLSearchParams()
+  if (params.keyword?.trim()) query.set('keyword', params.keyword.trim())
+  params.petTypes?.forEach(petType => query.append('petType', petType))
+  if (params.minRating !== null && params.minRating !== undefined) query.set('minRating', String(params.minRating))
+  if (params.experience) query.set('experience', params.experience)
+  if (params.page) query.set('page', String(params.page))
+  if (params.limit) query.set('limit', String(params.limit))
+
+  const suffix = query.toString() ? `?${query.toString()}` : ''
+  return request<ListedSitterSearchResponse>(`/api/sitters${suffix}`)
+}
+
+function searchQuery(params: ListedSitterSearchParams = {}) {
+  const query = new URLSearchParams()
+  if (params.keyword?.trim()) query.set('keyword', params.keyword.trim())
+  params.petTypes?.forEach(petType => query.append('petType', petType))
+  if (params.minRating !== null && params.minRating !== undefined) query.set('minRating', String(params.minRating))
+  if (params.experience) query.set('experience', params.experience)
+  return query
+}
+
+export const getMapSitters = (params: ListedSitterSearchParams = {}) => {
+  const query = searchQuery(params)
+  const suffix = query.toString() ? `?${query.toString()}` : ''
+  return request<ListedSitter[]>(`/api/sitters/map${suffix}`)
+}
+
+export const getPublicSitter = (sitterId: string) =>
+  request<PublicSitterDetail>(`/api/sitters/${encodeURIComponent(sitterId)}`)
+
+export const getPublicSitterReviews = (sitterId: string) =>
+  request<PublicReview[]>(`/api/sitters/${encodeURIComponent(sitterId)}/reviews`)

@@ -23,6 +23,7 @@ const router = createRouter({
     { path: '/admin/owners/profile/:id/unban', component: () => import('../views/Admin/AdminPetOwnerView-Profile-Unban.vue') },
       { path: '/admin/owners/profile/:id/pets', component: () => import('../views/Admin/AdminPetOwnerView-Pet.vue') },
     { path: '/admin/owners/profile/:id/pets/:petId', component: () => import('../views/Admin/AdminPetOwnerView-Pet-Detail.vue') },
+    { path: '/admin/owners/profile/:id/pets/:petId/suspend', component: () => import('../views/Admin/AdminPetOwnerView-Pet-Suspend.vue') },
     { path: '/admin/owners/profile/reviews', component: () => import('../views/Admin/AdminPetOwnerView-Review.vue') },
     { path: '/admin/map', component: () => import('../views/Admin/MapView.vue') },
     { path: '/admin/reports', component: () => import('../views/Admin/AdminPetSitterView-Report.vue') },

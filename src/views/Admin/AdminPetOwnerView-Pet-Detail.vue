@@ -56,6 +56,12 @@ const returnToPets = () => {
 	router.push(ownerId ? `/admin/owners/profile/${ownerId}/pets` : '/admin/owners')
 }
 
+const openSuspendConfirmation = () => {
+	const ownerId = typeof route.params.id === 'string' ? route.params.id : ''
+	const petId = typeof route.params.petId === 'string' ? route.params.petId : ''
+	router.push(ownerId && petId ? `/admin/owners/profile/${ownerId}/pets/${petId}/suspend` : '/admin/owners')
+}
+
 watch(
 	() => [route.params.id, route.params.petId],
 	([ownerId, petId]) => {
@@ -118,7 +124,7 @@ watch(
 			</div>
 
 			<footer class="flex justify-end px-6 pb-5">
-				<button type="button" class="text-[9px] font-semibold text-[#ff7040] transition hover:text-[#f25d2c]" @click="returnToPets">Back to Pets</button>
+				<button type="button" class="text-[9px] font-semibold text-[#ff7040] transition hover:text-[#f25d2c]" @click="openSuspendConfirmation">Suspend This Pet</button>
 			</footer>
 		</section>
 	</div>

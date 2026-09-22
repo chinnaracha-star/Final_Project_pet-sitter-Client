@@ -86,7 +86,8 @@ watch(
 const cancelReport = async () => {
 	const id = route.params.id
 	if (typeof id !== 'string') return
-	tawait axios.delete(`${API_BASE_URL}/reports/${id}`)
+	try {
+		await axios.delete(`${API_BASE_URL}/reports/${id}`)
 		router.push('/admin/reports')
 	} catch (error) {
 		console.error('Failed to delete report:', error)
@@ -98,9 +99,6 @@ const cancelReport = async () => {
 
 const dismissCancelConfirm = () => {
 	showCancelConfirm.value = false
-	const id = route.params.id
-	if (typeof id === 'string') router.push(`/admin/reports/${id}`)showCancelConfirm.value = false
-	}
 }
 
 const resolveReport = async () => {

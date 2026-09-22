@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
 
 interface OwnerReview {
 	id: number
@@ -11,6 +12,7 @@ interface OwnerReview {
 }
 
 const owner = { name: 'John Wick' }
+const store = useAdminPetOwnerStore()
 
 const reviews: OwnerReview[] = [
 	{ id: 1, name: 'Jane Maison', date: 'Aug 16, 2023', rating: 4, comment: 'Nice customer, with good bois!', avatar: '/image/dog1.jpg' },
@@ -30,8 +32,8 @@ const reviews: OwnerReview[] = [
 				</header>
 
 				<nav class="mt-4 flex gap-2" aria-label="Pet owner sections">
-					<RouterLink to="/admin/owners/profile" class="rounded-t-md bg-[#e2e5f1] px-5 py-3 text-[11px] font-semibold text-[#858b9f] transition hover:bg-[#d9ddeb]">Profile</RouterLink>
-					<RouterLink to="/admin/owners/profile/pets" class="rounded-t-md bg-[#e2e5f1] px-5 py-3 text-[11px] font-semibold text-[#858b9f] transition hover:bg-[#d9ddeb]">Pets</RouterLink>
+					<RouterLink :to="store.selectedOwnerId ? `/admin/owners/profile/${store.selectedOwnerId}` : '/admin/owners'" class="rounded-t-md bg-[#e2e5f1] px-5 py-3 text-[11px] font-semibold text-[#858b9f] transition hover:bg-[#d9ddeb]">Profile</RouterLink>
+					<RouterLink :to="store.selectedOwnerId ? `/admin/owners/profile/${store.selectedOwnerId}/pets` : '/admin/owners'" class="rounded-t-md bg-[#e2e5f1] px-5 py-3 text-[11px] font-semibold text-[#858b9f] transition hover:bg-[#d9ddeb]">Pets</RouterLink>
 					<RouterLink to="/admin/owners/profile/reviews" class="rounded-t-md bg-white px-5 py-3 text-[11px] font-semibold text-[#ff7040]">Reviews</RouterLink>
 				</nav>
 

@@ -59,6 +59,22 @@ const openBanStatusConfirmation = () => {
 	router.push(`/admin/owners/profile/${owner.value.id}/${owner.value.isBanned ? 'unban' : 'ban'}`)
 }
 
+const navigateToTab = (tab: OwnerTab) => {
+	if (!owner.value) return
+
+	if (tab === 'Pets') {
+		router.push(`/admin/owners/profile/${owner.value.id}/pets`)
+		return
+	}
+
+	if (tab === 'Reviews') {
+		router.push('/admin/owners/profile/reviews')
+		return
+	}
+
+	activeTab.value = tab
+}
+
 watch(
 	() => route.params.id,
 	(ownerId) => {
@@ -90,7 +106,7 @@ watch(
 						type="button"
 						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
 						:class="activeTab === tab ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
-						@click="activeTab = tab"
+						@click="navigateToTab(tab)"
 					>
 						{{ tab }}
 					</button>

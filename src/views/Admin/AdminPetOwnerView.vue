@@ -1,51 +1,107 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
-
-type OwnerStatus = 'Normal' | 'Banned'
+import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
 
 interface PetOwner {
-	id: number
-	name: string
-	phone: string
+	id: string
+	name: string | null
+	phone: string | null
 	email: string
 	petCount: number
-	status: OwnerStatus
-	avatar: string
+	isBanned: boolean
+	avatarUrl: string | null
 }
 
+interface OwnerAdminPageResponse {
+	owners: PetOwner[]
+	currentPage: number
+	totalPages: number
+	totalItems: number
+	limit: number
+}
+
+const API_BASE_URL = 'http://localhost:8081/api'
+
+const router = useRouter()
+const store = useAdminPetOwnerStore()
+
+const owners = ref<PetOwner[]>([])
 const searchQuery = ref('')
+const debouncedSearch = ref('')
+const isLoading = ref(false)
+const errorMessage = ref('')
+
 const currentPage = ref(1)
+const totalPages = ref(1)
 const pageSize = 8
 
-const owners: PetOwner[] = [
-	{ id: 1, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 2, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 3, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 4, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Banned', avatar: '/image/dog1.jpg' },
-	{ id: 5, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 6, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 7, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 8, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 9, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-	{ id: 10, name: 'John Wick', phone: '099 996 6734', email: 'johnwicklovedogs@dogorg.com', petCount: 2, status: 'Normal', avatar: '/image/dog1.jpg' },
-]
+// Debounce search input so a request isn't fired on every keystroke
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-const filteredOwners = computed(() => {
-	const query = searchQuery.value.trim().toLowerCase()
-	if (!query) return owners
-	return owners.filter((owner) => [owner.name, owner.phone, owner.email].some((value) => value.toLowerCase().includes(query)))
+watch(searchQuery, (newValue) => {
+	if (debounceTimer) clearTimeout(debounceTimer)
+
+	debounceTimer = setTimeout(() => {
+		debouncedSearch.value = newValue
+	}, 300)
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredOwners.value.length / pageSize)))
+// Reset to first page whenever the search changes
+watch(debouncedSearch, () => {
+	currentPage.value = 1
+})
 
-const paginatedOwners = computed(() => {
-	const start = (currentPage.value - 1) * pageSize
-	return filteredOwners.value.slice(start, start + pageSize)
+// Cancel the previous in-flight request when a newer one is fired
+let abortController: AbortController | null = null
+
+const fetchOwners = async (pageNum: number, currentSearch: string) => {
+	if (abortController) abortController.abort()
+	abortController = new AbortController()
+
+	isLoading.value = true
+	errorMessage.value = ''
+
+	try {
+		const response = await axios.get<OwnerAdminPageResponse>(`${API_BASE_URL}/admin/owners`, {
+			params: {
+				page: pageNum,
+				limit: pageSize,
+				keyword: currentSearch.trim(),
+			},
+			signal: abortController.signal,
+		})
+
+		owners.value = response.data.owners || []
+		totalPages.value = Math.max(1, response.data.totalPages)
+	} catch (error) {
+		if (axios.isCancel(error)) return
+
+		console.error('Failed to fetch pet owners:', error)
+		errorMessage.value = 'Unable to load pet owners. Please try again.'
+		owners.value = []
+	} finally {
+		isLoading.value = false
+	}
+}
+
+watch(
+	[currentPage, debouncedSearch],
+	() => {
+		fetchOwners(currentPage.value, debouncedSearch.value)
+	},
+	{ immediate: true },
+)
+
+onUnmounted(() => {
+	if (debounceTimer) clearTimeout(debounceTimer)
+	if (abortController) abortController.abort()
 })
 
 const updateSearch = () => {
-	currentPage.value = 1
+	// debounce watcher above resets the page once the query settles
 }
 
 const previousPage = () => {
@@ -54,6 +110,14 @@ const previousPage = () => {
 
 const nextPage = () => {
 	if (currentPage.value < totalPages.value) currentPage.value += 1
+}
+
+const avatarUrl = (owner: PetOwner) => owner.avatarUrl || '/image/dog1.jpg'
+
+// share userId of the clicked row with the profile/pets/reviews pages via the store
+const handleSelectOwner = (owner: PetOwner) => {
+	store.selectOwner(owner.id, owner.name)
+	router.push(`/admin/owners/profile/${owner.id}`)
 }
 </script>
 
@@ -85,23 +149,30 @@ const nextPage = () => {
 							<span>Status</span>
 						</div>
 
-						<div v-if="paginatedOwners.length === 0" class="px-3 py-10 text-center text-[10px] text-[#9297a9]">No pet owners found.</div>
-						<div v-for="owner in paginatedOwners" :key="owner.id" class="grid h-[54px] grid-cols-[1.35fr_1fr_1.75fr_0.7fr_0.85fr] items-center border-b border-[#e5e7ef] px-2.5 text-[10px] last:border-b-0 hover:bg-[#fcfcfe]">
+						<div v-if="errorMessage" class="px-3 py-10 text-center text-[10px] text-[#f04444]">{{ errorMessage }}</div>
+						<div v-else-if="isLoading" class="px-3 py-10 text-center text-[10px] text-[#9297a9]">Loading...</div>
+						<div v-else-if="owners.length === 0" class="px-3 py-10 text-center text-[10px] text-[#9297a9]">No pet owners found.</div>
+						<div
+							v-for="owner in owners"
+							:key="owner.id"
+							class="grid h-[54px] grid-cols-[1.35fr_1fr_1.75fr_0.7fr_0.85fr] items-center border-b border-[#e5e7ef] px-2.5 text-[10px] last:border-b-0 hover:bg-[#fcfcfe] cursor-pointer"
+							@click="handleSelectOwner(owner)"
+						>
 							<div class="flex items-center gap-2">
-								<img :src="owner.avatar" :alt="owner.name" class="h-7 w-7 rounded-full object-cover" />
+								<img :src="avatarUrl(owner)" :alt="owner.name ?? ''" class="h-7 w-7 rounded-full object-cover" />
 								<span>{{ owner.name }}</span>
 							</div>
 							<span>{{ owner.phone }}</span>
 							<span class="truncate pr-2">{{ owner.email }}</span>
 							<span>{{ owner.petCount }}</span>
-							<span class="flex items-center gap-1.5" :class="owner.status === 'Normal' ? 'text-[#16c784]' : 'text-[#f04444]'">
-								<span class="h-1 w-1 rounded-full bg-current"></span>{{ owner.status }}
+							<span class="flex items-center gap-1.5" :class="!owner.isBanned ? 'text-[#16c784]' : 'text-[#f04444]'">
+								<span class="h-1 w-1 rounded-full bg-current"></span>{{ owner.isBanned ? 'Banned' : 'Normal' }}
 							</span>
 						</div>
 					</div>
 				</section>
 
-				<nav v-if="filteredOwners.length > 0" class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pet owner pagination">
+				<nav v-if="owners.length > 0" class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pet owner pagination">
 					<button type="button" class="p-1.5 text-[#aab0c1] transition hover:text-[#ff7040] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Previous page" :disabled="currentPage === 1" @click="previousPage">
 						<svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m7.5 2.5-3.5 3.5 3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
 					</button>

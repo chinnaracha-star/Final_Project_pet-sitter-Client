@@ -93,7 +93,7 @@ const fetchBookings = async (sitterId: string) => {
 	isLoading.value = true
 	errorMessage.value = ''
 	try {
-		const response = await axios.get<BookingAdminListItem[]>(`${API_BASE_URL}/bookings/sitter/${sitterId}`)
+		const response = await axios.get<BookingAdminListItem[]>(`${API_BASE_URL}/bookings/admin/sitter/${sitterId}`)
 		bookings.value = response.data.map(mapBooking)
 	} catch (error) {
 		console.error('Failed to fetch sitter bookings:', error)

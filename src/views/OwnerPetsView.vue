@@ -3,11 +3,19 @@ import { onMounted } from 'vue'
 import { Navbar } from '../components'
 import OwnerPageShell from '../components/owner/OwnerPageShell.vue'
 import { useOwnerPetsStore } from '../stores/ownerPets'
+import type { PetTypeName } from '../types/owner'
 
 const pets = useOwnerPetsStore()
 onMounted(() => {
   void pets.load()
 })
+
+const typeBadge: Record<PetTypeName, string> = {
+  Dog: 'bg-green-100 text-green-500',
+  Cat: 'bg-pink-100 text-pink-500',
+  Bird: 'bg-blue-100 text-blue-500',
+  Rabbit: 'bg-yellow-100 text-yellow-500',
+}
 </script>
 
 <template>
@@ -15,29 +23,32 @@ onMounted(() => {
     <template #nav>
       <Navbar />
     </template>
+    <template #actions>
+      <RouterLink to="/owner/pets/new" class="auth-submit inline-flex items-center px-6 no-underline whitespace-nowrap">
+        Create Pet
+      </RouterLink>
+    </template>
 
     <p v-if="pets.error" class="mb-6 auth-notice" role="alert">{{ pets.error }}</p>
     <p v-else-if="pets.loading" class="mb-6 text-primary-500">Loading pets...</p>
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
       <RouterLink
         v-for="pet in pets.pets"
         :key="pet.id"
         :to="`/owner/pets/${pet.id}`"
-        class="overflow-hidden rounded-2xl bg-white shadow-sm no-underline"
+        class="flex flex-col items-center rounded-2xl border border-primary-100 px-4 py-6 no-underline"
       >
-        <img v-if="pet.avatarUrl" :src="pet.avatarUrl" :alt="pet.name" class="h-56 w-full object-cover" />
-        <div v-else class="grid h-56 place-items-center bg-primary-100 text-primary-300">No photo</div>
-        <div class="p-4">
-          <h2 class="text-lg font-bold text-primary-900">{{ pet.name }}</h2>
-          <p class="text-sm text-primary-500">{{ pet.petType }} ({{ pet.ageMonths }} Month)</p>
-        </div>
-      </RouterLink>
-
-      <RouterLink
-        to="/owner/pets/new"
-        class="grid min-h-[280px] place-items-center rounded-2xl border-2 border-dashed border-primary-100 text-primary-300 no-underline"
-      >
-        <span class="text-center text-4xl font-light">+<br /><span class="text-base">Create Pet</span></span>
+        <img
+          v-if="pet.avatarUrl"
+          :src="pet.avatarUrl"
+          :alt="pet.name"
+          class="size-28 rounded-full object-cover"
+        />
+        <div v-else class="grid size-28 place-items-center rounded-full bg-primary-100 text-sm text-primary-300">No photo</div>
+        <h2 class="mt-4 text-center text-base font-bold text-primary-900">{{ pet.name }}</h2>
+        <span class="mt-2 rounded-full px-3 py-0.5 text-sm font-medium" :class="typeBadge[pet.petType]">
+          {{ pet.petType }}
+        </span>
       </RouterLink>
     </div>
   </OwnerPageShell>

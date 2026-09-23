@@ -5,17 +5,6 @@ export type SitterBookingStatus =
   | 'success'
   | 'cancelled'
 
-export interface SitterBooking {
-  id: number
-  ownerName: string
-  ownerAvatar: string
-  petCount: number
-  durationLabel: string
-  bookedDateLabel: string
-  status: SitterBookingStatus
-  hasNewBooking: boolean
-}
-
 export const SITTER_BOOKING_STATUS_LABEL: Record<SitterBookingStatus, string> = {
   waiting_confirm: 'Waiting for confirm',
   waiting_service: 'Waiting for service',

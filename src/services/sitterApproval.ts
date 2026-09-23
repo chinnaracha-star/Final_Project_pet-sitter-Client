@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/auth'
+
 export type ApprovalStatus =
   | 'Unverified'
   | 'Waiting for verify'
@@ -121,7 +123,8 @@ async function request<T>(path: string, options: RequestInit = {}) {
 }
 
 export const currentSitterId = () =>
-  localStorage.getItem('petSitterUserId') || new URLSearchParams(location.search).get('userId')
+  (useAuthStore().role === 'sitter' ? useAuthStore().userId : null)
+  || localStorage.getItem('petSitterUserId') || new URLSearchParams(location.search).get('userId')
 
 export const currentAdminId = () =>
   localStorage.getItem('petSitterAdminId') || new URLSearchParams(location.search).get('adminId')

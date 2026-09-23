@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import SitterLocationMap from '../../components/admin/SitterLocationMap.vue'
+import AdminPetSitterViewProfileRejectConfirmation from './AdminPetSitterView-Profile-RejectConfirmation.vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
-import { useAdminPetSitterStore, type SitterStatus, type AdminTab } from '../../stores/adminPetSitter'
+import { useAdminPetSitterStore, type SitterStatus } from '../../stores/adminPetSitter'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
@@ -38,6 +40,9 @@ interface SitterProfileDetail {
 	experienceYears: string | null
 	pet_sitter_state: number | null
 	approvalStatus: SitterStatus
+	latitude: number | null
+	longitude: number | null
+	listed: boolean
 }
 
 interface SitterProfileDetailResponse {
@@ -51,6 +56,9 @@ const sitterUser = ref<SitterUser | null>(null)
 const petTypes = ref<PetType[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const approvalStatus = ref<SitterStatus | null>(null)
+const isListed = ref(false)
+const showRejectConfirmation = ref(false)
 
 const fetchSitterDetail = async (id: string) => {
 	isLoading.value = true
@@ -60,6 +68,8 @@ const fetchSitterDetail = async (id: string) => {
 		profile.value = response.data.sitterProfile
 		sitterUser.value = response.data.user
 		petTypes.value = response.data.petTypes || []
+		approvalStatus.value = response.data.sitterProfile.approvalStatus
+		isListed.value = response.data.sitterProfile.listed
 	} catch (error) {
 		console.error('Failed to fetch pet sitter profile:', error)
 		errorMessage.value = 'Unable to load pet sitter profile.'
@@ -84,8 +94,79 @@ watch(
 	},
 )
 
-const setApprovalStatus = (status: Exclude<SitterStatus, 'Waiting for approve'>) => {
-	if (store.selectedSitterId !== null) store.setApprovalStatus(status)
+const handleRejectConfirm = async (reason: string) => {
+	showRejectConfirmation.value = false
+	if (!store.selectedSitterId) return
+
+	if (approvalStatus.value === 'Waiting for verify') {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			approvalStatus.value = 'Unverified'
+			store.setApprovalStatus('Unverified')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to reject pet sitter profile:', error)
+			errorMessage.value = 'Unable to reject pet sitter profile.'
+		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			approvalStatus.value = 'Rejected'
+			store.setApprovalStatus('Rejected')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to reject pet sitter profile:', error)
+			errorMessage.value = 'Unable to reject pet sitter profile.'
+		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			approvalStatus.value = 'Rejected'
+			isListed.value = false
+			store.setApprovalStatus('Rejected')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to reject pet sitter profile:', error)
+			errorMessage.value = 'Unable to reject pet sitter profile.'
+		}
+	}
+}
+
+const handleApprove = async () => {
+	if (!store.selectedSitterId) return
+
+	if (approvalStatus.value === 'Waiting for verify') {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/verify`)
+			approvalStatus.value = 'Verified'
+			store.setApprovalStatus('Verified')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to verify pet sitter profile:', error)
+			errorMessage.value = 'Unable to verify pet sitter profile.'
+		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
+			approvalStatus.value = 'Approved'
+			isListed.value = true
+			store.setApprovalStatus('Approved')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to approve pet sitter profile:', error)
+			errorMessage.value = 'Unable to approve pet sitter profile.'
+		}
+	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
+		try {
+			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
+			approvalStatus.value = 'Approved'
+			store.setApprovalStatus('Approved')
+			await fetchSitterDetail(store.selectedSitterId)
+		} catch (error) {
+			console.error('Failed to approve pet sitter profile:', error)
+			errorMessage.value = 'Unable to approve pet sitter profile.'
+		}
+	}
 }
 
 const formatDate = (value: string | null) => {
@@ -113,27 +194,47 @@ const fullAddress = () => {
 						<h1 class="truncate text-[15px] font-bold text-[#252733]">{{ sitterUser?.name ?? store.selectedSitterName ?? profile?.displayName ?? 'Unnamed user' }}</h1>
 						<span class="flex shrink-0 items-center gap-1.5 text-[10px] text-[#ef82b6]">
 							<span class="h-1 w-1 rounded-full bg-current"></span>
-							{{ profile?.approvalStatus ?? store.selectedSitterStatus ?? 'Waiting for approve' }}
+							{{ approvalStatus ?? store.selectedSitterStatus ?? 'Waiting for approve' }}
 						</span>
 					</div>
 
 					<div class="flex items-center gap-3">
-						<button type="button" class="rounded-full bg-[#fff4ef] px-5 py-2 text-[9px] font-semibold text-[#f47755] transition hover:bg-[#ffe6dc]" @click="setApprovalStatus('Rejected')">Reject</button>
-						<button type="button" class="rounded-full bg-[#ff7040] px-5 py-2 text-[9px] font-semibold text-white transition hover:bg-[#f25d2c]" @click="setApprovalStatus('Approved')">Approve</button>
+						<button type="button" class="rounded-full bg-[#fff4ef] px-5 py-2 text-[9px] font-semibold text-[#f47755] transition hover:bg-[#ffe6dc]" @click="showRejectConfirmation = true">Reject</button>
+						<button type="button" class="rounded-full bg-[#ff7040] px-5 py-2 text-[9px] font-semibold text-white transition hover:bg-[#f25d2c]" @click="handleApprove">Approve</button>
 					</div>
 				</header>
 
+				<AdminPetSitterViewProfileRejectConfirmation
+					v-if="showRejectConfirmation"
+					@cancel="showRejectConfirmation = false"
+					@reject="handleRejectConfirm"
+				/>
+
 				<nav class="mt-4 flex gap-2" aria-label="Sitter profile sections">
 					<button
-						v-for="tab in (['Profile', 'Booking', 'Reviews', 'Report'] as AdminTab[])"
-						:key="tab"
 						type="button"
 						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
-						:class="store.activeTab === tab ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
-						@click="store.activeTab = tab"
+						:class="store.activeTab === 'Profile' ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
+						@click="store.activeTab = 'Profile'"
 					>
-						{{ tab }}
+						Profile
 					</button>
+					<RouterLink
+						:to="{ path: '/admin/petsitters/profile/booking', query: { id: store.selectedSitterId ?? undefined } }"
+						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
+						:class="store.activeTab === 'Booking' ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
+						@click="store.activeTab = 'Booking'"
+					>
+						Booking
+					</RouterLink>
+					<RouterLink
+						:to="{ path: '/admin/petsitters/profile/reviews', query: { id: store.selectedSitterId ?? undefined } }"
+						class="rounded-t-md px-5 py-3 text-[11px] font-semibold transition"
+						:class="store.activeTab === 'Reviews' ? 'bg-white text-[#ff7040]' : 'bg-[#e2e5f1] text-[#858b9f] hover:bg-[#d9ddeb]'"
+						@click="store.activeTab = 'Reviews'"
+					>
+						Reviews
+					</RouterLink>
 				</nav>
 
 				<div v-if="isLoading" class="mt-4 rounded-xl bg-white p-8 text-center text-[10px] text-[#9297a9] shadow-[0_1px_3px_rgba(40,45,70,0.02)]">Loading pet sitter profile...</div>
@@ -182,10 +283,8 @@ const fullAddress = () => {
 					<div v-if="profile?.pet_sitter_state === 3" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Address</h2>
 						<p class="mt-1 text-[10px]">{{ fullAddress() || '-' }}</p>
-						<div class="relative mt-5 h-52 overflow-hidden rounded-md bg-[#e5e9e9] bg-[linear-gradient(25deg,transparent_48%,#f4b93c_49%,#f4b93c_51%,transparent_52%),linear-gradient(105deg,transparent_45%,#f7c746_46%,#f7c746_48%,transparent_49%),linear-gradient(160deg,transparent_50%,#b7dbbf_51%,#b7dbbf_64%,transparent_65%)] bg-[length:220px_170px,180px_200px,240px_220px]">
-							<div class="absolute left-[52%] top-[48%] flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#ff7040] shadow-lg">
-								<img src="/image/Map_Pin_Selected.svg" alt="Location" class="h-6 w-6 brightness-0 invert" />
-							</div>
+						<div class="mt-5">
+							<SitterLocationMap :latitude="profile?.latitude ?? null" :longitude="profile?.longitude ?? null" />
 						</div>
 					</div>
 				</section>

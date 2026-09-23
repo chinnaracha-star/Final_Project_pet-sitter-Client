@@ -45,7 +45,7 @@ async function submit() {
       <input
         id="current-password"
         v-model="currentPassword"
-        class="auth-input"
+        class="auth-input rounded-lg!"
         type="password"
         autocomplete="current-password"
         minlength="8"
@@ -56,7 +56,7 @@ async function submit() {
       <input
         id="new-password"
         v-model="newPassword"
-        class="auth-input"
+        class="auth-input rounded-lg!"
         type="password"
         autocomplete="new-password"
         minlength="8"
@@ -67,7 +67,7 @@ async function submit() {
       <input
         id="confirm-password"
         v-model="confirmPassword"
-        class="auth-input"
+        class="auth-input rounded-lg!"
         type="password"
         autocomplete="new-password"
         minlength="8"
@@ -75,7 +75,7 @@ async function submit() {
       />
 
       <div class="mt-8 flex justify-end">
-        <button class="auth-submit max-w-56" type="submit">Change Password</button>
+        <button class="auth-submit w-auto px-8 whitespace-nowrap" type="submit">Change Password</button>
       </div>
       <p v-if="error" class="auth-notice text-red" role="alert">{{ error }}</p>
       <p v-else-if="notice" class="auth-notice" role="status">{{ notice }}</p>

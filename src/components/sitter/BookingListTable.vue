@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { useSitterBookingsStore } from '../../stores/sitterBookings'
 import {
   SITTER_BOOKING_STATUS_CLASS,
@@ -7,6 +8,11 @@ import {
 } from '../../types/sitterBooking'
 
 const bookings = useSitterBookingsStore()
+const router = useRouter()
+function open(id: number) {
+  bookings.markViewed(id)
+  void router.push(`/sitter/bookings/${id}`)
+}
 
 const statusOptions: Array<{ value: 'all' | SitterBookingStatus; label: string }> = [
   { value: 'all', label: 'All status' },
@@ -60,18 +66,18 @@ const statusOptions: Array<{ value: 'all' | SitterBookingStatus; label: string }
             </tr>
           </thead>
           <tbody>
-            <tr v-for="booking in bookings.filteredBookings" :key="booking.id" class="border-t border-primary-100">
+            <tr v-for="booking in bookings.filteredBookings" :key="booking.id" class="cursor-pointer border-t border-primary-100 hover:bg-primary-100/30" tabindex="0" role="link" :aria-label="`Open booking from ${booking.owner.name}`" @click="open(booking.id)" @keydown.enter="open(booking.id)">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
-                  <span v-if="booking.hasNewBooking" class="size-2 shrink-0 rounded-full bg-orange-700" aria-label="New booking" />
+                  <span v-if="booking.status === 'waiting_confirm' && !bookings.viewed.includes(booking.id)" class="size-2 shrink-0 rounded-full bg-orange-700" aria-label="New booking" />
                   <span v-else class="size-2 shrink-0" aria-hidden="true" />
-                  <img :src="booking.ownerAvatar" :alt="booking.ownerName" class="size-10 rounded-full object-cover" />
-                  <span class="font-medium text-primary-900">{{ booking.ownerName }}</span>
+                  <img :src="booking.owner.avatarUrl || '/icon/user.svg'" :alt="booking.owner.name" class="size-10 rounded-full object-cover" />
+                  <span class="font-medium text-primary-900">{{ booking.owner.name }}</span>
                 </div>
               </td>
-              <td class="px-4 py-4 text-primary-700">{{ booking.petCount }}</td>
-              <td class="px-4 py-4 text-primary-700">{{ booking.durationLabel }}</td>
-              <td class="px-4 py-4 text-primary-700">{{ booking.bookedDateLabel }}</td>
+              <td class="px-4 py-4 text-primary-700">{{ booking.pets.length }}</td>
+              <td class="px-4 py-4 text-primary-700">{{ booking.duration }} {{ booking.durationUnit }}</td>
+              <td class="px-4 py-4 text-primary-700">{{ booking.startDate }} · {{ booking.startTime.slice(0, 5) }}–{{ booking.endTime.slice(0, 5) }}</td>
               <td class="px-6 py-4 font-medium" :class="SITTER_BOOKING_STATUS_CLASS[booking.status]">
                 ● {{ SITTER_BOOKING_STATUS_LABEL[booking.status] }}
               </td>

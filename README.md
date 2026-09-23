@@ -2,6 +2,12 @@
 
 Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
+## Pet Sitter demo while the server is pending
+
+เปิด `/sitter/bookings?demo=true` เพื่อเปิดข้อมูลเดโมอย่างชัดเจน จากนั้น Booking List, Booking Detail, Calendar และ Payout จะใช้ booking ชุดเดียวกัน หน้า Messages ใช้แชตเดโมเสมอ ป้าย **Demo data** ระบุหน้าที่ยังไม่อ่านข้อมูลจาก server; ปุ่ม **Reset demo** ล้างสถานะ booking และบัญชีธนาคารที่เก็บในเบราว์เซอร์ ส่วน **Exit demo** กลับไปเรียก API โดยไม่มีการสลับเป็น mock อัตโนมัติ
+
+Profile/Approval ยังต้องใช้ API จริงและบัญชี sitter ที่ล็อกอินอยู่ ฝั่ง server ต้องแก้การเริ่ม Spring context, ผูก sitter/admin endpoint กับ JWT, เพิ่ม endpoint อัปโหลดรูป sitter และตกลง booking payload ที่มี pets ก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
+
 แผนที่ในหน้า Sitter Profile เป็น **preview ฝั่ง client** ด้วย Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก ยังไม่บันทึก lat/lng ลง API
 
 ## Sitter approval flow

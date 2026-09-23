@@ -2,6 +2,12 @@
 
 Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
+## Pet Sitter demo while the server is pending
+
+เปิด `/sitter/bookings?demo=true` เพื่อเปิดข้อมูลเดโมอย่างชัดเจน จากนั้น Booking List, Booking Detail, Calendar และ Payout จะใช้ booking ชุดเดียวกัน หน้า Messages ใช้แชตเดโมเสมอ ป้าย **Demo data** ระบุหน้าที่ยังไม่อ่านข้อมูลจาก server; ปุ่ม **Reset demo** ล้างสถานะ booking และบัญชีธนาคารที่เก็บในเบราว์เซอร์ ส่วน **Exit demo** กลับไปเรียก API โดยไม่มีการสลับเป็น mock อัตโนมัติ
+
+Profile/Approval ยังต้องใช้ API จริงและบัญชี sitter ที่ล็อกอินอยู่ ฝั่ง server ต้องแก้การเริ่ม Spring context, ผูก sitter/admin endpoint กับ JWT, เพิ่ม endpoint อัปโหลดรูป sitter และตกลง booking payload ที่มี pets ก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
+
 แผนที่ในหน้า Sitter Profile เป็น **preview ฝั่ง client** ด้วย Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก ยังไม่บันทึก lat/lng ลง API
 
 ## Sitter approval flow
@@ -32,7 +38,20 @@ Header เหล่านี้เป็นวิธีทดสอบในเ�
 | `GET` | `/api/admin/sitter-approvals` | อ่านรายการที่รอ Admin |
 | `PATCH` | `/api/admin/sitter-approvals/approve?sitterId={uuid}` | อนุมัติและคัดลอก pending ไป live |
 | `PATCH` | `/api/admin/sitter-approvals/reject?sitterId={uuid}` | Reject พร้อม `{ "reason": "..." }` |
-| `GET` | `/api/sitters` | คืนเฉพาะ Sitter ที่ `is_listed=true` |
+| `GET` | `/api/sitters` | ค้นหาและคืนเฉพาะ Sitter ที่ `is_listed=true` |
+| `GET` | `/api/sitters/map` | คืน Sitter ที่ตรง filter และมีพิกัดทั้งหมดสำหรับ Map mode |
+| `GET` | `/api/sitters/{id}` | อ่าน Public Sitter Profile โดยไม่ส่งข้อมูลส่วนตัว |
+| `GET` | `/api/sitters/{id}/reviews` | อ่านรีวิวที่ approved ล่าสุดสูงสุด 5 รายการ |
 | `POST` | `/api/bookings` | สร้าง Booking เมื่อ Sitter ยัง listed เท่านั้น |
 
 `pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร
+
+หน้า `/search` เรียก `/api/sitters` โดยส่ง filter ไปที่ server ทั้งหมด:
+
+```text
+GET /api/sitters?keyword=cat&petType=Cat&petType=Dog&minRating=4&experience=3-5%20Years&page=1&limit=6
+```
+
+Response เป็น object ที่มี `sitters`, `currentPage`, `totalPages`, `totalItems` และ `limit` เพื่อรองรับ server-side pagination
+
+หน้า `/search?view=map` ใช้ `/api/sitters/map` และเก็บ filter/view ไว้ใน query string ส่วนหน้า Public Profile อยู่ที่ `/sitters/{id}` โดยแสดงที่อยู่และพิกัดจริงของ Sitter ตามข้อมูลที่ได้รับอนุมัติ

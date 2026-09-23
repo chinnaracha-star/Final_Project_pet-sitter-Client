@@ -1,10 +1,23 @@
 <script setup lang="ts">
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import axios from 'axios'
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import AdminPetSitterViewBookingDetail from './AdminPetSitterView-Booking-Detail.vue'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
 
 const store = useAdminPetSitterStore()
+const route = useRoute()
+
+const API_BASE_URL = 'http://localhost:8081/api'
 
 type BookingStatus = 'Waiting for confirm' | 'Waiting for service' | 'In service' | 'Success' | 'Canceled'
+
+interface PetDetail {
+	name: string
+	type: string
+	image: string
+}
 
 interface Booking {
 	ownerName: string
@@ -12,18 +25,31 @@ interface Booking {
 	duration: string
 	bookedDate: string
 	status: BookingStatus
+	pets: PetDetail[]
+	totalPaid: string
 }
 
-const bookings: Booking[] = [
-	{ ownerName: 'John Wick', petCount: 2, duration: '3 hours', bookedDate: '25 Aug, 7 AM - 10 AM', status: 'Waiting for confirm' },
-	{ ownerName: 'Robert Jr.', petCount: 1, duration: '24 hours', bookedDate: '12 Aug, 7 AM - 13 Aug, 7 AM', status: 'Waiting for confirm' },
-	{ ownerName: 'Maren Press', petCount: 6, duration: '2 hours', bookedDate: '2 Aug, 7 AM - 9 AM', status: 'Waiting for service' },
-	{ ownerName: 'Lincoln Vaccaro', petCount: 4, duration: '3 hours', bookedDate: '25 Aug, 7 AM - 10 AM', status: 'In service' },
-	{ ownerName: 'Andaman R', petCount: 2, duration: '3 hours', bookedDate: '25 Aug, 7 AM - 10 AM', status: 'Success' },
-	{ ownerName: 'Pakwan', petCount: 2, duration: '3 hours', bookedDate: '25 Aug, 7 AM - 10 AM', status: 'Success' },
-	{ ownerName: 'Chatchai Haithong', petCount: 2, duration: '3 hours', bookedDate: '25 Aug, 7 AM - 10 AM', status: 'Canceled' },
-	{ ownerName: 'Steve J.', petCount: 2, duration: '3 hours', bookedDate: '25 Aug, 7 AM - 10 AM', status: 'Success' },
-]
+// raw shape returned by GET /api/bookings/sitter/{sitterId} (bookings joined with users, booking_pets and pets)
+interface BookingAdminPetItem {
+	id: number
+	name: string | null
+	type: string | null
+	avatarUrl: string | null
+}
+
+interface BookingAdminListItem {
+	id: number
+	ownerName: string | null
+	totalPrice: number
+	duration: number
+	durationUnit: string
+	startDate: string
+	startTime: string
+	endDate: string
+	endTime: string
+	status: string
+	pets: BookingAdminPetItem[]
+}
 
 const statusClass: Record<BookingStatus, string> = {
 	'Waiting for confirm': 'text-[#ef82b6]',
@@ -32,6 +58,68 @@ const statusClass: Record<BookingStatus, string> = {
 	Success: 'text-[#16c98d]',
 	Canceled: 'text-[#ff4242]',
 }
+
+const statusLabel: Record<string, BookingStatus> = {
+	waiting_confirm: 'Waiting for confirm',
+	waiting_service: 'Waiting for service',
+	in_service: 'In service',
+	success: 'Success',
+	canceled: 'Canceled',
+}
+
+const bookings = ref<Booking[]>([])
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const formatBookedDate = (startDate: string, startTime: string) => {
+	const date = new Date(`${startDate}T${startTime}`)
+	if (Number.isNaN(date.getTime())) return `${startDate}, ${startTime}`
+	const day = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+	const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(':00', '')
+	return `${day}, ${time}`
+}
+
+const mapBooking = (item: BookingAdminListItem): Booking => ({
+	ownerName: item.ownerName ?? 'Unknown',
+	petCount: item.pets.length,
+	duration: `${item.duration} ${item.durationUnit}`,
+	bookedDate: formatBookedDate(item.startDate, item.startTime),
+	status: statusLabel[item.status] ?? 'Waiting for confirm',
+	pets: item.pets.map((pet) => ({ name: pet.name ?? 'Unknown', type: pet.type ?? 'Pet', image: pet.avatarUrl ?? '' })),
+	totalPaid: `${item.totalPrice.toFixed(2)} THB`,
+})
+
+const fetchBookings = async (sitterId: string) => {
+	isLoading.value = true
+	errorMessage.value = ''
+	try {
+		const response = await axios.get<BookingAdminListItem[]>(`${API_BASE_URL}/bookings/admin/sitter/${sitterId}`)
+		bookings.value = response.data.map(mapBooking)
+	} catch (error) {
+		console.error('Failed to fetch sitter bookings:', error)
+		errorMessage.value = 'Unable to load bookings.'
+	} finally {
+		isLoading.value = false
+	}
+}
+
+const selectedBooking = ref<Booking | null>(null)
+
+// fall back to the userId in the URL (e.g. after a page refresh) when the store hasn't been populated yet
+onMounted(() => {
+	const queryId = route.query.id
+	if (!store.selectedSitterId && typeof queryId === 'string') {
+		store.selectedSitterId = queryId
+	}
+	if (store.selectedSitterId) fetchBookings(store.selectedSitterId)
+})
+
+watch(
+	() => store.selectedSitterId,
+	(id) => {
+		if (id) fetchBookings(id)
+	},
+)
 </script>
 
 <template>
@@ -79,7 +167,10 @@ const statusClass: Record<BookingStatus, string> = {
 				</nav>
 
 				<section class="mt-0 overflow-hidden rounded-xl bg-white px-5 py-6 shadow-[0_1px_3px_rgba(40,45,70,0.02)] sm:px-6 sm:py-6">
-					<div class="overflow-x-auto">
+					<p v-if="isLoading" class="px-1 py-4 text-[11px] text-[#858b9f]">Loading bookings…</p>
+					<p v-else-if="errorMessage" class="px-1 py-4 text-[11px] text-[#ff4242]">{{ errorMessage }}</p>
+					<p v-else-if="bookings.length === 0" class="px-1 py-4 text-[11px] text-[#858b9f]">No bookings found.</p>
+					<div v-else class="overflow-x-auto">
 						<table class="w-full min-w-[680px] table-fixed border-collapse text-left text-[10px] text-[#16181d]">
 							<caption class="sr-only">Booking records for {{ store.selectedSitterName ?? 'the selected pet sitter' }}</caption>
 							<colgroup>
@@ -99,7 +190,12 @@ const statusClass: Record<BookingStatus, string> = {
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="booking in bookings" :key="`${booking.ownerName}-${booking.bookedDate}`" class="border-b border-[#e5e8f0] last:border-b-0">
+								<tr
+									v-for="booking in bookings"
+									:key="`${booking.ownerName}-${booking.bookedDate}`"
+									class="cursor-pointer border-b border-[#e5e8f0] last:border-b-0 hover:bg-[#f7f8fc]"
+									@click="selectedBooking = booking"
+								>
 									<td class="px-3 py-[15px] font-medium">
 										<span v-if="booking.status === 'Waiting for confirm'" class="mr-2 inline-block h-1 w-1 rounded-full bg-[#ff7040] align-middle"></span>
 										{{ booking.ownerName }}
@@ -117,5 +213,15 @@ const statusClass: Record<BookingStatus, string> = {
 				</section>
 			</div>
 		</main>
+
+		<AdminPetSitterViewBookingDetail
+			v-if="selectedBooking"
+			:owner-name="selectedBooking.ownerName"
+			:pets="selectedBooking.pets"
+			:duration="selectedBooking.duration"
+			:booking-date="selectedBooking.bookedDate"
+			:total-paid="selectedBooking.totalPaid"
+			@close="selectedBooking = null"
+		/>
 	</div>
 </template>

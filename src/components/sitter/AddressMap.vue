@@ -9,11 +9,15 @@ const props = defineProps<{
   subDistrict: string
   province: string
   postCode: string
+  latitude?: number | null
+  longitude?: number | null
 }>()
+const emit = defineEmits<{ coordinates: [latitude: number | null, longitude: number | null] }>()
 
 const mapEl = ref<HTMLElement | null>(null)
 const lat = ref(13.7563)
 const lon = ref(100.5018)
+const lookupError = ref('')
 let map: L.Map | undefined
 let marker: L.Marker | undefined
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -44,22 +48,34 @@ async function lookup() {
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`)
     const data = await res.json() as { lat: string; lon: string }[]
-    if (!data[0]) return
+    if (!data[0]) {
+      lookupError.value = 'Could not find this address on the map. Please check the address.'
+      emit('coordinates', null, null)
+      return
+    }
     lat.value = Number(data[0].lat)
     lon.value = Number(data[0].lon)
+    lookupError.value = ''
+    emit('coordinates', lat.value, lon.value)
     movePin()
   } catch {
-    // keep last / default pin
+    lookupError.value = 'Map lookup is unavailable. The address can still be edited.'
+    emit('coordinates', null, null)
   }
 }
 
 watch(query, () => {
   clearTimeout(timer)
+  emit('coordinates', null, null)
   timer = setTimeout(lookup, 700)
 })
 
 onMounted(async () => {
   if (!mapEl.value) return
+  if (props.latitude != null && props.longitude != null) {
+    lat.value = props.latitude
+    lon.value = props.longitude
+  }
   map = L.map(mapEl.value).setView([lat.value, lon.value], 13)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -68,6 +84,7 @@ onMounted(async () => {
   await nextTick()
   map.invalidateSize()
   window.setTimeout(() => map?.invalidateSize(), 300)
+  if (props.latitude == null && query.value.replace(/, Thailand$/, '').trim().length >= 3) void lookup()
 })
 
 onUnmounted(() => {
@@ -81,7 +98,8 @@ onUnmounted(() => {
 <template>
   <figure class="address-map">
     <div ref="mapEl" class="map-canvas" role="img" aria-label="Address map preview"></div>
-    <figcaption>แผนที่ preview ฝั่ง client ด้วย Leaflet ยังไม่บันทึกพิกัดลง API</figcaption>
+    <figcaption v-if="lookupError" role="status">{{ lookupError }}</figcaption>
+    <figcaption v-else>Map location will be included with your profile when the address is found.</figcaption>
   </figure>
 </template>
 

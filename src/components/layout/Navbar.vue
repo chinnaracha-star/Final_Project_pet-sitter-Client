@@ -12,7 +12,7 @@ const isAccountOpen = ref(false)
 const ownerLinks = [
   { to: '/owner/profile', label: 'Profile', icon: '/icon/profile.svg' },
   { to: '/owner/pets', label: 'Your Pet', icon: '/icon/paw.svg' },
-  { to: '/owner/bookings', label: 'History', icon: '/icon/list.svg' },
+  { to: '/owner/bookings', label: 'Booking History', icon: '/icon/list.svg' },
   { to: '/owner/password', label: 'Change Password', icon: '/icon/settings.svg' },
 ]
 
@@ -22,10 +22,11 @@ watch(() => route.fullPath, () => {
 })
 
 function logout() {
-  auth.logout()
-  isAccountOpen.value = false
-  isMobileMenuOpen.value = false
-  void router.push('/')
+  void auth.logout().then(() => {
+    isAccountOpen.value = false
+    isMobileMenuOpen.value = false
+    void router.push('/')
+  })
 }
 </script>
 
@@ -39,6 +40,14 @@ function logout() {
 
       <div class="hidden md:flex items-center gap-8">
         <template v-if="auth.isOwnerLoggedIn">
+          <button
+            type="button"
+            class="grid size-11 place-items-center rounded-full text-primary-300"
+            aria-label="Notifications are not available yet"
+            disabled
+          >
+            <img src="/navbar/icon-bell.svg" alt="" class="size-6" />
+          </button>
           <div class="relative">
             <button
               type="button"
@@ -47,7 +56,8 @@ function logout() {
               aria-haspopup="menu"
               @click="isAccountOpen = !isAccountOpen"
             >
-              <img :src="auth.profile.avatarUrl" alt="" class="size-10 rounded-full object-cover" />
+              <img v-if="auth.profile.avatarUrl" :src="auth.profile.avatarUrl" alt="" class="size-10 rounded-full object-cover" />
+              <span v-else class="grid size-10 place-items-center rounded-full bg-primary-100 text-sm font-bold">{{ auth.profile.name.slice(0, 1) || 'U' }}</span>
               <img src="/icon/chevron-down.svg" alt="" class="size-4" />
             </button>
             <div
@@ -76,6 +86,12 @@ function logout() {
               </button>
             </div>
           </div>
+        </template>
+        <template v-else-if="auth.isLoggedIn">
+          <RouterLink to="/sitter/profile" class="text-sm font-medium text-[#292A36] hover:text-[#FF6525] transition-colors">
+            Sitter Profile
+          </RouterLink>
+          <button type="button" class="text-sm font-medium text-orange-700" @click="logout">Log out</button>
         </template>
         <template v-else>
           <RouterLink to="/register" class="text-sm font-medium text-[#292A36] hover:text-[#FF6525] transition-colors">
@@ -119,6 +135,10 @@ function logout() {
         >
           {{ link.label }}
         </RouterLink>
+        <button type="button" class="block py-2 text-base font-medium text-orange-700" @click="logout">Log out</button>
+      </template>
+      <template v-else-if="auth.isLoggedIn">
+        <RouterLink to="/sitter/profile" class="block py-2 text-base font-medium text-[#292A36]">Sitter Profile</RouterLink>
         <button type="button" class="block py-2 text-base font-medium text-orange-700" @click="logout">Log out</button>
       </template>
       <template v-else>

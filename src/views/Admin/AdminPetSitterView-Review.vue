@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import axios from 'axios'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
 
 const store = useAdminPetSitterStore()
+const route = useRoute()
+
+const API_BASE_URL = 'http://localhost:8081/api'
 
 interface Review {
 	id: number
@@ -13,51 +19,73 @@ interface Review {
 	avatar: string
 }
 
-const reviews: Review[] = [
-	{
-		id: 1,
-		name: 'David M.',
-		date: 'Aug 16, 2023',
-		rating: 4,
-		comment: 'I recently had the pleasure of entrusting Jane Maison with the care of my two energetic Labrador Retrievers, Max and Bella, while I was away on a business trip. I can confidently say that Jane exceeded all my expectations as a pet sitter.',
-		avatar: '/image/dog1.jpg',
-	},
-	{
-		id: 2,
-		name: 'Emily B.',
-		date: 'Aug 16, 2023',
-		rating: 5,
-		comment: 'I cannot express how grateful I am to have found Jane Maison as a pet sitter for my cat, Whiskers. Jane took the time to understand Whiskers’ routines, likes, and quirks. During my recent vacation, she provided regular updates, including photos of Whiskers playing, lounging, and even eating his favorite treats.',
-		avatar: '/image/cat.jpg',
-	},
-	{
-		id: 3,
-		name: 'Emily B.',
-		date: 'Aug 16, 2023',
-		rating: 5,
-		comment: 'Jane Maison did a great job looking after my energetic dog, Buddy. While I was away, she made sure Buddy got his exercise and kept up with his feeding schedule. I appreciated the updates she sent, although I would have liked a bit more frequent communication.',
-		avatar: '/image/dog2.jpg',
-	},
-	{
-		id: 4,
-		name: 'Emily B.',
-		date: 'Aug 16, 2023',
-		rating: 4,
-		comment: 'Jane Maison is a lifesaver! She took care of my rambunctious rabbit, Floppy, while I was away on vacation. Floppy can be quite picky, but Jane knew just how to keep her happy and entertained. I received adorable photos of Floppy munching on her favorite greens and exploring new play areas.',
-		avatar: '/image/blackcat.jpg',
-	},
-	{
-		id: 5,
-		name: 'Emily B.',
-		date: 'Aug 16, 2023',
-		rating: 4,
-		comment: 'Jane Maison took care of my cat during my vacation. While my cat seemed fine when I returned, I wish there had been more communication and updates about his well-being.',
-		avatar: '/image/bird.jpg',
-	},
-]
+// raw shape returned by GET /api/reviews/sitter/{sitterId} (reviews joined with users)
+interface ReviewAdminListItem {
+	id: number
+	ownerName: string | null
+	ownerAvatarUrl: string | null
+	createdAt: string
+	rating: number
+	comment: string | null
+}
 
-const removeReview = (id: number) => {
-	console.info(`Review ${id} marked for removal`)
+const reviews = ref<Review[]>([])
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const formatDate = (value: string) => {
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) return value
+	return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const mapReview = (item: ReviewAdminListItem): Review => ({
+	id: item.id,
+	name: item.ownerName ?? 'Unknown',
+	date: formatDate(item.createdAt),
+	rating: item.rating,
+	comment: item.comment ?? '',
+	avatar: item.ownerAvatarUrl ?? '/image/dog1.jpg',
+})
+
+const fetchReviews = async (sitterId: string) => {
+	isLoading.value = true
+	errorMessage.value = ''
+	try {
+		const response = await axios.get<ReviewAdminListItem[]>(`${API_BASE_URL}/reviews/sitter/${sitterId}`)
+		reviews.value = response.data.map(mapReview)
+	} catch (error) {
+		console.error('Failed to fetch sitter reviews:', error)
+		errorMessage.value = 'Unable to load reviews.'
+	} finally {
+		isLoading.value = false
+	}
+}
+
+// fall back to the userId in the URL (e.g. after a page refresh) when the store hasn't been populated yet
+onMounted(() => {
+	const queryId = route.query.id
+	if (!store.selectedSitterId && typeof queryId === 'string') {
+		store.selectedSitterId = queryId
+	}
+	if (store.selectedSitterId) fetchReviews(store.selectedSitterId)
+})
+
+watch(
+	() => store.selectedSitterId,
+	(id) => {
+		if (id) fetchReviews(id)
+	},
+)
+
+const removeReview = async (id: number) => {
+	try {
+		await axios.delete(`${API_BASE_URL}/reviews/${id}`)
+		reviews.value = reviews.value.filter((review) => review.id !== id)
+	} catch (error) {
+		console.error('Failed to remove review:', error)
+		errorMessage.value = 'Unable to remove review.'
+	}
 }
 
 const approveReview = (id: number) => {
@@ -105,6 +133,9 @@ const approveReview = (id: number) => {
 				</nav>
 
 				<section class="rounded-xl bg-white px-4 py-3 shadow-[0_1px_3px_rgba(40,45,70,0.02)] sm:px-5">
+					<p v-if="isLoading" class="px-1 py-4 text-[11px] text-[#858b9f]">Loading reviews…</p>
+					<p v-else-if="errorMessage" class="px-1 py-4 text-[11px] text-[#ff4242]">{{ errorMessage }}</p>
+					<p v-else-if="reviews.length === 0" class="px-1 py-4 text-[11px] text-[#858b9f]">No reviews found.</p>
 					<article v-for="review in reviews" :key="review.id" class="grid gap-3 border-b border-[#e5e8f0] py-5 last:border-b-0 sm:grid-cols-[80px_minmax(0,1fr)_70px] sm:gap-4">
 						<div class="flex items-start gap-2 sm:justify-center">
 							<img :src="review.avatar" :alt="`${review.name} avatar`" class="h-7 w-7 shrink-0 rounded-full object-cover" />

@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+
+const router = useRouter()
+const API_BASE_URL = 'http://localhost:8081/api'
 
 type ReportStatus = 'New Report' | 'Pending' | 'Resolved' | 'Canceled'
 
@@ -13,27 +18,72 @@ interface Report {
 	status: ReportStatus
 }
 
-const selectedStatus = ref<'All status' | ReportStatus>('All status')
+// raw shape returned by GET /api/reports (reports joined with bookings, sitter_profiles/users and owner users)
+interface ReportAdminListItem {
+	id: number
+	userName: string | null
+	reportedPersonName: string | null
+	issue: string
+	createdAt: string
+	status: string
+}
 
-const reports: Report[] = [
-	{ id: 1, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'New Report' },
-	{ id: 2, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'New Report' },
-	{ id: 3, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Pending' },
-	{ id: 4, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Pending' },
-	{ id: 5, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Resolved' },
-	{ id: 6, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Canceled' },
-	{ id: 7, user: 'John Wick', reportedPerson: 'Jane Maison', issue: 'My daisy look sad..', dateSubmitted: '25 Aug, 2023', status: 'Resolved' },
-]
+const selectedStatus = ref<'All status' | ReportStatus>('All status')
+const reports = ref<Report[]>([])
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const statusLabel: Record<string, ReportStatus> = {
+	new_report: 'New Report',
+	pending: 'Pending',
+	resolved: 'Resolved',
+	canceled: 'Canceled',
+}
+
+const formatDate = (value: string) => {
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) return value
+	return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const mapReport = (item: ReportAdminListItem): Report => ({
+	id: item.id,
+	user: item.userName ?? 'Unknown',
+	reportedPerson: item.reportedPersonName ?? 'Unknown',
+	issue: item.issue,
+	dateSubmitted: formatDate(item.createdAt),
+	status: statusLabel[item.status] ?? 'New Report',
+})
+
+const fetchReports = async () => {
+	isLoading.value = true
+	errorMessage.value = ''
+	try {
+		const response = await axios.get<ReportAdminListItem[]>(`${API_BASE_URL}/reports`)
+		reports.value = response.data.map(mapReport)
+	} catch (error) {
+		console.error('Failed to fetch reports:', error)
+		errorMessage.value = 'Unable to load reports.'
+	} finally {
+		isLoading.value = false
+	}
+}
+
+onMounted(fetchReports)
 
 const filteredReports = computed(() => selectedStatus.value === 'All status'
-	? reports
-	: reports.filter((report) => report.status === selectedStatus.value))
+	? reports.value
+	: reports.value.filter((report) => report.status === selectedStatus.value))
 
 const statusClass: Record<ReportStatus, string> = {
 	'New Report': 'text-[#ef82b6]',
 	Pending: 'text-[#57b7ef]',
 	Resolved: 'text-[#16c98d]',
 	Canceled: 'text-[#ff4242]',
+}
+
+const goToDetail = (id: number) => {
+	router.push(`/admin/reports/${id}`)
 }
 </script>
 
@@ -59,7 +109,9 @@ const statusClass: Record<ReportStatus, string> = {
 				</header>
 
 				<section class="overflow-hidden rounded-xl bg-white shadow-[0_1px_3px_rgba(40,45,70,0.02)]">
-					<div class="overflow-x-auto">
+					<p v-if="isLoading" class="px-3 py-10 text-center text-[10px] text-[#9298ab]">Loading reports…</p>
+					<p v-else-if="errorMessage" class="px-3 py-10 text-center text-[10px] text-[#ff4242]">{{ errorMessage }}</p>
+					<div v-else class="overflow-x-auto">
 						<table class="w-full min-w-[680px] table-fixed border-collapse text-left text-[10px] text-[#171923]">
 							<caption class="sr-only">Submitted reports</caption>
 							<colgroup>
@@ -79,7 +131,12 @@ const statusClass: Record<ReportStatus, string> = {
 								</tr>
 							</thead>
 							<tbody>
-								<tr v-for="report in filteredReports" :key="report.id" class="border-b border-[#e5e8f0] last:border-b-0">
+								<tr
+									v-for="report in filteredReports"
+									:key="report.id"
+									class="cursor-pointer border-b border-[#e5e8f0] last:border-b-0 hover:bg-[#f7f8fc]"
+									@click="goToDetail(report.id)"
+								>
 									<td class="px-3 py-[15px]">{{ report.user }}</td>
 									<td class="px-3 py-[15px]">{{ report.reportedPerson }}</td>
 									<td class="truncate px-3 py-[15px]">{{ report.issue }}</td>

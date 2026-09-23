@@ -1,13 +1,6 @@
 <script setup lang="ts">
-export interface BenefitItem {
-  id: string
-  image: string
-  highlightWord: string
-  highlightColor: string
-  remainingTitle: string
-  line1: string
-  line2: string
-}
+import type { BenefitItem } from '../../types/landing'
+export type { BenefitItem }
 
 const benefits: BenefitItem[] = [
   {

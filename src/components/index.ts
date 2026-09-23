@@ -8,3 +8,6 @@ export * from './common'
 export * from './landing'
 
 export * from './chat'
+
+// Booking components
+export * from './booking'

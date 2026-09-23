@@ -21,8 +21,22 @@ const router = createRouter({
     { path: '/sitter/bookings/:id', component: () => import('../views/SitterBookingDetailView.vue') },
     { path: '/sitter/calendar', component: () => import('../views/SitterCalendarView.vue') },
     { path: '/sitter/payout', component: () => import('../views/SitterPayoutView.vue') },
+    { path: '/booking', component: () => import('../views/BookingView.vue') },
+    { path: '/booking/pet', component: () => import('../views/BookingView.vue') },
+    { path: '/booking/information', component: () => import('../views/BookingView.vue') },
+    { path: '/booking/payment', component: () => import('../views/BookingView.vue') },
+    { path: '/booking/thank-you', component: () => import('../views/BookingView.vue') },
+    { path: '/booking/:sitterId', component: () => import('../views/BookingView.vue') },
     { path: '/sitters', redirect: '/search' },
     { path: '/admin/petsitters', alias: '/admin/sitters', component: () => import('../views/Admin/AdminPetSitterView.vue') },
+    { path: '/admin/owners', component: () => import('../views/Admin/AdminPetOwnerView.vue') },
+      { path: '/admin/owners/profile/:id', component: () => import('../views/Admin/AdminPetOwnerView-Profile.vue') },
+    { path: '/admin/owners/profile/:id/ban', component: () => import('../views/Admin/AdminPetOwnerView-Profile-Ban.vue') },
+    { path: '/admin/owners/profile/:id/unban', component: () => import('../views/Admin/AdminPetOwnerView-Profile-Unban.vue') },
+      { path: '/admin/owners/profile/:id/pets', component: () => import('../views/Admin/AdminPetOwnerView-Pet.vue') },
+    { path: '/admin/owners/profile/:id/pets/:petId', component: () => import('../views/Admin/AdminPetOwnerView-Pet-Detail.vue') },
+    { path: '/admin/owners/profile/:id/pets/:petId/suspend', component: () => import('../views/Admin/AdminPetOwnerView-Pet-Suspend.vue') },
+    { path: '/admin/owners/profile/reviews', component: () => import('../views/Admin/AdminPetOwnerView-Review.vue') },
     { path: '/admin/map', component: () => import('../views/Admin/MapView.vue') },
     { path: '/admin/reports', component: () => import('../views/Admin/AdminPetSitterView-Report.vue') },
     { path: '/admin/reports/:id', component: () => import('../views/Admin/AdminPetSitterView-Report-Detail.vue') },
@@ -34,6 +48,11 @@ const router = createRouter({
 })
 
 router.beforeEach(to => {
+  if (to.meta.owner && !useAuthStore().isOwnerLoggedIn
+      && to.path === '/owner/pets/new'
+      && String(to.query.redirect || '').includes('/booking')) {
+    return true
+  }
   const auth = useAuthStore()
   if (to.path.startsWith('/admin')) {
     if (!auth.isLoggedIn) return { path: '/login' }

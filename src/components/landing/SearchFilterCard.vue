@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-export interface SearchFilterState {
-  petTypes: string[]
-  rating: number | null
-  experience: string
-}
+import type { SearchFilterState } from '../../types/landing'
+export type { SearchFilterState }
 
 const props = withDefaults(
   defineProps<{

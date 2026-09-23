@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Footer, Navbar } from '../components'
 import SitterLocationMap from '../components/search/SitterLocationMap.vue'
+import { BookingCalendarModal, type BookingSchedule } from '../components/booking'
+import { useBookingStore } from '../stores/booking'
 import {
   getPublicSitter,
   getPublicSitterReviews,
@@ -11,11 +13,14 @@ import {
 } from '../services/sitterApproval'
 
 const route = useRoute()
+const router = useRouter()
+const bookingStore = useBookingStore()
 const profile = ref<PublicSitterDetail | null>(null)
 const reviews = ref<PublicReview[]>([])
 const loading = ref(true)
 const notice = ref('')
 const notFound = ref(false)
+const isBookingCalendarOpen = ref(false)
 
 const fallbackGallery = [
   '/image/services-cat-large.png',
@@ -74,6 +79,35 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function handleBookNow() {
+  if (!profile.value) return
+  isBookingCalendarOpen.value = true
+}
+
+function handleCalendarContinue(schedule: BookingSchedule) {
+  if (!profile.value) return
+
+  // Calculate dynamic hourly rate based on sitter experience or profile
+  const years = parseFloat(profile.value.experienceYears || '1.5')
+  let rate = 200
+  if (!isNaN(years)) {
+    if (years >= 5) rate = 300
+    else if (years >= 3) rate = 250
+    else if (years >= 2) rate = 220
+    else rate = 200
+  }
+
+  bookingStore.setSitter({
+    id: profile.value.userId,
+    placeName: profile.value.displayName || profile.value.myPlace || 'Pet Sitter House',
+    ownerName: profile.value.ownerName || 'Verified Sitter',
+    hourlyRate: rate,
+  })
+  bookingStore.setSchedule(schedule)
+  isBookingCalendarOpen.value = false
+  void router.push('/booking/pet')
+}
 </script>
 
 <template>
@@ -217,7 +251,7 @@ onMounted(async () => {
             </div>
             <div class="booking-actions">
               <button class="message-button" type="button" disabled>Send Message</button>
-              <button class="book-button" type="button" disabled>Book Now</button>
+              <button class="book-button" type="button" @click="handleBookNow">Book Now</button>
             </div>
           </div>
         </aside>
@@ -231,6 +265,15 @@ onMounted(async () => {
         <RouterLink to="/search">Back to Search</RouterLink>
       </div>
     </main>
+
+    <!-- Booking Calendar Popup Modal -->
+    <BookingCalendarModal
+      :open="isBookingCalendarOpen"
+      :as-modal="true"
+      :has-backdrop="true"
+      @close="isBookingCalendarOpen = false"
+      @continue="handleCalendarContinue"
+    />
 
     <Footer />
   </div>
@@ -301,9 +344,10 @@ onMounted(async () => {
 .booking-address img { width: 12px; height: 12px; flex: 0 0 auto; opacity: .55; }
 .booking-tags { justify-content: center; margin-top: 15px; }
 .booking-actions { padding: 14px 17px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid #eceef2; }
-.booking-actions button { height: 36px; margin: 0; border: 0; border-radius: 20px; font-size: 9px; font-weight: 750; cursor: not-allowed; opacity: 1; }
-.message-button { background: #fff0ea; color: #ff6525; }
-.book-button { background: #ff6525; color: #fff; box-shadow: 0 7px 16px -9px #ff6525; }
+.booking-actions button { height: 36px; margin: 0; border: 0; border-radius: 20px; font-size: 9px; font-weight: 750; opacity: 1; }
+.message-button { background: #fff0ea; color: #ff6525; cursor: not-allowed; }
+.book-button { background: #ff6525; color: #fff; box-shadow: 0 7px 16px -9px #ff6525; cursor: pointer !important; transition: all 200ms ease; }
+.book-button:hover { background: #e54f12; transform: translateY(-1px); }
 .not-found-page { display: grid; place-items: center; }
 .not-found-card { width: min(100%, 460px); padding: 55px 32px; border-radius: 24px; background: white; box-shadow: 0 22px 55px -38px rgb(31 34 45 / 35%); text-align: center; }
 .not-found-icon { color: #ff6525; font-size: 48px; font-weight: 800; }

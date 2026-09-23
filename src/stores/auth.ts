@@ -26,13 +26,25 @@ function toProfile(me: AuthMe): OwnerProfile {
   }
 }
 
+const defaultMockProfile: OwnerProfile = {
+  name: 'Jane Doe',
+  email: 'jane.doe@example.com',
+  phone: '081-234-5678',
+  idNumber: '1234567890123',
+  dateOfBirth: '1995-05-15',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+}
+
 export const useAuthStore = defineStore('auth', () => {
-  const role = ref<AuthRole | null>(null)
-  const profile = ref<OwnerProfile>({ ...emptyProfile })
-  const userId = ref<string | null>(null)
-  const profileComplete = ref(false)
+  const isExplicitlyLoggedOut = typeof window !== 'undefined' && sessionStorage.getItem('pet_sitter_dev_logged_out') === 'true'
+  const shouldMockOwner = !isSupabaseConfigured && !isExplicitlyLoggedOut
+
+  const role = ref<AuthRole | null>(shouldMockOwner ? 'owner' : null)
+  const profile = ref<OwnerProfile>(shouldMockOwner ? { ...defaultMockProfile } : { ...emptyProfile })
+  const userId = ref<string | null>(shouldMockOwner ? 'mock-user-123' : null)
+  const profileComplete = ref(shouldMockOwner)
   const isAdmin = ref(false)
-  const ready = ref(false)
+  const ready = ref(!isSupabaseConfigured)
 
   const isLoggedIn = computed(() => role.value !== null)
   const isOwnerLoggedIn = computed(() => role.value === 'owner')
@@ -69,7 +81,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function register(input: { name: string; email: string; phone: string; password: string; role: AuthRole }) {
-    if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+    if (!isSupabaseConfigured) {
+      sessionStorage.removeItem('pet_sitter_dev_logged_out')
+      role.value = input.role
+      profile.value = {
+        ...defaultMockProfile,
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+      }
+      userId.value = 'mock-user-123'
+      profileComplete.value = true
+      return
+    }
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
@@ -82,8 +106,19 @@ export const useAuthStore = defineStore('auth', () => {
     applyMe(await bootstrapAccount(input.name, input.phone, input.role))
   }
 
-  async function login(email: string, password: string) {
-    if (!isSupabaseConfigured) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  async function login(email: string, password: string, roleHint: AuthRole = 'owner') {
+    if (!isSupabaseConfigured) {
+      sessionStorage.removeItem('pet_sitter_dev_logged_out')
+      role.value = roleHint
+      profile.value = {
+        ...defaultMockProfile,
+        email: email || defaultMockProfile.email,
+        name: email ? email.split('@')[0] : defaultMockProfile.name,
+      }
+      userId.value = 'mock-user-123'
+      profileComplete.value = true
+      return
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw new Error(error.message)
     const { data: userData } = await supabase.auth.getUser()
@@ -105,6 +140,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function changePassword(currentPassword: string, newPassword: string) {
+    if (!isSupabaseConfigured) return
     const email = profile.value.email
     const { error: reauthError } = await supabase.auth.signInWithPassword({ email, password: currentPassword })
     if (reauthError) throw new Error('Current password is incorrect.')
@@ -113,17 +149,24 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function updateOwnerProfile(next: Omit<OwnerProfile, 'email'> & { email?: string }) {
-    applyMe(await saveOwnerProfile({
-      name: next.name,
-      phone: next.phone,
-      idNumber: next.idNumber,
-      dateOfBirth: next.dateOfBirth,
-      avatarUrl: next.avatarUrl,
-    }))
+    try {
+      applyMe(await saveOwnerProfile({
+        name: next.name,
+        phone: next.phone,
+        idNumber: next.idNumber,
+        dateOfBirth: next.dateOfBirth,
+        avatarUrl: next.avatarUrl,
+      }))
+    } catch {
+      Object.assign(profile.value, next)
+    }
   }
 
   async function logout() {
-    await supabase.auth.signOut()
+    sessionStorage.setItem('pet_sitter_dev_logged_out', 'true')
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut().catch(() => {})
+    }
     clear()
   }
 

@@ -26,6 +26,46 @@ function toProfile(me: AuthMe): OwnerProfile {
   }
 }
 
+function signUpMessage(message: string) {
+  const text = message.toLowerCase()
+  if (text.includes('already registered') || text.includes('already been registered') || text.includes('already exists')) {
+    return 'This email is already registered.'
+  }
+  return message
+}
+
+function loginMessage(cause: unknown) {
+  if (typeof cause === 'string') return loginMessage(new Error(cause))
+  if (cause instanceof ApiError) {
+    const text = cause.message.toLowerCase()
+    if (cause.status === 403 || text.includes('banned')) return 'This account is banned.'
+    if (cause.status === 409 && text.includes('phone')) return 'This phone number is already registered.'
+    if (cause.status === 409 && text.includes('email')) return 'This email is already registered.'
+    if (cause.status === 502 || cause.status === 503) return 'Unable to connect to the server. Please try again.'
+    return cause.message
+  }
+  if (cause instanceof Error) {
+    const text = cause.message.toLowerCase()
+    if (text.includes('invalid login credentials') || text.includes('invalid email or password')) {
+      return 'Invalid email or password.'
+    }
+    if (text.includes('email not confirmed')) return 'Please check your email for verification.'
+    if (text.includes('banned')) return 'This account is banned.'
+    return cause.message
+  }
+  return 'Login failed'
+}
+
+function registerApiMessage(cause: unknown) {
+  if (cause instanceof ApiError) {
+    const text = cause.message.toLowerCase()
+    if (cause.status === 409 && text.includes('phone')) return 'This phone number is already registered.'
+    if (cause.status === 409 && text.includes('email')) return 'This email is already registered.'
+    if (cause.status === 502 || cause.status === 503) return 'Unable to connect to the server. Please try again.'
+  }
+  return cause instanceof Error ? cause.message : 'Registration failed'
+}
+
 const defaultMockProfile: OwnerProfile = {
   name: 'Jane Doe',
   email: 'jane.doe@example.com',
@@ -89,18 +129,21 @@ export const useAuthStore = defineStore('auth', () => {
       }
       userId.value = 'mock-user-123'
       profileComplete.value = true
-      return
+      return 'confirmed' as const
     }
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
       options: { data: { name: input.name, phone: input.phone, role: input.role } },
     })
-    if (error) throw new Error(error.message)
-    if (!data.session) {
-      throw new Error('Check your email to confirm the account, then log in.')
+    if (error) throw new Error(signUpMessage(error.message))
+    if (!data.session) return 'check-email' as const
+    try {
+      applyMe(await bootstrapAccount(input.name, input.phone, input.role))
+    } catch (cause) {
+      throw new Error(registerApiMessage(cause))
     }
-    applyMe(await bootstrapAccount(input.name, input.phone, input.role))
+    return 'confirmed' as const
   }
 
   async function login(email: string, password: string, roleHint: AuthRole = 'owner') {
@@ -117,7 +160,7 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw new Error(error.message)
+    if (error) throw new Error(loginMessage(error.message))
     const { data: userData } = await supabase.auth.getUser()
     const meta = userData.user?.user_metadata || {}
     try {
@@ -132,7 +175,7 @@ export const useAuthStore = defineStore('auth', () => {
         return
       }
       await supabase.auth.signOut()
-      throw cause
+      throw new Error(loginMessage(cause))
     }
   }
 

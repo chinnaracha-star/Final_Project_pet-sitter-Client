@@ -344,9 +344,10 @@ function handleCalendarContinue(schedule: BookingSchedule) {
 .booking-address img { width: 12px; height: 12px; flex: 0 0 auto; opacity: .55; }
 .booking-tags { justify-content: center; margin-top: 15px; }
 .booking-actions { padding: 14px 17px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid #eceef2; }
-.booking-actions button { height: 36px; margin: 0; border: 0; border-radius: 20px; font-size: 9px; font-weight: 750; cursor: not-allowed; opacity: 1; }
-.message-button { background: #fff0ea; color: #ff6525; }
-.book-button { background: #ff6525; color: #fff; box-shadow: 0 7px 16px -9px #ff6525; }
+.booking-actions button { height: 36px; margin: 0; border: 0; border-radius: 20px; font-size: 9px; font-weight: 750; opacity: 1; }
+.message-button { background: #fff0ea; color: #ff6525; cursor: not-allowed; }
+.book-button { background: #ff6525; color: #fff; box-shadow: 0 7px 16px -9px #ff6525; cursor: pointer !important; transition: all 200ms ease; }
+.book-button:hover { background: #e54f12; transform: translateY(-1px); }
 .not-found-page { display: grid; place-items: center; }
 .not-found-card { width: min(100%, 460px); padding: 55px 32px; border-radius: 24px; background: white; box-shadow: 0 22px 55px -38px rgb(31 34 45 / 35%); text-align: center; }
 .not-found-icon { color: #ff6525; font-size: 48px; font-weight: 800; }

@@ -18,6 +18,7 @@ import {
 } from '../components/booking'
 import { useBookingStore } from '../stores/booking'
 import { useAuthStore } from '../stores/auth'
+import { useOwnerBookingsStore } from '../stores/ownerBookings'
 import { api } from '../services/http'
 import { getPublicSitter } from '../services/sitterApproval'
 
@@ -88,11 +89,19 @@ onMounted(async () => {
     try {
       const detail = await getPublicSitter(sitterId)
       if (detail) {
+        const years = parseFloat(detail.experienceYears || '1.5')
+        let rate = 200
+        if (!isNaN(years)) {
+          if (years >= 5) rate = 300
+          else if (years >= 3) rate = 250
+          else if (years >= 2) rate = 220
+          else rate = 200
+        }
         bookingStore.setSitter({
           id: detail.userId,
           placeName: detail.displayName || 'Pet Sitter House',
           ownerName: detail.ownerName || 'Verified Sitter',
-          hourlyRate: 200,
+          hourlyRate: rate,
         })
       }
     } catch (e) {
@@ -235,6 +244,30 @@ async function handleFinalConfirmBooking() {
   try {
     sessionStorage.setItem(TXN_STORAGE_KEY, JSON.stringify(confirmedTransaction.value))
   } catch {}
+
+  // Sync with Owner Booking History store
+  try {
+    const ownerBookingsStore = useOwnerBookingsStore()
+    const petNames = bookingStore.selectedPets.map(p => p.name)
+    ownerBookingsStore.addBooking({
+      id: Number(finalTxnNo) || Date.now(),
+      sitterName: bookingStore.sitter.placeName || 'Happy House!',
+      sitterOwner: bookingStore.sitter.ownerName || 'Jane Maison',
+      sitterAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=85',
+      status: 'pending',
+      startDate: bookingStore.schedule.date || new Date().toISOString().split('T')[0],
+      startTime: bookingStore.schedule.startTime ? toLocalTimeString(bookingStore.schedule.startTime).slice(0, 5) : '08:30',
+      endTime: bookingStore.schedule.endTime ? toLocalTimeString(bookingStore.schedule.endTime).slice(0, 5) : '10:30',
+      durationHours: Math.max(1, bookingStore.durationHours),
+      petNames: petNames.length > 0 ? petNames : ['Your Pet'],
+      totalPrice: Number(bookingStore.totalPrice) || 200,
+      transactionNo: finalTxnNo,
+      transactionDate: todayStr,
+      bannerText: 'Waiting Pet Sitter confirm booking',
+    })
+  } catch (e) {
+    console.warn('Could not sync booking to owner history store:', e)
+  }
 
   currentStep.value = 'thankyou'
   void router.push('/booking/thank-you')

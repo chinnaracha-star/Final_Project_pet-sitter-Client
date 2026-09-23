@@ -7,6 +7,4 @@ export { default as ServicesSection } from './ServicesSection.vue'
 export { default as BenefitsSection } from './BenefitsSection.vue'
 export { default as CtaBanner } from './CtaBanner.vue'
 
-export type { SearchFilterState } from './SearchFilterCard.vue'
-export type { ServiceItem } from './ServicesSection.vue'
-export type { BenefitItem } from './BenefitsSection.vue'
+export type { SearchFilterState, ServiceItem, BenefitItem } from '../../types/landing'

@@ -1,10 +1,6 @@
 <script setup lang="ts">
-export interface ServiceItem {
-  id: string
-  title: string
-  description: string
-  starColor: string
-}
+import type { ServiceItem } from '../../types/landing'
+export type { ServiceItem }
 
 const services: ServiceItem[] = [
   {

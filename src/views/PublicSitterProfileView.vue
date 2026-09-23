@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { Footer, Navbar } from '../components'
 import SitterLocationMap from '../components/search/SitterLocationMap.vue'
+import { BookingCalendarModal, type BookingSchedule } from '../components/booking'
+import { useBookingStore } from '../stores/booking'
 import {
   getPublicSitter,
   getPublicSitterReviews,
@@ -11,11 +13,14 @@ import {
 } from '../services/sitterApproval'
 
 const route = useRoute()
+const router = useRouter()
+const bookingStore = useBookingStore()
 const profile = ref<PublicSitterDetail | null>(null)
 const reviews = ref<PublicReview[]>([])
 const loading = ref(true)
 const notice = ref('')
 const notFound = ref(false)
+const isBookingCalendarOpen = ref(false)
 
 const fallbackGallery = [
   '/image/services-cat-large.png',
@@ -74,6 +79,35 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function handleBookNow() {
+  if (!profile.value) return
+  isBookingCalendarOpen.value = true
+}
+
+function handleCalendarContinue(schedule: BookingSchedule) {
+  if (!profile.value) return
+
+  // Calculate dynamic hourly rate based on sitter experience or profile
+  const years = parseFloat(profile.value.experienceYears || '1.5')
+  let rate = 200
+  if (!isNaN(years)) {
+    if (years >= 5) rate = 300
+    else if (years >= 3) rate = 250
+    else if (years >= 2) rate = 220
+    else rate = 200
+  }
+
+  bookingStore.setSitter({
+    id: profile.value.userId,
+    placeName: profile.value.displayName || profile.value.myPlace || 'Pet Sitter House',
+    ownerName: profile.value.ownerName || 'Verified Sitter',
+    hourlyRate: rate,
+  })
+  bookingStore.setSchedule(schedule)
+  isBookingCalendarOpen.value = false
+  void router.push('/booking/pet')
+}
 </script>
 
 <template>
@@ -217,7 +251,7 @@ onMounted(async () => {
             </div>
             <div class="booking-actions">
               <button class="message-button" type="button" disabled>Send Message</button>
-              <button class="book-button" type="button" disabled>Book Now</button>
+              <button class="book-button" type="button" @click="handleBookNow">Book Now</button>
             </div>
           </div>
         </aside>
@@ -231,6 +265,15 @@ onMounted(async () => {
         <RouterLink to="/search">Back to Search</RouterLink>
       </div>
     </main>
+
+    <!-- Booking Calendar Popup Modal -->
+    <BookingCalendarModal
+      :open="isBookingCalendarOpen"
+      :as-modal="true"
+      :has-backdrop="true"
+      @close="isBookingCalendarOpen = false"
+      @continue="handleCalendarContinue"
+    />
 
     <Footer />
   </div>

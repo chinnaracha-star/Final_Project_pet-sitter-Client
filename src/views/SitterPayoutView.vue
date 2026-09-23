@@ -42,8 +42,8 @@ async function readAccountNumber(file: File) {
   try {
     const { createWorker, PSM } = await import('tesseract.js')
     const worker = await createWorker('eng', 1, {
-      logger: message => {
-        if (message.status === 'recognizing text') ocrProgress.value = Math.round(message.progress * 100)
+      logger: (message: { status?: string; progress?: number }) => {
+        if (message.status === 'recognizing text' && message.progress != null) ocrProgress.value = Math.round(message.progress * 100)
       },
     })
     try {

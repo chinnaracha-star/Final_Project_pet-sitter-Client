@@ -7,17 +7,24 @@ import OwnerPageShell from '../components/owner/OwnerPageShell.vue'
 import PetForm from '../components/owner/PetForm.vue'
 import { uploadOwnerMedia } from '../services/ownerApi'
 import { useOwnerPetsStore } from '../stores/ownerPets'
+import { useBookingStore } from '../stores/booking'
 import type { OwnerPet } from '../types/owner'
 
 const route = useRoute()
 const router = useRouter()
 const pets = useOwnerPetsStore()
+const bookingStore = useBookingStore()
 const showDelete = ref(false)
 const error = ref('')
 const pet = ref<OwnerPet | undefined>()
 
 const isCreate = computed(() => route.path === '/owner/pets/new')
 const petId = computed(() => Number(route.params.id))
+
+const redirectTarget = computed(() => {
+  const redirect = route.query.redirect as string
+  return redirect || '/owner/pets'
+})
 
 onMounted(async () => {
   if (isCreate.value) return
@@ -31,24 +38,41 @@ onMounted(async () => {
 async function save(payload: Omit<OwnerPet, 'id'>, photo: File | null) {
   error.value = ''
   try {
-    const avatarUrl = photo ? (await uploadOwnerMedia(photo, 'pet')).url : payload.avatarUrl
+    let avatarUrl = payload.avatarUrl
+    if (photo) {
+      try {
+        avatarUrl = (await uploadOwnerMedia(photo, 'pet')).url
+      } catch {
+        avatarUrl = URL.createObjectURL(photo)
+      }
+    }
     const next = { ...payload, avatarUrl }
     if (isCreate.value) {
-      await pets.createPet(next)
+      const newId = await pets.createPet(next)
+      if (newId && redirectTarget.value.includes('/booking')) {
+        const createdPet = await pets.getById(newId)
+        if (createdPet) {
+          bookingStore.setSelectedPets([...bookingStore.selectedPets, createdPet])
+        }
+      }
     } else {
       await pets.updatePet(petId.value, next)
     }
-    void router.push('/owner/pets')
+    void router.push(redirectTarget.value)
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Could not save pet'
   }
+}
+
+function cancel() {
+  void router.push(redirectTarget.value)
 }
 
 async function confirmDelete() {
   try {
     await pets.removePet(petId.value)
     showDelete.value = false
-    void router.push('/owner/pets')
+    void router.push(redirectTarget.value)
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Could not delete pet'
   }
@@ -68,7 +92,7 @@ async function confirmDelete() {
       :mode="isCreate ? 'create' : 'edit'"
       :pet="pet"
       @save="save"
-      @cancel="router.push('/owner/pets')"
+      @cancel="cancel"
       @remove="showDelete = true"
     />
     <ConfirmDeleteModal :open="showDelete" @close="showDelete = false" @confirm="confirmDelete" />

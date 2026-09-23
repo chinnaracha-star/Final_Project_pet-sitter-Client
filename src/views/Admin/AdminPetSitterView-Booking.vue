@@ -5,11 +5,10 @@ import axios from 'axios'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import AdminPetSitterViewBookingDetail from './AdminPetSitterView-Booking-Detail.vue'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
+import { API_BASE_URL } from '../../config/api'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 type BookingStatus = 'Waiting for confirm' | 'Waiting for service' | 'In service' | 'Success' | 'Canceled'
 

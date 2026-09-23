@@ -4,11 +4,10 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
+import { API_BASE_URL } from '../../config/api'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 interface Review {
 	id: number

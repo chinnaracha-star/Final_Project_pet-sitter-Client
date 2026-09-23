@@ -3,6 +3,7 @@ import AdminSidebar from '../../components/AdminSidebar.vue'
 import { onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
+import { API_BASE_URL } from '../../config/api'
 
 type SitterStatus =
   | 'Unverified'
@@ -32,8 +33,6 @@ interface SitterProfilePageResponse {
   totalItems: number
   limit: number
 }
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 const store = useAdminPetSitterStore()
 

@@ -8,7 +8,7 @@ Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
 Profile/Approval ต้องใช้บัญชี Supabase ที่ล็อกอินอยู่และส่ง access token ให้ API ส่วนการอัปโหลดรูป sitter และ booking payload ที่มี pets ยังไม่รองรับครบก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
 
-ตั้ง `VITE_API_BASE_URL` เป็น origin ของ backend เมื่อ deploy frontend แยก service; เว้นว่างไว้ได้เมื่อใช้ Vite proxy ในเครื่อง
+บน Vercel คำขอ `/api/*` จะถูก proxy ไปที่ Render ตาม `vercel.json` โดยอัตโนมัติ ไม่ต้องตั้ง `VITE_API_BASE_URL` ใน Vercel; ค่าใน `.env` ใช้เฉพาะตอน `npm run dev` ถ้าต้องการเรียก backend โดยตรงแทน Vite proxy หลังแก้ `vercel.json` ต้อง deploy frontend ใหม่
 
 แผนที่ในหน้า Sitter Profile เป็น **preview ฝั่ง client** ด้วย Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก ยังไม่บันทึก lat/lng ลง API
 

@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { adminApi } from '../../services/adminApi'
 
 interface PetOwner {
 	id: string
@@ -22,8 +23,6 @@ interface OwnerAdminPageResponse {
 	totalItems: number
 	limit: number
 }
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 const router = useRouter()
 const store = useAdminPetOwnerStore()
@@ -65,7 +64,7 @@ const fetchOwners = async (pageNum: number, currentSearch: string) => {
 	errorMessage.value = ''
 
 	try {
-		const response = await axios.get<OwnerAdminPageResponse>(`${API_BASE_URL}/admin/owners`, {
+		const response = await adminApi.get<OwnerAdminPageResponse>('/admin/owners', {
 			params: {
 				page: pageNum,
 				limit: pageSize,

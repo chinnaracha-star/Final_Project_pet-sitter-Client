@@ -1,6 +1,10 @@
 import { supabase } from '../lib/supabase'
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
+// Production serves API requests through the hosting site's /api rewrite.
+// Vite's local proxy handles the same paths during development by default.
+export const API_BASE_URL = import.meta.env.PROD
+  ? ''
+  : (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
 
 export function apiUrl(path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`

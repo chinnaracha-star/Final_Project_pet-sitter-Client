@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://project-pet-sitter-server-1.onrender.com/api/:path*" },
     { "source": "/:path((?!api/).*)", "destination": "/index.html" }
   ]
 }

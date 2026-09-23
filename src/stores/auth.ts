@@ -31,6 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   const profile = ref<OwnerProfile>({ ...emptyProfile })
   const userId = ref<string | null>(null)
   const profileComplete = ref(false)
+  const isAdmin = ref(false)
   const ready = ref(false)
 
   const isLoggedIn = computed(() => role.value !== null)
@@ -41,6 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = toProfile(me)
     userId.value = me.id
     profileComplete.value = me.profileComplete
+    isAdmin.value = me.admin
   }
 
   function clear() {
@@ -48,6 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = { ...emptyProfile }
     userId.value = null
     profileComplete.value = false
+    isAdmin.value = false
   }
 
   async function restore() {
@@ -129,6 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
     profile,
     userId,
     profileComplete,
+    isAdmin,
     ready,
     isLoggedIn,
     isOwnerLoggedIn,

@@ -4,13 +4,11 @@ import SitterLocationMap from '../../components/admin/SitterLocationMap.vue'
 import AdminPetSitterViewProfileRejectConfirmation from './AdminPetSitterView-Profile-RejectConfirmation.vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
 import { useAdminPetSitterStore, type SitterStatus } from '../../stores/adminPetSitter'
+import { adminApi } from '../../services/adminApi'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 interface SitterUser {
 	name: string | null
@@ -64,7 +62,7 @@ const fetchSitterDetail = async (id: string) => {
 	isLoading.value = true
 	errorMessage.value = ''
 	try {
-		const response = await axios.get<SitterProfileDetailResponse>(`${API_BASE_URL}/sitterprofile/${id}`)
+		const response = await adminApi.get<SitterProfileDetailResponse>(`/sitterprofile/${id}`)
 		profile.value = response.data.sitterProfile
 		sitterUser.value = response.data.user
 		petTypes.value = response.data.petTypes || []
@@ -100,7 +98,7 @@ const handleRejectConfirm = async (reason: string) => {
 
 	if (approvalStatus.value === 'Waiting for verify') {
 		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			await adminApi.patch(`/sitterprofile/${store.selectedSitterId}/reject`, { reason })
 			approvalStatus.value = 'Unverified'
 			store.setApprovalStatus('Unverified')
 			await fetchSitterDetail(store.selectedSitterId)
@@ -110,7 +108,7 @@ const handleRejectConfirm = async (reason: string) => {
 		}
 	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
 		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			await adminApi.patch(`/sitterprofile/${store.selectedSitterId}/reject`, { reason })
 			approvalStatus.value = 'Rejected'
 			store.setApprovalStatus('Rejected')
 			await fetchSitterDetail(store.selectedSitterId)
@@ -120,7 +118,7 @@ const handleRejectConfirm = async (reason: string) => {
 		}
 	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
 		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+			await adminApi.patch(`/sitterprofile/${store.selectedSitterId}/reject`, { reason })
 			approvalStatus.value = 'Rejected'
 			isListed.value = false
 			store.setApprovalStatus('Rejected')
@@ -137,7 +135,7 @@ const handleApprove = async () => {
 
 	if (approvalStatus.value === 'Waiting for verify') {
 		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/verify`)
+			await adminApi.patch(`/sitterprofile/${store.selectedSitterId}/verify`)
 			approvalStatus.value = 'Verified'
 			store.setApprovalStatus('Verified')
 			await fetchSitterDetail(store.selectedSitterId)
@@ -147,7 +145,7 @@ const handleApprove = async () => {
 		}
 	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === false) {
 		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
+			await adminApi.patch(`/sitterprofile/${store.selectedSitterId}/approve`)
 			approvalStatus.value = 'Approved'
 			isListed.value = true
 			store.setApprovalStatus('Approved')
@@ -158,7 +156,7 @@ const handleApprove = async () => {
 		}
 	} else if (approvalStatus.value === 'Waiting for approve' && isListed.value === true) {
 		try {
-			await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/approve`)
+			await adminApi.patch(`/sitterprofile/${store.selectedSitterId}/approve`)
 			approvalStatus.value = 'Approved'
 			store.setApprovalStatus('Approved')
 			await fetchSitterDetail(store.selectedSitterId)

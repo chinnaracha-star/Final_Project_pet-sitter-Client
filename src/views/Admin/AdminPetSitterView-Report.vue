@@ -2,11 +2,9 @@
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 
 const router = useRouter()
-const API_BASE_URL = 'http://localhost:8081/api'
-
 type ReportStatus = 'New Report' | 'Pending' | 'Resolved' | 'Canceled'
 
 interface Report {
@@ -59,7 +57,7 @@ const fetchReports = async () => {
 	isLoading.value = true
 	errorMessage.value = ''
 	try {
-		const response = await axios.get<ReportAdminListItem[]>(`${API_BASE_URL}/reports`)
+		const response = await adminApi.get<ReportAdminListItem[]>('/reports')
 		reports.value = response.data.map(mapReport)
 	} catch (error) {
 		console.error('Failed to fetch reports:', error)

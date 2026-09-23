@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import L from 'leaflet'
+import { api } from '../../services/http'
 
 interface Location {
   id?: number
@@ -32,9 +33,7 @@ async function loadLocations() {
   if (!map) return
   const currentMap = map
   try {
-    const response = await fetch(API_URL)
-    if (!response.ok) throw new Error('Failed to load locations')
-    const locations = await response.json() as Location[]
+    const locations = await api<Location[]>(API_URL)
     const icon = createCustomIcon()
     locations.forEach(location => {
       const marker = L.marker([location.latitude, location.longitude], { icon })
@@ -48,12 +47,10 @@ async function loadLocations() {
 }
 
 async function saveLocation(latitude: number, longitude: number) {
-  const response = await fetch(API_URL, {
+  await api<Location>(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: 'Selected Location', latitude, longitude }),
   })
-  if (!response.ok) throw new Error('Failed to save location')
 }
 
 async function handleMapClick(event: L.LeafletMouseEvent) {

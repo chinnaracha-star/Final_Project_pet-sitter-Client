@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import AdminPetSitterViewBookingDetail from './AdminPetSitterView-Booking-Detail.vue'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 type BookingStatus = 'Waiting for confirm' | 'Waiting for service' | 'In service' | 'Success' | 'Canceled'
 
@@ -93,7 +91,7 @@ const fetchBookings = async (sitterId: string) => {
 	isLoading.value = true
 	errorMessage.value = ''
 	try {
-		const response = await axios.get<BookingAdminListItem[]>(`${API_BASE_URL}/bookings/admin/sitter/${sitterId}`)
+		const response = await adminApi.get<BookingAdminListItem[]>(`/bookings/admin/sitter/${sitterId}`)
 		bookings.value = response.data.map(mapBooking)
 	} catch (error) {
 		console.error('Failed to fetch sitter bookings:', error)

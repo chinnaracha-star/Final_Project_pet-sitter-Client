@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import AdminPetSitterViewReportResolve from './AdminPetSitterView-Report-Resolve.vue'
 import AdminPetSitterViewReportCancel from './AdminPetSitterView-Report-Cancel.vue'
 
 const route = useRoute()
 const router = useRouter()
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 type ReportStatus = 'New Report' | 'Pending' | 'Resolved' | 'Canceled'
 
@@ -61,7 +59,7 @@ const fetchReport = async (id: string) => {
 	isLoading.value = true
 	errorMessage.value = ''
 	try {
-		const response = await axios.get<ReportAdminListItem>(`${API_BASE_URL}/reports/${id}`)
+		const response = await adminApi.get<ReportAdminListItem>(`/reports/${id}`)
 		applyReport(response.data)
 	} catch (error) {
 		console.error('Failed to fetch report:', error)
@@ -87,7 +85,7 @@ const cancelReport = async () => {
 	const id = route.params.id
 	if (typeof id !== 'string') return
 	try {
-		await axios.delete(`${API_BASE_URL}/reports/${id}`)
+		await adminApi.delete(`/reports/${id}`)
 		router.push('/admin/reports')
 	} catch (error) {
 		console.error('Failed to delete report:', error)
@@ -105,7 +103,7 @@ const resolveReport = async () => {
 	const id = route.params.id
 	if (typeof id !== 'string') return
 	try {
-		const response = await axios.patch<ReportAdminListItem>(`${API_BASE_URL}/reports/${id}/resolve`)
+		const response = await adminApi.patch<ReportAdminListItem>(`/reports/${id}/resolve`)
 		applyReport(response.data)
 	} catch (error) {
 		console.error('Failed to resolve report:', error)

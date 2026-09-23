@@ -1,4 +1,5 @@
 import { currentSitterId } from './sitterApproval'
+import { api } from './http'
 import { isSitterDemo } from './sitterDemo'
 import { useSitterBookingsStore } from '../stores/sitterBookings'
 
@@ -11,11 +12,8 @@ export type SitterBooking = {
 }
 
 async function request<T>(path: string, options: RequestInit = {}) {
-  const userId = currentSitterId()
-  if (!userId) throw new Error('Server integration pending. Select “Use demo data” to preview bookings.')
-  const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', 'X-User-Id': userId, ...options.headers } })
-  if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail || `Request failed (${response.status})`)
-  return response.json() as Promise<T>
+  if (!currentSitterId()) throw new Error('Server integration pending. Select “Use demo data” to preview bookings.')
+  return api<T>(path, options)
 }
 
 export function getSitterBookings(query = '', from?: string, to?: string) {

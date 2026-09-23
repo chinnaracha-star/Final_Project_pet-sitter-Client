@@ -1,5 +1,12 @@
 import { supabase } from '../lib/supabase'
 
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
+
+export function apiUrl(path: string) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_BASE_URL}${normalizedPath}`
+}
+
 export class ApiError extends Error {
   status: number
 
@@ -26,7 +33,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   if (!isForm && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   const auth = await authHeader()
   if (auth.Authorization) headers.set('Authorization', auth.Authorization)
-  const response = await fetch(path, { ...options, headers })
+  const response = await fetch(apiUrl(path), { ...options, headers })
   if (response.status === 204) return undefined as T
   if (!response.ok) throw new ApiError(await parseError(response), response.status)
   return response.json() as Promise<T>

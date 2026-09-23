@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 type SidebarItem = {
   label: string
@@ -15,6 +16,13 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
+
+async function logout() {
+  await auth.logout()
+  await router.push('/login')
+}
 
 const items: SidebarItem[] = [
   { label: 'Pet Owner', to: '/admin/owners', icon: 'owner' },
@@ -60,14 +68,15 @@ const isActive = (item: SidebarItem) => computed(() => currentPath.value.startsW
       </RouterLink>
     </nav>
 
-    <RouterLink
-      to="/login"
+    <button
+      type="button"
       class="mt-auto flex h-[54px] items-center gap-3 border-t border-[#1d1f24] px-4 text-[12px] font-medium text-[#f3f5fa] transition-colors hover:bg-[#171a1f]"
+      @click="logout"
     >
       <svg class="h-[15px] w-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" aria-hidden="true">
         <path d="M13 5H6.5v14H13M11 12h9M17 8l3.5 4-3.5 4" />
       </svg>
       <span>Log Out</span>
-    </RouterLink>
+    </button>
   </aside>
 </template>

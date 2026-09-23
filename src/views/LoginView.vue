@@ -18,8 +18,9 @@ const notice = ref("");
 async function submitLogin() {
   notice.value = "";
   try {
-    await auth.login(email.value, password.value);
-    void router.push(auth.role === "sitter" ? "/sitter/profile" : "/owner/profile");
+    const targetRole = isOwner.value ? "owner" : "sitter";
+    await auth.login(email.value, password.value, targetRole);
+    void router.push(targetRole === "sitter" ? "/sitter/profile" : "/owner/profile");
   } catch (cause) {
     notice.value = cause instanceof Error ? cause.message : "Login failed";
   }

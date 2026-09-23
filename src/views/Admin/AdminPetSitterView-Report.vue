@@ -3,9 +3,9 @@ import AdminSidebar from '../../components/AdminSidebar.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { API_BASE_URL } from '../../config/api'
 
 const router = useRouter()
-const API_BASE_URL = 'http://localhost:8081/api'
 
 type ReportStatus = 'New Report' | 'Pending' | 'Resolved' | 'Canceled'
 

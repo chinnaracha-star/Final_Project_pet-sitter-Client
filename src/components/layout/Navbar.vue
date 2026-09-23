@@ -12,7 +12,7 @@ const isAccountOpen = ref(false)
 const ownerLinks = [
   { to: '/owner/profile', label: 'Profile', icon: '/icon/profile.svg' },
   { to: '/owner/pets', label: 'Your Pet', icon: '/icon/paw.svg' },
-  { to: '/owner/bookings', label: 'History', icon: '/icon/list.svg' },
+  { to: '/owner/bookings', label: 'Booking History', icon: '/icon/list.svg' },
   { to: '/owner/password', label: 'Change Password', icon: '/icon/settings.svg' },
 ]
 
@@ -40,6 +40,14 @@ function logout() {
 
       <div class="hidden md:flex items-center gap-8">
         <template v-if="auth.isOwnerLoggedIn">
+          <button
+            type="button"
+            class="grid size-11 place-items-center rounded-full text-primary-300"
+            aria-label="Notifications are not available yet"
+            disabled
+          >
+            <img src="/navbar/icon-bell.svg" alt="" class="size-6" />
+          </button>
           <div class="relative">
             <button
               type="button"

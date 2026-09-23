@@ -1,7 +1,10 @@
 <script setup lang="ts">
-defineProps<{
+withDefaults(defineProps<{
   open: boolean
-}>()
+  wide?: boolean
+}>(), {
+  wide: false,
+})
 const emit = defineEmits<{
   close: []
 }>()
@@ -14,7 +17,7 @@ const emit = defineEmits<{
       class="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4"
       @click.self="emit('close')"
     >
-      <div class="w-full max-w-[520px] rounded-2xl bg-white p-6 shadow-xl" role="dialog" aria-modal="true">
+      <div class="w-full rounded-2xl bg-white p-6 shadow-xl" :class="wide ? 'max-w-[680px]' : 'max-w-[520px]'" role="dialog" aria-modal="true">
         <slot />
       </div>
     </div>

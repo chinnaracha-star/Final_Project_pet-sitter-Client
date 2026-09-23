@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import OwnerModal from '../components/owner/OwnerModal.vue'
 import SocialLoginButtons from '../components/SocialLoginButtons.vue'
 import { useAuthRole } from '../composables/useAuthRole'
 import { useAuthStore } from '../stores/auth'
@@ -24,7 +25,11 @@ function submitRegister() {
     phone: phone.value,
     password: password.value,
     role: isOwner.value ? 'owner' : 'sitter',
-  }).then(() => {
+  }).then(result => {
+    if (result === 'check-email') {
+      socialNotice.value = 'Please check your email for verification.'
+      return
+    }
     void router.push(isOwner.value ? '/owner/profile' : '/sitter/profile')
   }).catch(cause => {
     socialNotice.value = cause instanceof Error ? cause.message : 'Registration failed'
@@ -38,9 +43,15 @@ function continueWith(provider: 'Facebook' | 'Google') {
 
 <template>
   <main class="auth-page">
+    <div class="auth-art" aria-hidden="true">
+      <img src="/image/paw-yellow.svg" alt="" class="auth-art-paw" />
+      <img src="/image/corner-bottom-left.svg" alt="" class="auth-art-corner" />
+    </div>
     <form class="auth-form" @submit.prevent="submitRegister">
       <h1 class="auth-title">Join Us!</h1>
-      <p class="auth-subtitle">Find your perfect pet sitter with us</p>
+      <p class="auth-subtitle">
+        {{ isOwner ? 'Find your perfect pet sitter with us' : 'Become the best Pet Sitter with us' }}
+      </p>
 
       <div class="mb-8 flex w-full rounded-full bg-primary-100/40 p-1" aria-label="Account type">
         <button
@@ -122,7 +133,20 @@ function continueWith(provider: 'Facebook' | 'Google') {
         {{ isOwner ? 'Register as Owner' : 'Register as Sitter' }}
       </button>
       <SocialLoginButtons @facebook="continueWith('Facebook')" @google="continueWith('Google')" />
-      <p v-if="socialNotice" class="auth-notice" role="status">{{ socialNotice }}</p>
+      <OwnerModal :open="socialNotice !== ''" @close="socialNotice = ''">
+        <div class="flex flex-nowrap items-center justify-between gap-4 border-b border-primary-100 pb-4">
+          <h2 class="text-xl font-bold leading-none">Notification</h2>
+          <button type="button" class="inline-flex size-10 shrink-0 items-center justify-center text-primary-900" aria-label="Close" @click="socialNotice = ''">
+            <svg viewBox="0 0 24 24" class="size-8" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path stroke-linecap="round" d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <p class="mt-6 text-primary-500">{{ socialNotice }}</p>
+        <div class="mt-8 flex justify-end">
+          <button type="button" class="auth-submit w-auto px-8 whitespace-nowrap" @click="socialNotice = ''">Close</button>
+        </div>
+      </OwnerModal>
       <p class="auth-switch">
         Already have an account?
         <RouterLink :to="loginTo">Login</RouterLink>

@@ -5,11 +5,10 @@ import axios from 'axios'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import AdminPetSitterViewReportResolve from './AdminPetSitterView-Report-Resolve.vue'
 import AdminPetSitterViewReportCancel from './AdminPetSitterView-Report-Cancel.vue'
+import { API_BASE_URL } from '../../config/api'
 
 const route = useRoute()
 const router = useRouter()
-
-const API_BASE_URL = 'http://localhost:8081/api'
 
 type ReportStatus = 'New Report' | 'Pending' | 'Resolved' | 'Canceled'
 

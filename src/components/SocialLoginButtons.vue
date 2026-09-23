@@ -7,7 +7,11 @@ const emit = defineEmits<{
 
 <template>
   <div class="w-full">
-    <p class="mt-7 mb-4 text-center text-body-3 text-primary-500">Or Continue With</p>
+    <div class="my-6 flex items-center gap-4">
+      <span class="h-px flex-1 bg-primary-100" aria-hidden="true" />
+      <p class="text-body-3 text-primary-500">Or Continue With</p>
+      <span class="h-px flex-1 bg-primary-100" aria-hidden="true" />
+    </div>
     <div class="flex gap-3.5">
       <button
         type="button"

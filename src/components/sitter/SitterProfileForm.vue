@@ -17,7 +17,7 @@ const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 const fullName = defineModel<string>("fullName", { required: true });
 
 const auth = useAuthStore();
-const userId = computed(() => auth.role === "sitter" ? auth.userId : null);
+const userId = computed(() => auth.role === "pet-sitter" ? auth.userId : null);
 const status = ref<ApprovalStatus>("Unverified");
 
 const phone = ref("");

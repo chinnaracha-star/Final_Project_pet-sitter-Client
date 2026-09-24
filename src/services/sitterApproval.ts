@@ -113,7 +113,7 @@ export type ListedSitterSearchResponse = {
 
 export const currentSitterId = () => {
   const auth = useAuthStore()
-  return auth.role === 'sitter' ? auth.userId : null
+  return auth.role === 'pet-sitter' ? auth.userId : null
 }
 
 export const getOwnProfile = () => api<ProfileResponse>('/api/sitter/profile')

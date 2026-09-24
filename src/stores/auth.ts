@@ -173,7 +173,7 @@ export const useAuthStore = defineStore('auth', () => {
         applyMe(await bootstrapAccount(
           String(meta.name || userData.user?.email || 'Owner'),
           String(meta.phone || '0000000000'),
-          meta.role === 'sitter' ? 'sitter' : 'owner',
+          meta.role === 'pet-sitter' || meta.role === 'sitter' ? 'pet-sitter' : 'owner',
         ))
         return
       }

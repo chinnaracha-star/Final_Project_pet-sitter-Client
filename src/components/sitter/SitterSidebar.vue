@@ -29,7 +29,7 @@ const bookings = useSitterBookingsStore()
         <span class="label">Payout Option</span>
       </RouterLink>
     </nav>
-    <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'sitter' } }">
+    <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'pet-sitter' } }">
       <span class="nav-icon exit" aria-hidden="true"></span>
       <span class="label">Log Out</span>
     </RouterLink>

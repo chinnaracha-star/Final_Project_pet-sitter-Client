@@ -60,7 +60,7 @@ router.beforeEach(to => {
   }
   if (to.meta.sitter) {
     if (!auth.isLoggedIn) return { path: '/login', query: { redirect: to.fullPath } }
-    return auth.role === 'sitter' ? true : { path: '/' }
+    return auth.role === 'pet-sitter' ? true : { path: '/' }
   }
   if (!to.meta.owner) return true
   if (auth.isOwnerLoggedIn) return true

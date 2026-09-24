@@ -19,9 +19,9 @@ const notice = ref("");
 async function submitLogin() {
   notice.value = "";
   try {
-    const targetRole = isOwner.value ? "owner" : "sitter";
+    const targetRole = isOwner.value ? "owner" : "pet-sitter";
     await auth.login(email.value, password.value, targetRole);
-    void router.push(targetRole === "sitter" ? "/sitter/profile" : "/owner/profile");
+    void router.push(targetRole === "pet-sitter" ? "/sitter/profile" : "/owner/profile");
   } catch (cause) {
     notice.value = cause instanceof Error ? cause.message : "Login failed";
   }
@@ -76,7 +76,7 @@ function continueWith(provider: "Facebook" | "Google") {
               : 'text-primary-500'
           "
           :aria-current="!isOwner ? 'page' : undefined"
-          @click="setRole('sitter')"
+          @click="setRole('pet-sitter')"
         >
           Sitter
         </button>

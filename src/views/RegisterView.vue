@@ -24,7 +24,7 @@ function submitRegister() {
     email: email.value,
     phone: phone.value,
     password: password.value,
-    role: isOwner.value ? 'owner' : 'sitter',
+    role: isOwner.value ? 'owner' : 'pet-sitter',
   }).then(result => {
     if (result === 'check-email') {
       socialNotice.value = 'Please check your email for verification.'
@@ -68,7 +68,7 @@ function continueWith(provider: 'Facebook' | 'Google') {
           class="w-1/2 rounded-full py-2.5 text-sm font-bold"
           :class="!isOwner ? 'border border-orange-700 bg-white text-orange-700' : 'text-primary-500'"
           :aria-current="!isOwner ? 'page' : undefined"
-          @click="setRole('sitter')"
+          @click="setRole('pet-sitter')"
         >
           Sitter
         </button>

@@ -1,1 +1,0 @@
-var e=`/icon/search.svg`;export{e as t};

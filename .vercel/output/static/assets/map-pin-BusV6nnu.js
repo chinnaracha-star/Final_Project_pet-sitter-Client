@@ -1,1 +1,0 @@
-var e=`/icon/map-pin.svg`;export{e as t};

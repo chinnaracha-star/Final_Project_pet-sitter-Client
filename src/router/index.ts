@@ -15,12 +15,12 @@ const router = createRouter({
     { path: '/owner/pets/:id', component: () => import('../views/OwnerPetFormView.vue'), meta: { owner: true } },
     { path: '/owner/bookings', component: () => import('../views/OwnerBookingsView.vue'), meta: { owner: true } },
     { path: '/owner/password', component: () => import('../views/OwnerPasswordView.vue'), meta: { owner: true } },
-    { path: '/sitter/profile', component: () => import('../views/SitterProfileView.vue') },
-    { path: '/sitter/bookings', component: () => import('../views/SitterBookingListView.vue') },
-    { path: '/sitter/messages', component: () => import('../views/SitterMessagesView.vue') },
-    { path: '/sitter/bookings/:id', component: () => import('../views/SitterBookingDetailView.vue') },
-    { path: '/sitter/calendar', component: () => import('../views/SitterCalendarView.vue') },
-    { path: '/sitter/payout', component: () => import('../views/SitterPayoutView.vue') },
+    { path: '/sitter/profile', component: () => import('../views/SitterProfileView.vue'), meta: { sitter: true } },
+    { path: '/sitter/bookings', component: () => import('../views/SitterBookingListView.vue'), meta: { sitter: true } },
+    { path: '/sitter/messages', component: () => import('../views/SitterMessagesView.vue'), meta: { sitter: true } },
+    { path: '/sitter/bookings/:id', component: () => import('../views/SitterBookingDetailView.vue'), meta: { sitter: true } },
+    { path: '/sitter/calendar', component: () => import('../views/SitterCalendarView.vue'), meta: { sitter: true } },
+    { path: '/sitter/payout', component: () => import('../views/SitterPayoutView.vue'), meta: { sitter: true } },
     { path: '/booking', component: () => import('../views/BookingView.vue') },
     { path: '/booking/pet', component: () => import('../views/BookingView.vue') },
     { path: '/booking/information', component: () => import('../views/BookingView.vue') },
@@ -57,6 +57,10 @@ router.beforeEach(to => {
   if (to.path.startsWith('/admin')) {
     if (!auth.isLoggedIn) return { path: '/login' }
     return auth.isAdmin ? true : { path: '/' }
+  }
+  if (to.meta.sitter) {
+    if (!auth.isLoggedIn) return { path: '/login', query: { redirect: to.fullPath } }
+    return auth.role === 'sitter' ? true : { path: '/' }
   }
   if (!to.meta.owner) return true
   if (auth.isOwnerLoggedIn) return true

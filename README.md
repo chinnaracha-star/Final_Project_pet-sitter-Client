@@ -2,11 +2,7 @@
 
 Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
-## Pet Sitter demo while the server is pending
-
-เปิด `/sitter/bookings?demo=true` เพื่อเปิดข้อมูลเดโมอย่างชัดเจน จากนั้น Booking List, Booking Detail, Calendar และ Payout จะใช้ booking ชุดเดียวกัน หน้า Messages ใช้แชตเดโมเสมอ ป้าย **Demo data** ระบุหน้าที่ยังไม่อ่านข้อมูลจาก server; ปุ่ม **Reset demo** ล้างสถานะ booking และบัญชีธนาคารที่เก็บในเบราว์เซอร์ ส่วน **Exit demo** กลับไปเรียก API โดยไม่มีการสลับเป็น mock อัตโนมัติ
-
-Profile/Approval ต้องใช้บัญชี Supabase ที่ล็อกอินอยู่และส่ง access token ให้ API ส่วนการอัปโหลดรูป sitter และ booking payload ที่มี pets ยังไม่รองรับครบก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
+Booking List, Booking Detail, Calendar และ Payout ใช้ข้อมูลจริงจาก Spring Boot API โดยส่ง Supabase access token ไปกับทุก request หน้า Messages ยังเป็นข้อมูลเดโมใน browser จนกว่าจะเชื่อม chat API
 
 ในเครื่อง ให้ตั้ง `VITE_API_BASE_URL=` ว่างและ `VITE_API_PORT` ให้ตรงกับ `PORT` ของ backend (ตัวอย่างใช้ `10000`) แล้วรัน `npm run dev`; Vite จะส่ง `/api/*` ไป backend ในเครื่อง บน Vercel คำขอ `/api/*` จะถูกส่งต่อไป Render ตาม `vercel.json` โดยอัตโนมัติ ไม่ต้องตั้ง `VITE_API_BASE_URL` ใน Vercel หลังแก้ `vercel.json` ต้อง deploy frontend ใหม่
 
@@ -43,6 +39,12 @@ API ส่วนตัวต้องส่ง `Authorization: Bearer <Supabase 
 | `GET` | `/api/sitters/{id}` | อ่าน Public Sitter Profile โดยไม่ส่งข้อมูลส่วนตัว |
 | `GET` | `/api/sitters/{id}/reviews` | อ่านรีวิวที่ approved ล่าสุดสูงสุด 5 รายการ |
 | `POST` | `/api/bookings` | สร้าง Booking เมื่อ Sitter ยัง listed เท่านั้น |
+| `GET` | `/api/bookings/sitter` | อ่าน Booking ของ Sitter ที่ล็อกอิน พร้อมค้นหาและกรองช่วงวันที่ |
+| `GET` | `/api/bookings/sitter/{id}` | อ่านรายละเอียดและบันทึกว่า Sitter เปิดดู Booking แล้ว |
+| `PATCH` | `/api/bookings/sitter/{id}/status` | Confirm, reject หรือปิดงานตาม status transition |
+| `GET` | `/api/sitter/payout` | อ่านยอดรายได้ บัญชีธนาคาร และรายการงานสำเร็จ |
+| `PUT` | `/api/sitter/payout/bank-account` | บันทึกบัญชีรับเงิน |
+| `POST` | `/api/sitter/payout/book-bank-image` | อัปโหลดรูปสมุดบัญชีไป Supabase Storage |
 
 `pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร
 

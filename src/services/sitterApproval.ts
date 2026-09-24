@@ -126,6 +126,9 @@ export const submitProfile = (profile: ProfilePayload) =>
 
 export const getApprovalQueue = () => api<ProfileResponse[]>('/api/admin/sitter-approvals')
 
+export const getSitterApproval = (sitterId: string) =>
+  api<ProfileResponse>(`/api/admin/sitter-approvals/${encodeURIComponent(sitterId)}`)
+
 export const approveSitter = (sitterId: string) =>
   api<ProfileResponse>(`/api/admin/sitter-approvals/approve?sitterId=${encodeURIComponent(sitterId)}`, {
     method: 'PATCH',

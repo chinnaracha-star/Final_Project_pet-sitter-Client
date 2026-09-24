@@ -15,7 +15,7 @@ onMounted(() => {
 <template>
   <SitterPageShell>
     <main class="messages-page">
-      <SitterDemoNotice :always-demo="true" />
+      <SitterDemoNotice />
       <h1>Messages</h1>
       <div class="messages-panel">
         <ConversationList />

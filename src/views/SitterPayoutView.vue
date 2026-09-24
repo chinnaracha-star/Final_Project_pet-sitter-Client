@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import SitterPageShell from '../components/sitter/SitterPageShell.vue'
-import SitterDemoNotice from '../components/sitter/SitterDemoNotice.vue'
-import { getPayout, updateBankAccount, type BankAccount, type Payout } from '../services/sitterPayout'
-import { isSitterDemo } from '../services/sitterDemo'
+import { getPayout, updateBankAccount, uploadBookBankImage, type BankAccount, type Payout } from '../services/sitterPayout'
 import { extractAccountNumber } from '../utils/accountNumberOcr'
 
 // Add or edit supported banks here. The code is saved with the selected name.
@@ -20,6 +18,8 @@ const payout = ref<Payout | null>(null)
 const editing = ref(false)
 const confirming = ref(false)
 const busy = ref(false)
+const loading = ref(true)
+const uploading = ref(false)
 const error = ref('')
 const ocrStatus = ref('')
 const ocrProgress = ref(0)
@@ -34,6 +34,8 @@ async function load() {
     bank.value = { ...payout.value.bankAccount }
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to load payout'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -72,19 +74,28 @@ async function readAccountNumber(file: File) {
   }
 }
 
-function image(event: Event) {
+async function image(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-  const maxSize = isSitterDemo() ? 1_000_000 : 5_000_000
-  if (!file.type.startsWith('image/') || file.size > maxSize) {
-    error.value = `Use an image no larger than ${isSitterDemo() ? 1 : 5} MB`
+  if (!file.type.startsWith('image/') || file.size > 5_000_000) {
+    error.value = 'Use an image no larger than 5 MB'
     return
   }
   error.value = ''
-  const reader = new FileReader()
-  reader.onload = () => (bank.value.bookBankImageUrl = String(reader.result))
-  reader.readAsDataURL(file)
-  void readAccountNumber(file)
+  uploading.value = true
+  const previousUrl = bank.value.bookBankImageUrl
+  const previewUrl = URL.createObjectURL(file)
+  bank.value.bookBankImageUrl = previewUrl
+  try {
+    const [uploaded] = await Promise.all([uploadBookBankImage(file), readAccountNumber(file)])
+    bank.value.bookBankImageUrl = uploaded.url
+  } catch (cause) {
+    bank.value.bookBankImageUrl = previousUrl
+    error.value = cause instanceof Error ? cause.message : 'Unable to upload book bank image'
+  } finally {
+    URL.revokeObjectURL(previewUrl)
+    uploading.value = false
+  }
 }
 
 async function save() {
@@ -108,8 +119,8 @@ onMounted(load)
 <template>
   <SitterPageShell>
     <main class="page">
-      <SitterDemoNotice />
       <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="loading" role="status">Loading payout...</p>
       <template v-if="payout">
         <section v-if="!editing">
           <h1>Payout Option</h1>
@@ -130,7 +141,7 @@ onMounted(load)
         <form v-else @submit.prevent="confirming = true">
           <div class="form-head">
             <h1><button class="back" type="button" aria-label="Back" @click="editing = false">‹</button>Payout Option</h1>
-            <button class="primary" type="submit">Update</button>
+            <button class="primary" type="submit" :disabled="uploading">{{ uploading ? 'Uploading...' : 'Update' }}</button>
           </div>
           <section class="form-card">
             <label class="caption">Book Bank Image*</label>

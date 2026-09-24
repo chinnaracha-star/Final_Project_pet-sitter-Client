@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onMounted, ref } from "vue";
 import AddressMap from "./AddressMap.vue";
 import ProfileGallery from "./ProfileGallery.vue";
 import { getProfileUiState } from "./profileFlow";
+import { useAuthStore } from "../../stores/auth";
 import {
-  currentSitterId,
   getOwnProfile,
   submitProfile as submitSitterProfile,
   type ApprovalStatus,
@@ -17,23 +16,9 @@ const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 
 const fullName = defineModel<string>("fullName", { required: true });
 
-const route = useRoute();
-const userId = currentSitterId();
-const demoStatuses: Record<string, ApprovalStatus> = {
-  unverified: "Unverified",
-  waiting: "Waiting for approve",
-  "waiting-for-verify": "Waiting for verify",
-  verified: "Verified",
-  approved: "Approved",
-  "rejected-first": "Unverified",
-  rejected: "Rejected",
-};
-const demoStatusKey = String(route.query.status);
-const status = ref<ApprovalStatus>(
-  !userId && demoStatuses[demoStatusKey]
-    ? demoStatuses[demoStatusKey]
-    : "Unverified",
-);
+const auth = useAuthStore();
+const userId = computed(() => auth.role === "sitter" ? auth.userId : null);
+const status = ref<ApprovalStatus>("Unverified");
 
 const phone = ref("");
 const email = ref("");
@@ -61,11 +46,7 @@ const avatarUrl = ref("");
 const photoUrls = ref<string[]>([]);
 const notice = ref("");
 const photoInput = ref<HTMLInputElement | null>(null);
-const rejectionReason = ref(
-  !userId && demoStatusKey.startsWith("rejected")
-    ? "Please update the information and submit it again."
-    : "",
-);
+const rejectionReason = ref("");
 const loading = ref(false);
 const uiState = computed(() => getProfileUiState(status.value, rejectionReason.value));
 const showFullProfile = computed(() => uiState.value.showFullProfile);
@@ -161,7 +142,7 @@ async function submitProfile() {
     notice.value = "เลือก Pet type อย่างน้อย 1 ประเภท";
     return;
   }
-  if (!userId) {
+  if (!userId.value) {
     notice.value = "เข้าสู่ระบบด้วยบัญชี Sitter เพื่อเชื่อมต่อ API";
     return;
   }
@@ -180,23 +161,11 @@ function removePetType(pet: string) {
   petTypes.value = petTypes.value.filter((selectedPet) => selectedPet !== pet);
 }
 
-watch(
-  () => route.query.status,
-  (value) => {
-    if (userId) return;
-    const key = String(value);
-    const next = demoStatuses[key];
-    if (next) {
-      status.value = next;
-      rejectionReason.value = key.startsWith("rejected")
-        ? "Please update the information and submit it again."
-        : "";
-    }
-  },
-);
-
 onMounted(async () => {
-  if (!userId) return;
+  if (!userId.value) {
+    notice.value = "กรุณาเข้าสู่ระบบด้วยบัญชี Pet Sitter";
+    return;
+  }
   loading.value = true;
   try {
     applyResponse(await getOwnProfile());
@@ -225,9 +194,6 @@ onMounted(async () => {
         {{ uiState.actionText }}
       </button>
     </div>
-    <p v-if="!userId" class="demo-notice" role="status">
-      {{ demoStatuses[demoStatusKey] ? 'Demo profile state. Saving requires the sitter API and a signed-in sitter account.' : 'Server integration pending. Sign in as a sitter to load and save a real profile.' }}
-    </p>
     <p v-if="rejectionReason" class="rejection" role="status">
       <img src="/icon/info-circle.svg" alt="" width="20" height="20" />
       Your request has not been approved: '{{ rejectionReason }}'

@@ -13,6 +13,7 @@ export type AuthMe = {
   avatarUrl: string | null
   profileComplete: boolean
   banned: boolean
+  admin: boolean
 }
 
 export type PetPayload = {

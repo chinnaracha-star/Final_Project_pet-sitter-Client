@@ -2,8 +2,8 @@
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
-import { API_BASE_URL } from '../../config/api'
 
 type SitterStatus =
   | 'Unverified'
@@ -77,7 +77,7 @@ const fetchSitters = async (pageNum: number, currentSearch: string, currentStatu
     // "All status" behaves like the example's "Highlight" (no status filter applied)
     const statusParam = currentStatus === 'All status' ? '' : currentStatus
 
-    const response = await axios.get<SitterProfilePageResponse>(`${API_BASE_URL}/sitterprofile`, {
+    const response = await adminApi.get<SitterProfilePageResponse>('/sitterprofile', {
       params: {
         page: pageNum,
         limit,

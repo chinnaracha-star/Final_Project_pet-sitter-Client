@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
 
@@ -8,7 +8,6 @@ interface OwnerBanStatusResponse {
 	isBanned: boolean | null
 }
 
-const API_BASE_URL = 'http://localhost:8081/api'
 const route = useRoute()
 const router = useRouter()
 const store = useAdminPetOwnerStore()
@@ -28,7 +27,7 @@ const confirmUnban = async () => {
 
 	isSubmitting.value = true
 	try {
-		const response = await axios.patch<OwnerBanStatusResponse>(`${API_BASE_URL}/admin/owners/${ownerId}/unban`)
+		const response = await adminApi.patch<OwnerBanStatusResponse>(`/admin/owners/${ownerId}/unban`)
 		store.setSelectedOwnerIsBanned(response.data.isBanned)
 		returnToProfile()
 	} catch (error) {

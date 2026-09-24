@@ -6,7 +6,9 @@ Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
 เปิด `/sitter/bookings?demo=true` เพื่อเปิดข้อมูลเดโมอย่างชัดเจน จากนั้น Booking List, Booking Detail, Calendar และ Payout จะใช้ booking ชุดเดียวกัน หน้า Messages ใช้แชตเดโมเสมอ ป้าย **Demo data** ระบุหน้าที่ยังไม่อ่านข้อมูลจาก server; ปุ่ม **Reset demo** ล้างสถานะ booking และบัญชีธนาคารที่เก็บในเบราว์เซอร์ ส่วน **Exit demo** กลับไปเรียก API โดยไม่มีการสลับเป็น mock อัตโนมัติ
 
-Profile/Approval ยังต้องใช้ API จริงและบัญชี sitter ที่ล็อกอินอยู่ ฝั่ง server ต้องแก้การเริ่ม Spring context, ผูก sitter/admin endpoint กับ JWT, เพิ่ม endpoint อัปโหลดรูป sitter และตกลง booking payload ที่มี pets ก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
+Profile/Approval ต้องใช้บัญชี Supabase ที่ล็อกอินอยู่และส่ง access token ให้ API ส่วนการอัปโหลดรูป sitter และ booking payload ที่มี pets ยังไม่รองรับครบก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
+
+ในเครื่อง ให้ตั้ง `VITE_API_BASE_URL=` ว่างและ `VITE_API_PORT` ให้ตรงกับ `PORT` ของ backend (ตัวอย่างใช้ `10000`) แล้วรัน `npm run dev`; Vite จะส่ง `/api/*` ไป backend ในเครื่อง บน Vercel คำขอ `/api/*` จะถูกส่งต่อไป Render ตาม `vercel.json` โดยอัตโนมัติ ไม่ต้องตั้ง `VITE_API_BASE_URL` ใน Vercel หลังแก้ `vercel.json` ต้อง deploy frontend ใหม่
 
 แผนที่ในหน้า Sitter Profile เป็น **preview ฝั่ง client** ด้วย Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก ยังไม่บันทึก lat/lng ลง API
 
@@ -27,9 +29,7 @@ Profile/Approval ยังต้องใช้ API จริงและบั�
 
 ## Sitter approval API contract
 
-ระหว่างที่ระบบ authentication ยังไม่เชื่อม API ใช้ `X-User-Id` สำหรับ Sitter/Owner และ `X-Admin-Id` สำหรับ Admin โดย Backend ตรวจ `users.is_admin` ก่อนอนุญาตการอนุมัติ เมื่อ Auth พร้อมให้ middleware สร้างค่าเดียวกันจาก token โดยไม่เปลี่ยน payload
-
-Header เหล่านี้เป็นวิธีทดสอบในเครื่องเท่านั้น ผู้ใช้ปลอมค่าได้ จึงห้ามเปิด API นี้สู่ production ก่อนเชื่อม authentication จริง
+API ส่วนตัวต้องส่ง `Authorization: Bearer <Supabase access token>`; backend ใช้ subject ใน token ระบุตัวผู้ใช้ และตรวจ `users.is_admin` สำหรับการอนุมัติหรือ API แอดมิน ไม่มีการใช้ ID จาก request header เป็นตัวตน
 
 | Method | Endpoint | หน้าที่ |
 |---|---|---|

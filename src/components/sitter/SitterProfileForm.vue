@@ -162,12 +162,12 @@ async function submitProfile() {
     return;
   }
   if (!userId) {
-    notice.value = "ตั้งค่า petSitterUserId ใน localStorage หรือส่ง ?userId=UUID เพื่อเชื่อม API";
+    notice.value = "เข้าสู่ระบบด้วยบัญชี Sitter เพื่อเชื่อมต่อ API";
     return;
   }
   loading.value = true;
   try {
-    applyResponse(await submitSitterProfile(userId, payload()));
+    applyResponse(await submitSitterProfile(payload()));
     notice.value = "ส่งข้อมูลให้ Admin ตรวจสอบแล้ว";
   } catch (error) {
     notice.value = error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้";
@@ -199,7 +199,7 @@ onMounted(async () => {
   if (!userId) return;
   loading.value = true;
   try {
-    applyResponse(await getOwnProfile(userId));
+    applyResponse(await getOwnProfile());
   } catch (error) {
     notice.value = error instanceof Error ? error.message : "ไม่สามารถโหลดโปรไฟล์ได้";
   } finally {

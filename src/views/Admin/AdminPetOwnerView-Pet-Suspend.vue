@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
 
-const API_BASE_URL = 'http://localhost:8081/api'
 const route = useRoute()
 const router = useRouter()
 const isSubmitting = ref(false)
@@ -26,7 +25,7 @@ const suspendPet = async () => {
 	isSubmitting.value = true
 	errorMessage.value = ''
 	try {
-		await axios.patch(`${API_BASE_URL}/admin/owners/${ownerId}/pets/${petId}/suspend`)
+		await adminApi.patch(`/admin/owners/${ownerId}/pets/${petId}/suspend`)
 		router.push(`/admin/owners/profile/${ownerId}/pets`)
 	} catch (error) {
 		console.error('Failed to suspend pet:', error)

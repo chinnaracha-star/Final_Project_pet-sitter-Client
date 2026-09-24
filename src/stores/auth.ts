@@ -83,6 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
   const profile = ref<OwnerProfile>(shouldMockOwner ? { ...defaultMockProfile } : { ...emptyProfile })
   const userId = ref<string | null>(shouldMockOwner ? 'mock-user-123' : null)
   const profileComplete = ref(shouldMockOwner)
+  const isAdmin = ref(false)
   const ready = ref(!isSupabaseConfigured)
 
   const isLoggedIn = computed(() => role.value !== null)
@@ -93,6 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = toProfile(me)
     userId.value = me.id
     profileComplete.value = me.profileComplete
+    isAdmin.value = me.admin
   }
 
   function clear() {
@@ -100,6 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = { ...emptyProfile }
     userId.value = null
     profileComplete.value = false
+    isAdmin.value = false
   }
 
   async function restore() {
@@ -215,6 +218,7 @@ export const useAuthStore = defineStore('auth', () => {
     profile,
     userId,
     profileComplete,
+    isAdmin,
     ready,
     isLoggedIn,
     isOwnerLoggedIn,

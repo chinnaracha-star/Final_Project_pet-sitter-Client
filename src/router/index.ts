@@ -48,12 +48,17 @@ const router = createRouter({
 })
 
 router.beforeEach(to => {
-  if (!to.meta.owner) return true
-  // Allow creating new pet without login if coming from booking flow for testing
-  if (to.path === '/owner/pets/new' && String(to.query.redirect || '').includes('/booking')) {
+  if (to.meta.owner && !useAuthStore().isOwnerLoggedIn
+      && to.path === '/owner/pets/new'
+      && String(to.query.redirect || '').includes('/booking')) {
     return true
   }
   const auth = useAuthStore()
+  if (to.path.startsWith('/admin')) {
+    if (!auth.isLoggedIn) return { path: '/login' }
+    return auth.isAdmin ? true : { path: '/' }
+  }
+  if (!to.meta.owner) return true
   if (auth.isOwnerLoggedIn) return true
   return { path: '/login' }
 })

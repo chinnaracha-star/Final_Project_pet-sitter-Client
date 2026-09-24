@@ -52,7 +52,6 @@ function getDefaultTimes() {
     return `${displayHour}:${displayMinute} ${period}`
   }
 
-  
   const startTime = formatSlot(startHour, startMinute)
   const endHour = (startHour + 1) % 24
   const endTime = formatSlot(endHour, startMinute)

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
-import { API_BASE_URL } from '../../config/api'
+import { adminApi } from '../../services/adminApi'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
@@ -51,7 +50,7 @@ const fetchReviews = async (sitterId: string) => {
 	isLoading.value = true
 	errorMessage.value = ''
 	try {
-		const response = await axios.get<ReviewAdminListItem[]>(`${API_BASE_URL}/reviews/sitter/${sitterId}`)
+		const response = await adminApi.get<ReviewAdminListItem[]>(`/reviews/sitter/${sitterId}`)
 		reviews.value = response.data.map(mapReview)
 	} catch (error) {
 		console.error('Failed to fetch sitter reviews:', error)
@@ -79,7 +78,7 @@ watch(
 
 const removeReview = async (id: number) => {
 	try {
-		await axios.delete(`${API_BASE_URL}/reviews/${id}`)
+		await adminApi.delete(`/reviews/${id}`)
 		reviews.value = reviews.value.filter((review) => review.id !== id)
 	} catch (error) {
 		console.error('Failed to remove review:', error)

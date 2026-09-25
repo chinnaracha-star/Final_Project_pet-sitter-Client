@@ -124,6 +124,13 @@ export const submitProfile = (profile: ProfilePayload) =>
     body: JSON.stringify(profile),
   })
 
+export const uploadSitterProfileMedia = (file: File, folder: 'profile' | 'gallery') => {
+  const body = new FormData()
+  body.append('file', file)
+  body.append('folder', folder)
+  return api<{ url: string }>('/api/sitter/profile/media', { method: 'POST', body })
+}
+
 export const getApprovalQueue = () => api<ProfileResponse[]>('/api/admin/sitter-approvals')
 
 export const getSitterApproval = (sitterId: string) =>

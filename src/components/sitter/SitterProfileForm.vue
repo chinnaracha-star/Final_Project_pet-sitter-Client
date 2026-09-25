@@ -7,6 +7,7 @@ import { useAuthStore } from "../../stores/auth";
 import {
   getOwnProfile,
   submitProfile as submitSitterProfile,
+  uploadSitterProfileMedia,
   type ApprovalStatus,
   type ProfilePayload,
   type ProfileResponse,
@@ -58,7 +59,7 @@ function setCoordinates(nextLatitude: number | null, nextLongitude: number | nul
   longitude.value = nextLongitude;
 }
 
-function changeAvatar(event: Event) {
+async function changeAvatar(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -67,10 +68,16 @@ function changeAvatar(event: Event) {
     input.value = "";
     return;
   }
-  const reader = new FileReader();
-  reader.onload = () => (avatarUrl.value = String(reader.result));
-  reader.readAsDataURL(file);
-  input.value = "";
+  loading.value = true;
+  try {
+    avatarUrl.value = (await uploadSitterProfileMedia(file, "profile")).url;
+    notice.value = "อัปโหลดรูปโปรไฟล์แล้ว";
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : "ไม่สามารถอัปโหลดรูปได้";
+  } finally {
+    loading.value = false;
+    input.value = "";
+  }
 }
 
 function fillForm(payload: ProfilePayload) {

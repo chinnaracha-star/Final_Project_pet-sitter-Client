@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { uploadSitterProfileMedia } from '../../services/sitterApproval'
 
 const images = defineModel<string[]>({ required: true })
 defineProps<{ readonly?: boolean }>()
 const imageError = ref('')
-
-function readImage(file: File) {
-  // ponytail: data URLs keep v1 self-contained; use object storage when production upload volume matters.
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(file)
-  })
-}
+const uploading = ref(false)
 
 async function addImages(event: Event) {
   const input = event.target as HTMLInputElement
@@ -29,10 +21,14 @@ async function addImages(event: Event) {
     return
   }
   try {
-    images.value.push(...await Promise.all(selected.map(readImage)))
+    uploading.value = true
+    const uploaded = await Promise.all(selected.map(file => uploadSitterProfileMedia(file, 'gallery')))
+    images.value.push(...uploaded.map(image => image.url))
     imageError.value = ''
-  } catch {
-    imageError.value = 'ไม่สามารถอ่านไฟล์รูปภาพได้'
+  } catch (error) {
+    imageError.value = error instanceof Error ? error.message : 'ไม่สามารถอัปโหลดรูปภาพได้'
+  } finally {
+    uploading.value = false
   }
   input.value = ''
 }
@@ -63,8 +59,8 @@ function removeImage(index: number) {
             <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
         </span>
-        <span class="upload-text">Upload Image</span>
-        <input type="file" accept="image/*" multiple class="visually-hidden" @change="addImages" />
+        <span class="upload-text">{{ uploading ? 'Uploading...' : 'Upload Image' }}</span>
+        <input type="file" accept="image/*" multiple class="visually-hidden" :disabled="uploading" @change="addImages" />
       </label>
     </div>
     <small v-if="imageError" class="error" role="alert">{{ imageError }}</small>

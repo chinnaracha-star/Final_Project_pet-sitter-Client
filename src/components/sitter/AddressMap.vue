@@ -21,6 +21,7 @@ const lookupError = ref('')
 let map: L.Map | undefined
 let marker: L.Marker | undefined
 let timer: ReturnType<typeof setTimeout> | undefined
+let lookupId = 0
 
 const pin = L.icon({
   iconUrl: '/image/Map_Pin_Selected.svg',
@@ -42,12 +43,24 @@ function movePin() {
   map.setView(pos, 15)
 }
 
+function selectLocation(position: L.LatLng) {
+  lookupId++
+  clearTimeout(timer)
+  lat.value = position.lat
+  lon.value = position.lng
+  lookupError.value = ''
+  emit('coordinates', lat.value, lon.value)
+  movePin()
+}
+
 async function lookup() {
   const q = query.value
   if (q.replace(/, Thailand$/, '').trim().length < 3) return
+  const currentLookup = ++lookupId
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`)
     const data = await res.json() as { lat: string; lon: string }[]
+    if (currentLookup !== lookupId) return
     if (!data[0]) {
       lookupError.value = 'Could not find this address on the map. Please check the address.'
       emit('coordinates', null, null)
@@ -59,6 +72,7 @@ async function lookup() {
     emit('coordinates', lat.value, lon.value)
     movePin()
   } catch {
+    if (currentLookup !== lookupId) return
     lookupError.value = 'Map lookup is unavailable. The address can still be edited.'
     emit('coordinates', null, null)
   }
@@ -66,6 +80,7 @@ async function lookup() {
 
 watch(query, () => {
   clearTimeout(timer)
+  lookupId++
   emit('coordinates', null, null)
   timer = setTimeout(lookup, 700)
 })
@@ -80,7 +95,10 @@ onMounted(async () => {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map)
-  marker = L.marker([lat.value, lon.value], { icon: pin }).addTo(map)
+  marker = L.marker([lat.value, lon.value], { icon: pin, draggable: true })
+    .on('dragend', event => selectLocation((event.target as L.Marker).getLatLng()))
+    .addTo(map)
+  map.on('click', event => selectLocation(event.latlng))
   await nextTick()
   map.invalidateSize()
   window.setTimeout(() => map?.invalidateSize(), 300)
@@ -99,7 +117,7 @@ onUnmounted(() => {
   <figure class="address-map">
     <div ref="mapEl" class="map-canvas" role="img" aria-label="Address map preview"></div>
     <figcaption v-if="lookupError" role="status">{{ lookupError }}</figcaption>
-    <figcaption v-else>Map location will be included with your profile when the address is found.</figcaption>
+    <figcaption v-else>Click the map or drag the pin to choose the exact location saved with your profile.</figcaption>
   </figure>
 </template>
 

@@ -6,7 +6,7 @@ Booking List, Booking Detail, Calendar และ Payout ใช้ข้อมู
 
 ในเครื่อง ให้ตั้ง `VITE_API_BASE_URL=` ว่างและ `VITE_API_PORT` ให้ตรงกับ `PORT` ของ backend (ตัวอย่างใช้ `10000`) แล้วรัน `npm run dev`; Vite จะส่ง `/api/*` ไป backend ในเครื่อง บน Vercel คำขอ `/api/*` จะถูกส่งต่อไป Render ตาม `vercel.json` โดยอัตโนมัติ ไม่ต้องตั้ง `VITE_API_BASE_URL` ใน Vercel หลังแก้ `vercel.json` ต้อง deploy frontend ใหม่
 
-แผนที่ในหน้า Sitter Profile เป็น **preview ฝั่ง client** ด้วย Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก ยังไม่บันทึก lat/lng ลง API
+แผนที่ในหน้า Sitter Profile ใช้ Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก และรองรับการคลิกแผนที่หรือลากหมุดเพื่อเลือกตำแหน่งที่แม่นยำ ค่า latitude/longitude จะถูกบันทึกใน `pending_profile` เพื่อรอ Admin อนุมัติ
 
 ## Sitter approval flow
 

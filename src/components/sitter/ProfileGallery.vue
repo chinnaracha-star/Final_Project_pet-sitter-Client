@@ -75,6 +75,9 @@ function removeImage(index: number) {
         <input type="file" accept="image/*" multiple class="visually-hidden" :disabled="uploading" @change="addImages" />
       </label>
     </div>
+    <small v-if="readonly && images.length === 0" class="readonly-note" role="status">
+      Gallery is locked while waiting for Admin approval. Ask Admin to reject the request, then upload up to 10 images and submit again.
+    </small>
     <small v-if="imageError" class="error" role="alert">{{ imageError }}</small>
   </div>
 </template>
@@ -94,6 +97,7 @@ function removeImage(index: number) {
 .upload-icon svg { width: 100%; height: 100%; }
 .upload-text { font-size: 14px; font-weight: 500; }
 .error { color: #d43a3a; }
+.readonly-note { color: #777f90; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 760px) {
   .field.wide { grid-column: 1; }

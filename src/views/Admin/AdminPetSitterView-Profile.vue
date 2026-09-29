@@ -204,6 +204,20 @@ const fullAddress = () => {
 					</div>
 
 					<div v-if="approvalStatus !== 'Unverified' && approvalStatus !== 'Waiting for verify'" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
+						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Image Gallery</h2>
+						<div v-if="profile?.photoUrls.length" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+							<img
+								v-for="(photo, index) in profile.photoUrls"
+								:key="photo"
+								:src="photo"
+								:alt="`Pet sitter gallery ${index + 1}`"
+								class="aspect-square w-full rounded-lg object-cover"
+							/>
+						</div>
+						<p v-else class="mt-1 text-[10px] text-[#9297a9]">No gallery images submitted.</p>
+					</div>
+
+					<div v-if="approvalStatus !== 'Unverified' && approvalStatus !== 'Waiting for verify'" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Address</h2>
 						<p class="mt-1 text-[10px]">{{ fullAddress() || '-' }}</p>
 						<div class="mt-5">

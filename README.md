@@ -31,6 +31,7 @@ API ส่วนตัวต้องส่ง `Authorization: Bearer <Supabase 
 |---|---|---|
 | `GET` | `/api/sitter/profile` | อ่าน live profile, pending profile และสถานะ |
 | `POST` | `/api/sitter/profile/submit` | ส่งข้อมูลเข้าคิว Verify/Approve |
+| `POST` | `/api/sitter/profile/media` | อัปโหลดรูป Profile/Gallery ไป bucket `uploads` แล้วคืน public URL |
 | `GET` | `/api/admin/sitter-approvals` | อ่านรายการที่รอ Admin |
 | `PATCH` | `/api/admin/sitter-approvals/approve?sitterId={uuid}` | อนุมัติและคัดลอก pending ไป live |
 | `PATCH` | `/api/admin/sitter-approvals/reject?sitterId={uuid}` | Reject พร้อม `{ "reason": "..." }` |
@@ -47,6 +48,8 @@ API ส่วนตัวต้องส่ง `Authorization: Bearer <Supabase 
 | `POST` | `/api/sitter/payout/book-bank-image` | อัปโหลดรูปสมุดบัญชีไป Supabase Storage |
 
 `pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร
+
+รูป Profile และ Gallery จะถูกอัปโหลดก่อน แล้ว `pending_profile.avatarUrl` และ `pending_profile.photoUrls` จะเก็บเฉพาะ HTTPS URL เท่านั้น ส่วน Address จะอยู่ใน `pending_profile.addressDetail`, `subDistrict`, `district`, `province`, `postCode`, `latitude` และ `longitude` จนกว่า Admin จะอนุมัติรอบที่ 2 จึงคัดลอกไป live profile
 
 หน้า `/search` เรียก `/api/sitters` โดยส่ง filter ไปที่ server ทั้งหมด:
 

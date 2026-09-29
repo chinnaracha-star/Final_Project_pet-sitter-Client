@@ -4,6 +4,7 @@ import { uploadSitterProfileMedia } from '../../services/sitterApproval'
 
 const images = defineModel<string[]>({ required: true })
 defineProps<{ readonly?: boolean }>()
+const emit = defineEmits<{ uploading: [value: boolean] }>()
 const imageError = ref('')
 const uploading = ref(false)
 
@@ -22,13 +23,24 @@ async function addImages(event: Event) {
   }
   try {
     uploading.value = true
-    const uploaded = await Promise.all(selected.map(file => uploadSitterProfileMedia(file, 'gallery')))
-    images.value.push(...uploaded.map(image => image.url))
-    imageError.value = ''
-  } catch (error) {
-    imageError.value = error instanceof Error ? error.message : 'ไม่สามารถอัปโหลดรูปภาพได้'
+    emit('uploading', true)
+    const results = await Promise.allSettled(
+      selected.map(file => uploadSitterProfileMedia(file, 'gallery')),
+    )
+    const uploaded = results
+      .filter((result): result is PromiseFulfilledResult<{ url: string }> => result.status === 'fulfilled')
+      .map(result => result.value.url)
+    images.value.push(...uploaded)
+
+    const failed = results.find((result): result is PromiseRejectedResult => result.status === 'rejected')
+    imageError.value = failed
+      ? failed.reason instanceof Error
+        ? failed.reason.message
+        : 'ไม่สามารถอัปโหลดรูปภาพได้'
+      : ''
   } finally {
     uploading.value = false
+    emit('uploading', false)
   }
   input.value = ''
 }
@@ -52,7 +64,7 @@ function removeImage(index: number) {
           @click="removeImage(index)"
         >×</button>
       </div>
-      <label v-if="!readonly" class="upload-tile">
+      <label v-if="!readonly && images.length < 10" class="upload-tile">
         <span class="upload-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />

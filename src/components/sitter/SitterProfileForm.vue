@@ -49,6 +49,7 @@ const notice = ref("");
 const photoInput = ref<HTMLInputElement | null>(null);
 const rejectionReason = ref("");
 const loading = ref(false);
+const galleryUploading = ref(false);
 const uiState = computed(() => getProfileUiState(status.value, rejectionReason.value));
 const showFullProfile = computed(() => uiState.value.showFullProfile);
 const statusClass = computed(() =>
@@ -122,13 +123,13 @@ function payload(): ProfilePayload {
     experienceYears: experience.value,
     dateOfBirth: dateOfBirth.value || null,
     idNumber: idNumber.value,
-    avatarUrl: avatarUrl.value,
+    avatarUrl: avatarUrl.value.startsWith("https://") ? avatarUrl.value : "",
     introduction: introduction.value,
     displayName: sitterName.value,
     petTypes: petTypes.value,
     services: services.value,
     myPlace: myPlace.value,
-    photoUrls: photoUrls.value,
+    photoUrls: photoUrls.value.filter((url) => url.startsWith("https://")),
     addressDetail: address.value,
     district: district.value,
     subDistrict: subDistrict.value,
@@ -145,6 +146,10 @@ function payload(): ProfilePayload {
 }
 
 async function submitProfile() {
+  if (galleryUploading.value) {
+    notice.value = "กรุณารอให้อัปโหลดรูปเสร็จก่อนส่งให้ Admin";
+    return;
+  }
   if (showFullProfile.value && petTypes.value.length === 0) {
     notice.value = "เลือก Pet type อย่างน้อย 1 ประเภท";
     return;
@@ -196,7 +201,7 @@ onMounted(async () => {
         type="submit"
         form="profile-form"
         class="approval-button"
-        :disabled="loading || !userId"
+        :disabled="loading || galleryUploading || !userId"
       >
         {{ uiState.actionText }}
       </button>
@@ -212,7 +217,7 @@ onMounted(async () => {
     <p v-if="notice" class="demo-notice" role="status">{{ notice }}</p>
 
     <form id="profile-form" @submit.prevent="submitProfile">
-      <fieldset class="profile-fields" :disabled="loading || uiState.readOnly">
+      <fieldset class="profile-fields" :disabled="loading || galleryUploading || uiState.readOnly">
       <section class="card">
         <h2>Basic Information</h2>
         <label class="image-label">Profile Image</label>
@@ -352,7 +357,11 @@ onMounted(async () => {
             <label for="my-place">My Place (Describe your place)</label>
             <textarea id="my-place" v-model.trim="myPlace" rows="4" />
           </div>
-          <ProfileGallery v-model="photoUrls" :readonly="uiState.readOnly" />
+          <ProfileGallery
+            v-model="photoUrls"
+            :readonly="uiState.readOnly"
+            @uploading="galleryUploading = $event"
+          />
         </div>
       </section>
 
@@ -398,7 +407,7 @@ onMounted(async () => {
       </section>
       </fieldset>
       <div v-if="uiState.canSubmit" class="form-actions">
-        <button type="submit" :disabled="loading || !userId">{{ uiState.actionText }}</button>
+        <button type="submit" :disabled="loading || galleryUploading || !userId">{{ uiState.actionText }}</button>
       </div>
     </form>
   </main>

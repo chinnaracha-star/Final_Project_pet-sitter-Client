@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import SitterPageShell from '../components/sitter/SitterPageShell.vue'
 import { getPayout, updateBankAccount, uploadBookBankImage, type BankAccount, type Payout } from '../services/sitterPayout'
-import { extractAccountNumber, formatAccountNumber } from '../utils/accountNumberOcr'
+import { accountFromWords, digitsFromBinary, dottedBoxes, extractAccountNumber, formatAccountNumber, prepareDotBand, type OcrWord } from '../utils/accountNumberOcr'
 
 // Add or edit supported banks here. The code is saved with the selected name.
 const bankOptions = [
@@ -43,34 +43,30 @@ function selectBank() {
   bank.value.bankCode = bankOptions.find(option => option.name === bank.value.bankName)?.code || ''
 }
 
-async function stretchContrast(file: File) {
-  const bitmap = await createImageBitmap(file)
-  const width = Math.min(1600, bitmap.width)
-  const height = Math.max(1, Math.round(bitmap.height * (width / bitmap.width)))
+function wordsOf(blocks: { paragraphs?: { lines?: { words?: { text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }[] }[] }[] }[]): OcrWord[] {
+  const words: OcrWord[] = []
+  for (const block of blocks || []) {
+    for (const paragraph of block.paragraphs || []) {
+      for (const line of paragraph.lines || []) {
+        for (const word of line.words || []) words.push({ text: word.text, confidence: word.confidence, x0: word.bbox.x0, y0: word.bbox.y0, x1: word.bbox.x1, y1: word.bbox.y1 })
+      }
+    }
+  }
+  return words
+}
+
+function bandDigits(bitmap: ImageBitmap, box: { left: number; top: number; width: number; height: number }) {
   const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
+  canvas.width = box.width
+  canvas.height = box.height
   const context = canvas.getContext('2d', { willReadFrequently: true })
-  if (!context) return canvas
-  context.drawImage(bitmap, 0, 0, width, height)
-  bitmap.close()
-  const image = context.getImageData(0, 0, width, height)
-  const pixels = image.data
-  let darkest = 255
-  let lightest = 0
-  for (let index = 0; index < pixels.length; index += 4) {
-    const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
-    darkest = Math.min(darkest, gray)
-    lightest = Math.max(lightest, gray)
-  }
-  const span = lightest - darkest || 1
-  for (let index = 0; index < pixels.length; index += 4) {
-    const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
-    const value = Math.round(((gray - darkest) * 255) / span)
-    pixels[index] = pixels[index + 1] = pixels[index + 2] = value
-  }
-  context.putImageData(image, 0, 0)
-  return canvas
+  if (!context) return ''
+  context.drawImage(bitmap, box.left, box.top, box.width, box.height, 0, 0, box.width, box.height)
+  const pixels = context.getImageData(0, 0, box.width, box.height).data
+  const gray = new Uint8Array(box.width * box.height)
+  for (let index = 0, pixel = 0; index < pixels.length; index += 4, pixel++) gray[pixel] = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
+  const digits = digitsFromBinary(prepareDotBand(gray, box.width, box.height), box.width, box.height)
+  return /^\d{10}$/.test(digits) ? digits : ''
 }
 
 async function readAccountNumber(file: File) {
@@ -83,14 +79,51 @@ async function readAccountNumber(file: File) {
         if (message.status === 'recognizing text' && message.progress != null) ocrProgress.value = Math.round(message.progress * 100)
       },
     })
+    const bitmap = await createImageBitmap(file)
     try {
       await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT })
-      const first = await worker.recognize(file)
-      let accountNumber = extractAccountNumber(first.data.text)
+      const first = await worker.recognize(file, {}, { blocks: true })
+      const words = wordsOf(first.data.blocks || [])
+      let accountNumber = accountFromWords(words)
+      const tail = words.find(word => /\d-\d{5}-\d/.test(word.text.replace(/[.–—]/g, '-')))
+      if (!accountNumber && tail) {
+        await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE, user_defined_dpi: '300', tessedit_char_whitelist: '0123456789-' })
+        for (const trim of [0.22, 0.3, 0.38]) {
+          const left = Math.round(tail.x0 + (tail.x1 - tail.x0) * trim)
+          const top = Math.max(0, tail.y0 - 2)
+          const width = Math.min(bitmap.width - left, tail.x1 - left + 24)
+          const height = Math.min(bitmap.height - top, tail.y1 - tail.y0 + 10)
+          if (width < 40 || height < 12) continue
+          const canvas = document.createElement('canvas')
+          canvas.width = width * 4
+          canvas.height = height * 4
+          const context = canvas.getContext('2d', { willReadFrequently: true })
+          if (!context) continue
+          context.drawImage(bitmap, left, top, width, height, 0, 0, canvas.width, canvas.height)
+          const image = context.getImageData(0, 0, canvas.width, canvas.height)
+          const samples: number[] = []
+          for (let index = 0; index < image.data.length; index += 4) samples.push(image.data[index] * 0.299 + image.data[index + 1] * 0.587 + image.data[index + 2] * 0.114)
+          samples.sort((a, b) => a - b)
+          const darkest = samples[Math.floor(samples.length * 0.02)]
+          const lightest = samples[Math.floor(samples.length * 0.98)]
+          const span = lightest - darkest || 1
+          for (let index = 0; index < image.data.length; index += 4) {
+            const value = Math.max(0, Math.min(255, ((image.data[index] * 0.299 + image.data[index + 1] * 0.587 + image.data[index + 2] * 0.114 - darkest) * 255) / span))
+            image.data[index] = image.data[index + 1] = image.data[index + 2] = value
+          }
+          context.putImageData(image, 0, 0)
+          const line = extractAccountNumber((await worker.recognize(canvas)).data.text)
+          if (/^\d{3}-\d-\d{5}-\d$/.test(line) || /^\d{10}$/.test(line) || /^\d{12}$/.test(line)) {
+            accountNumber = line
+            break
+          }
+        }
+      }
       if (!accountNumber) {
-        const stretched = await stretchContrast(file)
-        const second = await worker.recognize(stretched)
-        accountNumber = extractAccountNumber(second.data.text)
+        for (const box of dottedBoxes(words, bitmap.width, bitmap.height)) {
+          accountNumber = bandDigits(bitmap, box)
+          if (accountNumber) break
+        }
       }
       if (accountNumber) {
         bank.value.accountNumber = formatAccountNumber(accountNumber, bank.value.bankName)
@@ -99,6 +132,7 @@ async function readAccountNumber(file: File) {
         ocrStatus.value = 'No account number detected. Please enter it manually.'
       }
     } finally {
+      bitmap.close()
       await worker.terminate()
     }
   } catch {

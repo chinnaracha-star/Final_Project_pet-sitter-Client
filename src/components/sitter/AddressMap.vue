@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { placeFromNominatim, type MapAddress } from './mapAddress'
 
 const props = defineProps<{
   address: string
@@ -12,7 +13,10 @@ const props = defineProps<{
   latitude?: number | null
   longitude?: number | null
 }>()
-const emit = defineEmits<{ coordinates: [latitude: number | null, longitude: number | null] }>()
+const emit = defineEmits<{
+  coordinates: [latitude: number | null, longitude: number | null]
+  place: [place: MapAddress & { latitude: number; longitude: number }]
+}>()
 
 const mapEl = ref<HTMLElement | null>(null)
 const lat = ref(13.7563)
@@ -22,6 +26,7 @@ let map: L.Map | undefined
 let marker: L.Marker | undefined
 let timer: ReturnType<typeof setTimeout> | undefined
 let lookupId = 0
+let ignoreQuery = false
 
 const pin = L.icon({
   iconUrl: '/image/Map_Pin_Selected.svg',
@@ -51,6 +56,25 @@ function selectLocation(position: L.LatLng) {
   lookupError.value = ''
   emit('coordinates', lat.value, lon.value)
   movePin()
+  void reverseGeocode(position)
+}
+
+async function reverseGeocode(position: L.LatLng) {
+  const currentLookup = lookupId
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${position.lat}&lon=${position.lng}`,
+      { headers: { 'Accept-Language': 'th' } },
+    )
+    if (currentLookup !== lookupId) return
+    if (!res.ok) throw new Error('lookup failed')
+    const data = await res.json() as { address?: Record<string, string> }
+    ignoreQuery = true
+    emit('place', { ...placeFromNominatim(data.address), latitude: position.lat, longitude: position.lng })
+  } catch {
+    if (currentLookup !== lookupId) return
+    lookupError.value = 'Could not read this location. The pin is saved, and you can type the address.'
+  }
 }
 
 async function lookup() {
@@ -79,6 +103,10 @@ async function lookup() {
 }
 
 watch(query, () => {
+  if (ignoreQuery) {
+    ignoreQuery = false
+    return
+  }
   clearTimeout(timer)
   lookupId++
   emit('coordinates', null, null)

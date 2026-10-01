@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import AddressMap from "./AddressMap.vue";
 import ProfileGallery from "./ProfileGallery.vue";
 import { getProfileUiState } from "./profileFlow";
+import type { MapAddress } from "./mapAddress";
 import { useAuthStore } from "../../stores/auth";
 import {
   getOwnProfile,
@@ -58,6 +59,15 @@ const statusClass = computed(() =>
 function setCoordinates(nextLatitude: number | null, nextLongitude: number | null) {
   latitude.value = nextLatitude;
   longitude.value = nextLongitude;
+}
+
+function setPlace(place: MapAddress & { latitude: number; longitude: number }) {
+  if (place.address) address.value = place.address;
+  if (place.district) district.value = place.district;
+  if (place.subDistrict) subDistrict.value = place.subDistrict;
+  if (place.province) province.value = place.province;
+  if (place.postCode) postCode.value = place.postCode;
+  setCoordinates(place.latitude, place.longitude);
 }
 
 async function changeAvatar(event: Event) {
@@ -403,6 +413,7 @@ onMounted(async () => {
           :latitude="latitude"
           :longitude="longitude"
           @coordinates="setCoordinates"
+          @place="setPlace"
         />
       </section>
       </fieldset>

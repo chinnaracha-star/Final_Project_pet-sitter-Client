@@ -207,7 +207,19 @@ onMounted(load)
 </style>
 
 <style scoped>
-.page { background: #f8f9fd; }
+.upload {
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);
+}
+.upload img {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
 .page h1 { font-size: 24px; font-weight: 700; line-height: 32px; }
 .summary { gap: 20px; margin-top: 20px; }
 .summary-card, .summary article { display: flex; align-items: center; justify-content: space-between; min-width: 0; min-height: 78px; padding: 0 24px; border: 0; border-radius: 12px; background: #fff; color: #111; font-size: 16px; }

@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import SitterPageShell from '../components/sitter/SitterPageShell.vue'
 import { getPayout, updateBankAccount, uploadBookBankImage, type BankAccount, type Payout } from '../services/sitterPayout'
-import { extractAccountNumber } from '../utils/accountNumberOcr'
+import { extractAccountNumber, formatAccountNumber } from '../utils/accountNumberOcr'
 
 // Add or edit supported banks here. The code is saved with the selected name.
 const bankOptions = [
@@ -43,6 +43,50 @@ function selectBank() {
   bank.value.bankCode = bankOptions.find(option => option.name === bank.value.bankName)?.code || ''
 }
 
+async function bookBankBands(file: File) {
+  const bitmap = await createImageBitmap(file)
+  const bands = [
+    { y: 0.34, height: 0.2 },
+    { y: 0.26, height: 0.24 },
+    { y: 0.44, height: 0.18 },
+  ]
+  const images = await Promise.all(bands.map(band => renderBand(bitmap, band.y, band.height)))
+  bitmap.close()
+  return images
+}
+
+function renderBand(bitmap: ImageBitmap, yRatio: number, heightRatio: number) {
+  const sx = Math.round(bitmap.width * 0.05)
+  const sy = Math.round(bitmap.height * yRatio)
+  const sw = Math.round(bitmap.width * 0.9)
+  const sh = Math.max(1, Math.round(bitmap.height * heightRatio))
+  const width = Math.min(1400, sw * 3)
+  const height = Math.max(1, Math.round(sh * (width / sw)))
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  if (!context) return Promise.resolve(canvas)
+  context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, width, height)
+  const image = context.getImageData(0, 0, width, height)
+  const pixels = image.data
+  let darkest = 255
+  let lightest = 0
+  for (let index = 0; index < pixels.length; index += 4) {
+    const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
+    darkest = Math.min(darkest, gray)
+    lightest = Math.max(lightest, gray)
+  }
+  const span = lightest - darkest || 1
+  for (let index = 0; index < pixels.length; index += 4) {
+    const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
+    const value = ((gray - darkest) * 255) / span < 150 ? 0 : 255
+    pixels[index] = pixels[index + 1] = pixels[index + 2] = value
+  }
+  context.putImageData(image, 0, 0)
+  return Promise.resolve(canvas)
+}
+
 async function readAccountNumber(file: File) {
   ocrStatus.value = 'Reading account number from image...'
   ocrProgress.value = 0
@@ -55,13 +99,18 @@ async function readAccountNumber(file: File) {
     })
     try {
       await worker.setParameters({
-        tessedit_char_whitelist: '0123456789- ',
-        tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+        tessedit_char_whitelist: '0123456789-',
+        tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
       })
-      const { data: { text } } = await worker.recognize(file)
-      const accountNumber = extractAccountNumber(text)
+      const images = await bookBankBands(file)
+      let accountNumber = ''
+      for (const image of images) {
+        const { data: { text } } = await worker.recognize(image)
+        accountNumber = extractAccountNumber(text)
+        if (accountNumber) break
+      }
       if (accountNumber) {
-        bank.value.accountNumber = accountNumber
+        bank.value.accountNumber = formatAccountNumber(accountNumber, bank.value.bankName)
         ocrStatus.value = 'Account number detected. Please verify it before updating.'
       } else {
         ocrStatus.value = 'No account number detected. Please enter it manually.'

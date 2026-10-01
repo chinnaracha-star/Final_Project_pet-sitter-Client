@@ -43,35 +43,30 @@ function selectBank() {
   bank.value.bankCode = bankOptions.find(option => option.name === bank.value.bankName)?.code || ''
 }
 
-async function bookBankBands(file: File) {
+async function stretchContrast(file: File) {
   const bitmap = await createImageBitmap(file)
-  const bands = [0.38, 0.3, 0.46]
-  const images = bands.flatMap(y => [renderBand(bitmap, y, 205), renderBand(bitmap, y, 0)])
-  bitmap.close()
-  return images
-}
-
-function renderBand(bitmap: ImageBitmap, yRatio: number, threshold: number) {
-  const sx = Math.round(bitmap.width * 0.04)
-  const sy = Math.round(bitmap.height * yRatio)
-  const sw = Math.round(bitmap.width * 0.92)
-  const sh = Math.max(1, Math.round(bitmap.height * 0.14))
-  const width = Math.min(1600, Math.max(sw, sw * 2))
-  const height = Math.max(1, Math.round(sh * (width / sw)))
+  const width = Math.min(1600, bitmap.width)
+  const height = Math.max(1, Math.round(bitmap.height * (width / bitmap.width)))
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
   const context = canvas.getContext('2d', { willReadFrequently: true })
   if (!context) return canvas
-  context.fillStyle = '#ffffff'
-  context.fillRect(0, 0, width, height)
-  context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, width, height)
-  if (threshold <= 0) return canvas
+  context.drawImage(bitmap, 0, 0, width, height)
+  bitmap.close()
   const image = context.getImageData(0, 0, width, height)
   const pixels = image.data
+  let darkest = 255
+  let lightest = 0
   for (let index = 0; index < pixels.length; index += 4) {
     const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
-    const value = gray < threshold ? 0 : 255
+    darkest = Math.min(darkest, gray)
+    lightest = Math.max(lightest, gray)
+  }
+  const span = lightest - darkest || 1
+  for (let index = 0; index < pixels.length; index += 4) {
+    const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
+    const value = Math.round(((gray - darkest) * 255) / span)
     pixels[index] = pixels[index + 1] = pixels[index + 2] = value
   }
   context.putImageData(image, 0, 0)
@@ -89,16 +84,13 @@ async function readAccountNumber(file: File) {
       },
     })
     try {
-      await worker.setParameters({
-        tessedit_char_whitelist: '0123456789-',
-        tessedit_pageseg_mode: PSM.SINGLE_LINE,
-      })
-      const images = await bookBankBands(file)
-      let accountNumber = ''
-      for (const image of images) {
-        const { data: { text } } = await worker.recognize(image)
-        accountNumber = extractAccountNumber(text)
-        if (accountNumber) break
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT })
+      const first = await worker.recognize(file)
+      let accountNumber = extractAccountNumber(first.data.text)
+      if (!accountNumber) {
+        const stretched = await stretchContrast(file)
+        const second = await worker.recognize(stretched)
+        accountNumber = extractAccountNumber(second.data.text)
       }
       if (accountNumber) {
         bank.value.accountNumber = formatAccountNumber(accountNumber, bank.value.bankName)

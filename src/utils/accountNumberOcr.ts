@@ -6,7 +6,11 @@ const ACCOUNT_PATTERNS = [
 ]
 
 export function extractAccountNumber(text: string): string {
-  const normalized = text.replace(/[.–—]/g, '-').replace(/[^\d-]+/g, ' ')
+  const normalized = text
+    .replace(/(?<=\d)[OoQ]|[OoQ](?=\d)/g, '0')
+    .replace(/(?<=\d)[Il|]|[Il|](?=\d)/g, '1')
+    .replace(/[.–—]/g, '-')
+    .replace(/[^\d-]+/g, ' ')
   const tight = normalized.replace(/\s+/g, '').replace(/-+/g, '-')
   for (const source of [tight, normalized.replace(/\s+/g, '')]) {
     for (const pattern of ACCOUNT_PATTERNS) {

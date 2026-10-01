@@ -45,46 +45,37 @@ function selectBank() {
 
 async function bookBankBands(file: File) {
   const bitmap = await createImageBitmap(file)
-  const bands = [
-    { y: 0.34, height: 0.2 },
-    { y: 0.26, height: 0.24 },
-    { y: 0.44, height: 0.18 },
-  ]
-  const images = await Promise.all(bands.map(band => renderBand(bitmap, band.y, band.height)))
+  const bands = [0.38, 0.3, 0.46]
+  const images = bands.flatMap(y => [renderBand(bitmap, y, 205), renderBand(bitmap, y, 0)])
   bitmap.close()
   return images
 }
 
-function renderBand(bitmap: ImageBitmap, yRatio: number, heightRatio: number) {
-  const sx = Math.round(bitmap.width * 0.05)
+function renderBand(bitmap: ImageBitmap, yRatio: number, threshold: number) {
+  const sx = Math.round(bitmap.width * 0.04)
   const sy = Math.round(bitmap.height * yRatio)
-  const sw = Math.round(bitmap.width * 0.9)
-  const sh = Math.max(1, Math.round(bitmap.height * heightRatio))
-  const width = Math.min(1400, sw * 3)
+  const sw = Math.round(bitmap.width * 0.92)
+  const sh = Math.max(1, Math.round(bitmap.height * 0.14))
+  const width = Math.min(1600, Math.max(sw, sw * 2))
   const height = Math.max(1, Math.round(sh * (width / sw)))
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
   const context = canvas.getContext('2d', { willReadFrequently: true })
-  if (!context) return Promise.resolve(canvas)
+  if (!context) return canvas
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, width, height)
   context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, width, height)
+  if (threshold <= 0) return canvas
   const image = context.getImageData(0, 0, width, height)
   const pixels = image.data
-  let darkest = 255
-  let lightest = 0
   for (let index = 0; index < pixels.length; index += 4) {
     const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
-    darkest = Math.min(darkest, gray)
-    lightest = Math.max(lightest, gray)
-  }
-  const span = lightest - darkest || 1
-  for (let index = 0; index < pixels.length; index += 4) {
-    const gray = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
-    const value = ((gray - darkest) * 255) / span < 150 ? 0 : 255
+    const value = gray < threshold ? 0 : 255
     pixels[index] = pixels[index + 1] = pixels[index + 2] = value
   }
   context.putImageData(image, 0, 0)
-  return Promise.resolve(canvas)
+  return canvas
 }
 
 async function readAccountNumber(file: File) {
@@ -100,7 +91,7 @@ async function readAccountNumber(file: File) {
     try {
       await worker.setParameters({
         tessedit_char_whitelist: '0123456789-',
-        tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+        tessedit_pageseg_mode: PSM.SINGLE_LINE,
       })
       const images = await bookBankBands(file)
       let accountNumber = ''

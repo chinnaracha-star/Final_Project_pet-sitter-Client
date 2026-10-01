@@ -2,7 +2,7 @@
 
 Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
-Booking List, Booking Detail, Calendar และ Payout ใช้ข้อมูลจริงจาก Spring Boot API โดยส่ง Supabase access token ไปกับทุก request หน้า Messages ยังเป็นข้อมูลเดโมใน browser จนกว่าจะเชื่อม chat API
+Booking List, Booking Detail, Calendar, Payout, Messages และ Notifications ใช้ข้อมูลจริงจาก Spring Boot API โดยส่ง Supabase access token ไปกับทุก request
 
 ในเครื่อง ให้ตั้ง `VITE_API_BASE_URL=` ว่างและ `VITE_API_PORT` ให้ตรงกับ `PORT` ของ backend (ตัวอย่างใช้ `10000`) แล้วรัน `npm run dev`; Vite จะส่ง `/api/*` ไป backend ในเครื่อง บน Vercel คำขอ `/api/*` จะถูกส่งต่อไป Render ตาม `vercel.json` โดยอัตโนมัติ ไม่ต้องตั้ง `VITE_API_BASE_URL` ใน Vercel หลังแก้ `vercel.json` ต้อง deploy frontend ใหม่
 
@@ -46,6 +46,13 @@ API ส่วนตัวต้องส่ง `Authorization: Bearer <Supabase 
 | `GET` | `/api/sitter/payout` | อ่านยอดรายได้ บัญชีธนาคาร และรายการงานสำเร็จ |
 | `PUT` | `/api/sitter/payout/bank-account` | บันทึกบัญชีรับเงิน |
 | `POST` | `/api/sitter/payout/book-bank-image` | อัปโหลดรูปสมุดบัญชีไป Supabase Storage |
+| `GET` | `/api/messages/conversations` | อ่าน conversation ของผู้ใช้ที่ล็อกอิน |
+| `POST` | `/api/messages/conversations` | Owner สร้างหรือเปิด conversation กับ Sitter |
+| `GET/POST` | `/api/messages/conversations/{id}` | อ่านหรือส่งข้อความ โดยตรวจว่าผู้ใช้เป็นคู่สนทนา |
+| `PATCH` | `/api/messages/conversations/{id}/read` | ทำเครื่องหมายข้อความของอีกฝ่ายว่าอ่านแล้ว |
+| `GET` | `/api/notifications` | อ่าน Notifications ของผู้ใช้ที่ล็อกอิน |
+| `PATCH` | `/api/notifications/{id}/read` | ทำเครื่องหมาย Notification ว่าอ่านแล้ว |
+| `PATCH` | `/api/notifications/read-all` | ทำเครื่องหมาย Notifications ทั้งหมดว่าอ่านแล้ว |
 
 `pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร
 

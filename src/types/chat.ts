@@ -1,8 +1,8 @@
 export interface ChatConversation {
   id: number
-  ownerId: string
-  ownerName: string
-  ownerAvatar: string
+  participantId: string
+  participantName: string
+  participantAvatar: string | null
   lastMessage: string
   unreadCount: number
 }
@@ -14,5 +14,5 @@ export interface ChatMessage {
   content: string | null
   imageUrl: string | null
   sentAt: string
-  isMine: boolean
+  mine: boolean
 }

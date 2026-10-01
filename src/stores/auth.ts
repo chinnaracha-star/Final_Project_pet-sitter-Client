@@ -38,7 +38,8 @@ function loginMessage(cause: unknown) {
   if (typeof cause === 'string') return loginMessage(new Error(cause))
   if (cause instanceof ApiError) {
     const text = cause.message.toLowerCase()
-    if (cause.status === 403 || text.includes('banned')) return 'This account is banned.'
+    if (cause.status === 403 && text.includes('banned')) return 'This account is banned.'
+    if (cause.status === 403) return cause.message || 'You do not have access to this page.'
     if (cause.status === 409 && text.includes('phone')) return 'This phone number is already registered.'
     if (cause.status === 409 && text.includes('email')) return 'This email is already registered.'
     if (cause.status === 502 || cause.status === 503) return 'Unable to connect to the server. Please try again.'
@@ -166,19 +167,22 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw new Error(loginMessage(error.message))
     const { data: userData } = await supabase.auth.getUser()
     const meta = userData.user?.user_metadata || {}
+    const name = String(meta.name || userData.user?.email || 'Pet Sitter')
+    const phone = String(meta.phone || '0000000000')
+    const wanted: AuthRole = roleHint === 'pet-sitter' || meta.role === 'pet-sitter' || meta.role === 'sitter'
+      ? 'pet-sitter'
+      : 'owner'
     try {
       applyMe(await getMe())
     } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 404) {
-        applyMe(await bootstrapAccount(
-          String(meta.name || userData.user?.email || 'Owner'),
-          String(meta.phone || '0000000000'),
-          meta.role === 'pet-sitter' || meta.role === 'sitter' ? 'pet-sitter' : 'owner',
-        ))
-        return
+      if (!(cause instanceof ApiError) || cause.status !== 404) {
+        await supabase.auth.signOut()
+        throw new Error(loginMessage(cause))
       }
-      await supabase.auth.signOut()
-      throw new Error(loginMessage(cause))
+      applyMe(await bootstrapAccount(name, phone, wanted))
+    }
+    if (wanted === 'pet-sitter' && role.value !== 'pet-sitter') {
+      applyMe(await bootstrapAccount(name, phone, 'pet-sitter'))
     }
   }
 

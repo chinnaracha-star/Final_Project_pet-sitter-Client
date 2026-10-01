@@ -21,7 +21,7 @@ async function submitLogin() {
   try {
     const targetRole = isOwner.value ? "owner" : "pet-sitter";
     await auth.login(email.value, password.value, targetRole);
-    void router.push(targetRole === "pet-sitter" ? "/sitter/profile" : "/owner/profile");
+    void router.push(auth.role === "pet-sitter" ? "/sitter/profile" : "/owner/profile");
   } catch (cause) {
     notice.value = cause instanceof Error ? cause.message : "Login failed";
   }

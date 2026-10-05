@@ -2,20 +2,16 @@
 import { onMounted } from 'vue'
 import ChatWindow from '../components/chat/ChatWindow.vue'
 import ConversationList from '../components/chat/ConversationList.vue'
-import SitterDemoNotice from '../components/sitter/SitterDemoNotice.vue'
 import SitterPageShell from '../components/sitter/SitterPageShell.vue'
 import { useChatStore } from '../stores/chat'
 
 const chat = useChatStore()
-onMounted(() => {
-  if (chat.activeConversationId === null && chat.conversations[0]) chat.selectConversation(chat.conversations[0].id)
-})
+onMounted(() => void chat.loadConversations())
 </script>
 
 <template>
   <SitterPageShell>
     <main class="messages-page">
-      <SitterDemoNotice :always-demo="true" />
       <h1>Messages</h1>
       <div class="messages-panel">
         <ConversationList />

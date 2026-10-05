@@ -2,7 +2,7 @@
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import SitterLocationMap from '../../components/admin/SitterLocationMap.vue'
 import AdminPetSitterViewProfileRejectConfirmation from './AdminPetSitterView-Profile-RejectConfirmation.vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAdminPetSitterStore, type SitterStatus } from '../../stores/adminPetSitter'
 import {
@@ -97,12 +97,6 @@ const formatDate = (value: string | null) => {
 }
 
 const fullAddress = () => {
-	if (usePendingProfile.value) {
-		if (!pendingProfile.value) return ''
-		return [pendingProfile.value.addressDetail, pendingProfile.value.subDistrict, pendingProfile.value.district, pendingProfile.value.province, pendingProfile.value.postCode]
-			.filter(Boolean)
-			.join(', ')
-	}
 	if (!profile.value) return ''
 	return [profile.value.addressDetail, profile.value.subDistrict, profile.value.district, profile.value.province, profile.value.postCode]
 		.filter(Boolean)
@@ -185,7 +179,7 @@ const fullAddress = () => {
 							</dl>
 							<div class="mt-5">
 								<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Introduction</h2>
-								<p class="mt-1 max-w-3xl text-[10px] leading-[1.55] text-[#30343f]">{{ displayIntroduction || 'No introduction provided.' }}</p>
+								<p class="mt-1 max-w-3xl text-[10px] leading-[1.55] text-[#30343f]">{{ profile?.introduction || 'No introduction provided.' }}</p>
 							</div>
 						</div>
 					</div>
@@ -193,7 +187,7 @@ const fullAddress = () => {
 					<div v-if="approvalStatus !== 'Unverified' && approvalStatus !== 'Waiting for verify'" class="mt-6 rounded-md bg-[#fbfbfd] p-4 sm:p-5">
 						<div>
 							<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Pet sitter name (Trade Name)</h2>
-							<p class="mt-1 text-[10px]">{{ displaySitterName || '-' }}</p>
+							<p class="mt-1 text-[10px]">{{ profile?.displayName || '-' }}</p>
 						</div>
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Pet type</h2>
@@ -204,7 +198,7 @@ const fullAddress = () => {
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">Services</h2>
 						<div class="mt-2 space-y-2 text-[10px] leading-[1.5]">
-							<p>{{ displayServices || 'No services listed.' }}</p>
+							<p>{{ profile?.services || 'No services listed.' }}</p>
 						</div>
 
 						<h2 class="mt-6 text-[11px] font-semibold text-[#aeb4c7]">My Place</h2>
@@ -229,7 +223,7 @@ const fullAddress = () => {
 						<h2 class="text-[11px] font-semibold text-[#aeb4c7]">Address</h2>
 						<p class="mt-1 text-[10px]">{{ fullAddress() || '-' }}</p>
 						<div class="mt-5">
-							<SitterLocationMap :latitude="displayLatitude" :longitude="displayLongitude" />
+							<SitterLocationMap :latitude="profile?.latitude ?? null" :longitude="profile?.longitude ?? null" />
 						</div>
 					</div>
 				</section>

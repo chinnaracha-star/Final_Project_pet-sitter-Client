@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '../../config/api'
 
 const route = useRoute()
 const router = useRouter()

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth";
 
 const router = useRouter();
+const auth = useAuthStore();
+const loading = ref(false);
 
 const showPassword = ref(false);
 const email = ref("");
@@ -10,13 +13,22 @@ const password = ref("");
 const emailError = ref("");
 const passwordError = ref("");
 
-function submitLogin() {
-  emailError.value = email.value === "adminnick@gmail.com" ? "" : "Incorrect email.";
-  passwordError.value = password.value === "iamadmin555" ? "" : "Incorrect password.";
-
+async function submitLogin() {
+  if (loading.value) return;
+  emailError.value = email.value.trim() ? "" : "Email is required.";
+  passwordError.value = password.value ? "" : "Password is required.";
   if (emailError.value || passwordError.value) return;
-
-  void router.push("/admin/petsitters");
+  loading.value = true;
+  try {
+    await auth.login(email.value.trim(), password.value);
+    if (!auth.isAdmin) {
+      await auth.logout();
+      throw new Error("This account does not have admin access.");
+    }
+    await router.push("/admin/petsitters");
+  } catch (error) {
+    passwordError.value = error instanceof Error ? error.message : "Unable to sign in.";
+  } finally { loading.value = false; }
 }
 </script>
 

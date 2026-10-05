@@ -17,6 +17,7 @@ import {
 const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 
 const fullName = defineModel<string>("fullName", { required: true });
+const avatarUrl = defineModel<string>("avatarUrl", { default: "" });
 
 const auth = useAuthStore();
 const userId = computed(() =>
@@ -46,7 +47,6 @@ const accountName = ref("");
 const accountNumber = ref("");
 const bankCode = ref("");
 const bookBankImageUrl = ref("");
-const avatarUrl = ref("");
 const photoUrls = ref<string[]>([]);
 const notice = ref("");
 const rejectionReason = ref("");

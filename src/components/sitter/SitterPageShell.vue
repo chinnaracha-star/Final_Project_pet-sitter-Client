@@ -5,8 +5,10 @@ import SitterTopbar from './SitterTopbar.vue'
 
 withDefaults(defineProps<{
   name?: string
+  avatarUrl?: string
 }>(), {
   name: 'Jane Maison',
+  avatarUrl: '',
 })
 </script>
 
@@ -14,7 +16,7 @@ withDefaults(defineProps<{
   <div class="flex min-h-svh bg-[#f6f7fb]">
     <SitterSidebar />
     <div class="flex min-w-0 flex-1 flex-col">
-      <SitterTopbar :name="name" />
+      <SitterTopbar :name="name" :avatar-url="avatarUrl" />
       <slot />
     </div>
     <ChatBox />

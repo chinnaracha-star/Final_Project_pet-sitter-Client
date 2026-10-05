@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useChatStore } from '../../stores/chat'
 import NotificationMenu from '../NotificationMenu.vue'
 
-defineProps<{ name: string }>()
+defineProps<{ name: string; avatarUrl?: string }>()
 
 const chat = useChatStore()
 onMounted(() => void chat.loadConversations())
@@ -12,8 +12,9 @@ onMounted(() => void chat.loadConversations())
 <template>
   <header class="flex h-[78px] items-center justify-between border-b border-[#e0e4f2] bg-white px-9 max-[760px]:px-5">
     <div class="flex items-center gap-3.5">
-      <span class="grid size-10 place-items-center rounded-full bg-[#e7e9f6]">
-        <img src="/icon/user.svg" alt="" width="20" height="20" />
+      <span class="grid size-10 place-items-center overflow-hidden rounded-full bg-[#e7e9f6]">
+        <img v-if="avatarUrl" class="size-10 object-cover" :src="avatarUrl" alt="" />
+        <img v-else src="/icon/user.svg" alt="" width="20" height="20" />
       </span>
       <span class="font-medium text-primary-900">{{ name || 'Jane Maison' }}</span>
     </div>

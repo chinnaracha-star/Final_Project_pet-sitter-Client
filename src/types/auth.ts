@@ -1,1 +1,1 @@
-export type AuthRole = 'owner' | 'pet-sitter'
+export type AuthRole = 'owner' | 'sitter'

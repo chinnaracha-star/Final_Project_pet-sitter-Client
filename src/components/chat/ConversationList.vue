@@ -17,14 +17,14 @@ const chat = useChatStore()
           class="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left transition hover:bg-white/10 sm:px-3"
           :class="chat.activeConversationId === conversation.id ? 'bg-white/10' : ''"
           :aria-selected="chat.activeConversationId === conversation.id"
-          :aria-label="conversation.participantName"
+          :aria-label="conversation.ownerName"
           role="option"
           @click="chat.selectConversation(conversation.id)"
         >
           <span class="relative shrink-0">
             <img
-              :src="conversation.participantAvatar || '/icon/user.svg'"
-              :alt="conversation.participantName"
+              :src="conversation.ownerAvatar"
+              :alt="conversation.ownerName"
               class="size-11 rounded-full object-cover"
             />
             <span
@@ -34,7 +34,7 @@ const chat = useChatStore()
             />
           </span>
           <span class="hidden min-w-0 flex-1 sm:block">
-            <span class="truncate text-sm font-semibold">{{ conversation.participantName }}</span>
+            <span class="truncate text-sm font-semibold">{{ conversation.ownerName }}</span>
             <span class="mt-0.5 block truncate text-xs text-white/55">{{ conversation.lastMessage }}</span>
           </span>
         </button>

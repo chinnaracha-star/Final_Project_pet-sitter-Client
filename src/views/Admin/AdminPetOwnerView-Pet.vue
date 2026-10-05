@@ -3,6 +3,8 @@ import { ref, watch } from 'vue'
 import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import { API_BASE_URL } from '../../config/api'
+
 interface Pet {
 	id: number
 	name: string

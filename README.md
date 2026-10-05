@@ -2,15 +2,19 @@
 
 Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
-## Pet Sitter demo while the server is pending
+## Local Pet Sitter with real APIs
 
-เปิด `/sitter/bookings?demo=true` เพื่อเปิดข้อมูลเดโมอย่างชัดเจน จากนั้น Booking List, Booking Detail, Calendar และ Payout จะใช้ booking ชุดเดียวกัน หน้า Messages ใช้แชตเดโมเสมอ ป้าย **Demo data** ระบุหน้าที่ยังไม่อ่านข้อมูลจาก server; ปุ่ม **Reset demo** ล้างสถานะ booking และบัญชีธนาคารที่เก็บในเบราว์เซอร์ ส่วน **Exit demo** กลับไปเรียก API โดยไม่มีการสลับเป็น mock อัตโนมัติ
+รัน `npm run dev:server` และ `npm run dev:client` จาก workspace หลักใน terminal คนละหน้าต่าง Frontend ใช้ `http://localhost:5174` และ backend ใช้ `http://localhost:8083` โดยค่าเริ่มต้น ตั้ง `VITE_API_BASE_URL=` ว่างเพื่อใช้ Vite proxy; หากเปลี่ยน `PORT` ของ backend ให้ตั้ง `VITE_API_PORT` ของ client ให้ตรงกัน
 
-Profile/Approval ต้องใช้บัญชี Supabase ที่ล็อกอินอยู่และส่ง access token ให้ API ส่วนการอัปโหลดรูป sitter และ booking payload ที่มี pets ยังไม่รองรับครบก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
+Profile, Bookings, Calendar, Payout และ Messages ใช้ API จริงและไม่สลับเป็น demo เมื่อ request ล้มเหลว ต้องตั้งค่า Supabase ของ client/backend และล็อกอินด้วยบัญชี sitter จริง Admin Login ใช้ Supabase และบัญชีที่มี `users.is_admin=true`
 
-ในเครื่อง ให้ตั้ง `VITE_API_BASE_URL=` ว่างและ `VITE_API_PORT` ให้ตรงกับ `PORT` ของ backend (ตัวอย่างใช้ `10000`) แล้วรัน `npm run dev`; Vite จะส่ง `/api/*` ไป backend ในเครื่อง บน Vercel คำขอ `/api/*` จะถูกส่งต่อไป Render ตาม `vercel.json` โดยอัตโนมัติ ไม่ต้องตั้ง `VITE_API_BASE_URL` ใน Vercel หลังแก้ `vercel.json` ต้อง deploy frontend ใหม่
+รูป avatar/gallery และสมุดธนาคารใช้ multipart upload คืน `{ url }` แล้วจึงบันทึก URL ผ่าน API ของแต่ละหน้า รองรับ JPEG, PNG, WebP และ GIF ขนาดไม่เกิน 5 MB; gallery ไม่เกิน 10 รูป Storage bucket ต้องอ่าน URL รูปได้ และ policy ต้องอนุญาตผู้ใช้ที่ล็อกอินอัปโหลดใต้โฟลเดอร์ UUID ของตัวเอง หาก policy ปฏิเสธจะแสดง error โดยไม่แทนรูปเดิม
 
-แผนที่ในหน้า Sitter Profile เป็น **preview ฝั่ง client** ด้วย Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก ยังไม่บันทึก lat/lng ลง API
+API ที่เพิ่ม: `POST /api/sitter/profile/media` รับ `file` และ `folder=profile|gallery`; `POST /api/sitter/payout/book-bank-image` รับ `file`; `/api/messages/conversations` สำหรับรายการและเริ่มแชท, `/{id}` สำหรับอ่าน/ส่งข้อความ และ `/{id}/read` สำหรับอ่านแล้ว; `/api/notifications` สำหรับรายการ พร้อม `/{id}/read` และ `/read-all`
+
+ตรวจ frontend ด้วย `npm run build`, `npm run test:profile-flow`, `npm run test:ocr` และ `node --test tests/chatFlow.test.mjs` จาก `client/` ชุดทดสอบ chat จำลองเฉพาะ API และทดสอบ store จริง ไม่ส่งข้อความหรืออัปโหลดไปบัญชีจริง
+
+แผนที่ใช้ Leaflet + OpenStreetMap และบันทึก latitude/longitude ที่เลือกผ่าน Profile API
 
 ## Sitter approval flow
 

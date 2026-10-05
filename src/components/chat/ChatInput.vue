@@ -3,15 +3,16 @@ import { ref } from 'vue'
 
 const draft = ref('')
 
-const emit = defineEmits<{
-  send: [content: string]
-}>()
+const props = defineProps<{ sendMessage: (content: string) => Promise<boolean> }>()
+const sending = ref(false)
 
-function submitMessage() {
+async function submitMessage() {
   const content = draft.value.trim()
-  if (!content) return
-  emit('send', content)
-  draft.value = ''
+  if (!content || sending.value) return
+  sending.value = true
+  try {
+    if (await props.sendMessage(content)) draft.value = ''
+  } finally { sending.value = false }
 }
 </script>
 
@@ -25,10 +26,12 @@ function submitMessage() {
       type="text"
       placeholder="Message here..."
       autocomplete="off"
+      :disabled="sending"
     />
     <button
       class="grid size-12 shrink-0 place-items-center rounded-full bg-orange-700 text-white"
       type="submit"
+      :disabled="sending || !draft.trim()"
       aria-label="Send message"
     >
       <span class="send-icon" aria-hidden="true"></span>

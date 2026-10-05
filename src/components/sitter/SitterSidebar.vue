@@ -6,10 +6,10 @@ const bookings = useSitterBookingsStore()
 
 <template>
   <aside class="sidebar">
-    <header class="brand">
+    <a class="brand" href="/" aria-label="Sitter home">
       <img class="logo" src="/navbar/logo-sitter.svg" width="106" height="32" alt="Sitter" />
       <img class="star" src="/navbar/logo-star.svg" width="17" height="17" alt="" />
-    </header>
+    </a>
     <nav aria-label="Sitter menu">
       <RouterLink class="nav-item" to="/sitter/profile">
         <span class="nav-icon profile" aria-hidden="true"></span>
@@ -29,7 +29,7 @@ const bookings = useSitterBookingsStore()
         <span class="label">Payout Option</span>
       </RouterLink>
     </nav>
-    <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'sitter' } }">
+    <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'pet-sitter' } }">
       <span class="nav-icon exit" aria-hidden="true"></span>
       <span class="label">Log Out</span>
     </RouterLink>
@@ -50,6 +50,7 @@ const bookings = useSitterBookingsStore()
   display: flex;
   align-items: flex-start;
   padding: 28px 24px 12px;
+  text-decoration: none;
 }
 .logo { display: block; width: 106px; height: auto; }
 .star { position: absolute; top: 24px; left: 122px; }

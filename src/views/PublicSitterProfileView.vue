@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { Footer, Navbar } from '../components'
+import { ChatBox, Footer, Navbar } from '../components'
 import SitterLocationMap from '../components/search/SitterLocationMap.vue'
 import { BookingCalendarModal, type BookingSchedule } from '../components/booking'
 import { useBookingStore } from '../stores/booking'
+import { useAuthStore } from '../stores/auth'
+import { useChatStore } from '../stores/chat'
 import {
   getPublicSitter,
   getPublicSitterReviews,
@@ -15,6 +17,9 @@ import {
 const route = useRoute()
 const router = useRouter()
 const bookingStore = useBookingStore()
+const auth = useAuthStore()
+const chat = useChatStore()
+const startingConversation = ref(false)
 const profile = ref<PublicSitterDetail | null>(null)
 const reviews = ref<PublicReview[]>([])
 const loading = ref(true)
@@ -79,6 +84,21 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+async function handleMessage() {
+  if (!profile.value || startingConversation.value) return
+  if (!auth.isLoggedIn) {
+    await router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  startingConversation.value = true
+  try {
+    await chat.startConversation(profile.value.userId)
+    chat.isOpen = true
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : 'Unable to start conversation'
+  } finally { startingConversation.value = false }
+}
 
 function handleBookNow() {
   if (!profile.value) return
@@ -250,7 +270,7 @@ function handleCalendarContinue(schedule: BookingSchedule) {
               </div>
             </div>
             <div class="booking-actions">
-              <button class="message-button" type="button" disabled>Send Message</button>
+              <button class="message-button" type="button" :disabled="startingConversation" @click="handleMessage">Send Message</button>
               <button class="book-button" type="button" @click="handleBookNow">Book Now</button>
             </div>
           </div>
@@ -275,6 +295,7 @@ function handleCalendarContinue(schedule: BookingSchedule) {
       @continue="handleCalendarContinue"
     />
 
+    <ChatBox />
     <Footer />
   </div>
 </template>
@@ -345,7 +366,7 @@ function handleCalendarContinue(schedule: BookingSchedule) {
 .booking-tags { justify-content: center; margin-top: 15px; }
 .booking-actions { padding: 14px 17px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid #eceef2; }
 .booking-actions button { height: 36px; margin: 0; border: 0; border-radius: 20px; font-size: 9px; font-weight: 750; opacity: 1; }
-.message-button { background: #fff0ea; color: #ff6525; cursor: not-allowed; }
+.message-button { background: #fff0ea; color: #ff6525; cursor: pointer; }
 .book-button { background: #ff6525; color: #fff; box-shadow: 0 7px 16px -9px #ff6525; cursor: pointer !important; transition: all 200ms ease; }
 .book-button:hover { background: #e54f12; transform: translateY(-1px); }
 .not-found-page { display: grid; place-items: center; }

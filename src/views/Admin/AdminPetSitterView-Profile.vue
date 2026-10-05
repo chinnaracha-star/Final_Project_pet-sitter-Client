@@ -6,6 +6,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAdminPetSitterStore, type SitterStatus } from '../../stores/adminPetSitter'
 import { adminApi } from '../../services/adminApi'
+import { approveSitter, rejectSitter } from '../../services/sitterApproval'
 
 const store = useAdminPetSitterStore()
 const route = useRoute()
@@ -159,7 +160,7 @@ const handleRejectConfirm = async (reason: string) => {
 	if (approvalStatus.value !== 'Waiting for verify' && approvalStatus.value !== 'Waiting for approve') return
 
 	try {
-		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/reject`, { reason })
+		await rejectSitter(store.selectedSitterId, reason)
 		const nextStatus = approvalStatus.value === 'Waiting for verify' ? 'Unverified' : 'Rejected'
 		approvalStatus.value = nextStatus
 		isListed.value = false
@@ -177,8 +178,7 @@ const handleApprove = async () => {
 	if (approvalStatus.value !== 'Waiting for verify' && approvalStatus.value !== 'Waiting for approve') return
 
 	try {
-		const endpoint = approvalStatus.value === 'Waiting for verify' ? 'verify' : 'approve'
-		await axios.patch(`${API_BASE_URL}/sitterprofile/${store.selectedSitterId}/${endpoint}`)
+		await approveSitter(store.selectedSitterId)
 		const nextStatus = approvalStatus.value === 'Waiting for verify' ? 'Verified' : 'Approved'
 		approvalStatus.value = nextStatus
 		isListed.value = nextStatus === 'Approved'

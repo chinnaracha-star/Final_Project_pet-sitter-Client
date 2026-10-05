@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth";
+import { isLocalAdminLogin } from "../../services/localAdminLogin";
 
 const router = useRouter();
+const auth = useAuthStore();
+const loading = ref(false);
 
 const showPassword = ref(false);
 const email = ref("");
@@ -10,13 +14,28 @@ const password = ref("");
 const emailError = ref("");
 const passwordError = ref("");
 
-function submitLogin() {
-  emailError.value = email.value === "adminnick@gmail.com" ? "" : "Incorrect email.";
-  passwordError.value = password.value === "iamadmin555" ? "" : "Incorrect password.";
-
+async function submitLogin() {
+  if (loading.value) return;
+  emailError.value = email.value.trim() ? "" : "Email is required.";
+  passwordError.value = password.value ? "" : "Password is required.";
   if (emailError.value || passwordError.value) return;
-
-  void router.push("/admin/petsitters");
+  loading.value = true;
+  try {
+    if (isLocalAdminLogin(import.meta.env.DEV, window.location.hostname, email.value, password.value)) {
+      sessionStorage.setItem("pet_sitter_temporary_admin", "true");
+      await router.push("/admin/petsitters");
+      return;
+    }
+    sessionStorage.removeItem("pet_sitter_temporary_admin");
+    await auth.login(email.value.trim(), password.value);
+    if (!auth.isAdmin) {
+      await auth.logout();
+      throw new Error("This account does not have admin access.");
+    }
+    await router.push("/admin/petsitters");
+  } catch (error) {
+    passwordError.value = error instanceof Error ? error.message : "Unable to sign in.";
+  } finally { loading.value = false; }
 }
 </script>
 

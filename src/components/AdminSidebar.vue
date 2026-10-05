@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
+const temporaryAdmin = import.meta.env.DEV && sessionStorage.getItem('pet_sitter_temporary_admin') === 'true'
+
 type SidebarItem = {
   label: string
   to: string
@@ -20,6 +22,11 @@ const router = useRouter()
 const auth = useAuthStore()
 
 async function logout() {
+  sessionStorage.removeItem('pet_sitter_temporary_admin')
+  if (temporaryAdmin) {
+    await router.push('/admin/login')
+    return
+  }
   await auth.logout()
   await router.push('/login')
 }
@@ -42,6 +49,9 @@ const isActive = (item: SidebarItem) => computed(() => currentPath.value.startsW
         <span class="italic text-[#ff6b39]">S</span><span class="text-white">itter</span><span class="ml-1 align-top text-[11px] text-[#4bd58f]">✦</span>
       </div>
       <p class="mt-2 text-[10px] italic leading-none text-[#8d8f9d]">Admin Panel</p>
+      <p v-if="temporaryAdmin" class="mt-3 text-[11px] leading-relaxed text-orange-300" role="status">
+        เข้าสู่ระบบชั่วคราวในเครื่อง การอนุมัติโปรไฟล์ต้องใช้บัญชี Admin จริง
+      </p>
     </div>
 
     <nav class="mt-3 flex flex-col gap-1 px-2" aria-label="Admin menu">

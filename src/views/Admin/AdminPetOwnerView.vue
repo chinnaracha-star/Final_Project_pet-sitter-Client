@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { adminApi } from '../../services/adminApi'
+import { API_BASE_URL } from '../../config/api'
 
 interface PetOwner {
 	id: string
@@ -23,8 +25,6 @@ interface OwnerAdminPageResponse {
 	limit: number
 }
 
-const API_BASE_URL = 'http://localhost:8081/api'
-
 const router = useRouter()
 const store = useAdminPetOwnerStore()
 
@@ -37,6 +37,13 @@ const errorMessage = ref('')
 const currentPage = ref(1)
 const totalPages = ref(1)
 const pageSize = 8
+const paginationItems = computed<(number | 'ellipsis')[]>(() => {
+	if (totalPages.value <= 4) {
+		return Array.from({ length: totalPages.value }, (_, index) => index + 1)
+	}
+
+	return [1, 2, 'ellipsis', totalPages.value - 1, totalPages.value]
+})
 
 // Debounce search input so a request isn't fired on every keystroke
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -65,7 +72,7 @@ const fetchOwners = async (pageNum: number, currentSearch: string) => {
 	errorMessage.value = ''
 
 	try {
-		const response = await axios.get<OwnerAdminPageResponse>(`${API_BASE_URL}/admin/owners`, {
+		const response = await adminApi.get<OwnerAdminPageResponse>('/admin/owners', {
 			params: {
 				page: pageNum,
 				limit: pageSize,
@@ -110,6 +117,10 @@ const previousPage = () => {
 
 const nextPage = () => {
 	if (currentPage.value < totalPages.value) currentPage.value += 1
+}
+
+const selectPage = (pageNum: number) => {
+	if (pageNum >= 1 && pageNum <= totalPages.value) currentPage.value = pageNum
 }
 
 const avatarUrl = (owner: PetOwner) => owner.avatarUrl || '/image/dog1.jpg'
@@ -172,12 +183,22 @@ const handleSelectOwner = (owner: PetOwner) => {
 					</div>
 				</section>
 
-				<nav v-if="owners.length > 0" class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pet owner pagination">
+				<nav v-if="owners.length > 0" class="mt-4 flex items-center justify-center gap-2 text-[10px] text-[#aab0c1]" aria-label="Pet owner pagination">
 					<button type="button" class="p-1.5 text-[#aab0c1] transition hover:text-[#ff7040] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Previous page" :disabled="currentPage === 1" @click="previousPage">
 						<svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m7.5 2.5-3.5 3.5 3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
 					</button>
-					<button type="button" class="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0eb] text-[#ff7040]" aria-current="page">{{ currentPage }}</button>
-					<span v-if="totalPages > 1" class="text-[#b8bfd0]">of {{ totalPages }}</span>
+					<template v-for="item in paginationItems" :key="item">
+						<span v-if="item === 'ellipsis'" class="flex h-6 w-6 items-center justify-center text-[#b8bfd0]" aria-hidden="true">...</span>
+						<button
+							v-else
+							type="button"
+							class="flex h-6 w-6 items-center justify-center rounded-full transition"
+							:class="currentPage === item ? 'bg-[#fff0eb] text-[#ff7040]' : 'text-[#aab0c1] hover:bg-[#f2f3f8] hover:text-[#ff7040]'"
+							:aria-label="`Go to page ${item}`"
+							:aria-current="currentPage === item ? 'page' : undefined"
+							@click="selectPage(item)"
+						>{{ item }}</button>
+					</template>
 					<button type="button" class="p-1.5 text-[#aab0c1] transition hover:text-[#ff7040] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Next page" :disabled="currentPage === totalPages" @click="nextPage">
 						<svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m4.5 2.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
 					</button>

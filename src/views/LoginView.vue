@@ -56,7 +56,7 @@ function continueWith(provider: "Facebook" | "Google") {
       >
         <button
           type="button"
-          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          class="w-1/3 rounded-full py-2.5 text-sm font-bold"
           :class="
             isOwner
               ? 'border border-orange-700 bg-white text-orange-700'
@@ -69,7 +69,7 @@ function continueWith(provider: "Facebook" | "Google") {
         </button>
         <button
           type="button"
-          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          class="w-1/3 rounded-full py-2.5 text-sm font-bold"
           :class="
             !isOwner
               ? 'border border-orange-700 bg-white text-orange-700'
@@ -79,6 +79,13 @@ function continueWith(provider: "Facebook" | "Google") {
           @click="setRole('sitter')"
         >
           Sitter
+        </button>
+        <button
+          type="button"
+          class="w-1/3 rounded-full py-2.5 text-sm font-bold text-primary-500"
+          @click="router.push('/admin/login')"
+        >
+          Admin
         </button>
       </div>
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import AdminSidebar from '../../components/AdminSidebar.vue'
-import { onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useAdminPetSitterStore } from '../../stores/adminPetSitter'
-import { API_BASE_URL } from '../../config/api'
 
 type SitterStatus =
   | 'Unverified'
@@ -46,6 +46,13 @@ const errorMessage = ref('')
 const page = ref(1)
 const totalPages = ref(1)
 const limit = 10
+const paginationItems = computed<(number | 'ellipsis')[]>(() => {
+  if (totalPages.value <= 4) {
+    return Array.from({ length: totalPages.value }, (_, index) => index + 1)
+  }
+
+  return [1, 2, 'ellipsis', totalPages.value - 1, totalPages.value]
+})
 
 // Debounce search input so a request isn't fired on every keystroke
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -77,7 +84,7 @@ const fetchSitters = async (pageNum: number, currentSearch: string, currentStatu
     // "All status" behaves like the example's "Highlight" (no status filter applied)
     const statusParam = currentStatus === 'All status' ? '' : currentStatus
 
-    const response = await axios.get<SitterProfilePageResponse>(`${API_BASE_URL}/sitterprofile`, {
+    const response = await adminApi.get<SitterProfilePageResponse>('/sitterprofile', {
       params: {
         page: pageNum,
         limit,
@@ -114,6 +121,10 @@ const handlePrevPage = () => {
 
 const handleNextPage = () => {
   if (page.value < totalPages.value) page.value++
+}
+
+const handlePageSelect = (pageNum: number) => {
+  if (pageNum >= 1 && pageNum <= totalPages.value) page.value = pageNum
 }
 
 onUnmounted(() => {
@@ -205,11 +216,22 @@ const handleSelectSitter = (sitter: SitterProfile) => {
         </div>
       </section>
 
-      <nav v-if="sitters.length > 0" class="mt-4 flex items-center justify-center gap-3 text-[10px] text-[#aab0c1]" aria-label="Pagination">
+      <nav v-if="sitters.length > 0" class="mt-4 flex items-center justify-center gap-2 text-[10px] text-[#aab0c1]" aria-label="Pagination">
         <button type="button" class="p-1.5 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Previous page" :disabled="page === 1" @click="handlePrevPage">
           <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m7.5 2.5-3.5 3.5 3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>
-        <span class="px-2">Page {{ page }} of {{ totalPages }}</span>
+        <template v-for="item in paginationItems" :key="item">
+          <span v-if="item === 'ellipsis'" class="flex h-6 w-6 items-center justify-center text-[#b8bfd0]" aria-hidden="true">...</span>
+          <button
+            v-else
+            type="button"
+            class="flex h-6 w-6 items-center justify-center rounded-full transition"
+            :class="page === item ? 'bg-[#fff0eb] text-[#ff7040]' : 'text-[#aab0c1] hover:bg-[#f2f3f8] hover:text-[#ff7040]'"
+            :aria-label="`Go to page ${item}`"
+            :aria-current="page === item ? 'page' : undefined"
+            @click="handlePageSelect(item)"
+          >{{ item }}</button>
+        </template>
         <button type="button" class="p-1.5 disabled:cursor-not-allowed disabled:opacity-40" aria-label="Next page" :disabled="page === totalPages" @click="handleNextPage">
           <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m4.5 2.5 3.5 3.5-3.5 3.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </button>

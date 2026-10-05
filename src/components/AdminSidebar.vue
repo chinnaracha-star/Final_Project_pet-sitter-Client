@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 type SidebarItem = {
   label: string
@@ -15,6 +16,13 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
+
+async function logout() {
+  await auth.logout()
+  await router.push('/login')
+}
 
 const items: SidebarItem[] = [
   { label: 'Pet Owner', to: '/admin/owners', icon: 'owner' },
@@ -45,28 +53,23 @@ const isActive = (item: SidebarItem) => computed(() => currentPath.value.startsW
         :class="isActive(item).value ? 'border border-[#32363d] bg-[#2d3037] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]' : 'text-[#eef1f7]'"
         :aria-current="isActive(item).value ? 'page' : undefined"
       >
-        <svg v-if="item.icon === 'owner'" class="h-[15px] w-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" aria-hidden="true">
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5.5 20c.6-3.7 2.8-5.5 6.5-5.5s5.9 1.8 6.5 5.5" />
-        </svg>
-        <svg v-else-if="item.icon === 'sitter'" class="h-[15px] w-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" aria-hidden="true">
-          <path d="M7.4 10.4c-1.7-2.4-.2-4.8 1.7-3.8L12 8.4l2.9-1.8c1.9-1 3.4 1.4 1.7 3.8 1.9-.2 3.1 1.1 2.6 2.8-.4 1.4-1.7 2.1-3.4 1.8 1.2 1.5.5 3.5-1.3 3.5-1.3 0-2.1-.8-2.5-1.6-.4.8-1.2 1.6-2.5 1.6-1.8 0-2.5-2-1.3-3.5-1.7.3-3-.4-3.4-1.8-.5-1.7.7-3 2.6-2.8Z" />
-          <circle cx="9" cy="11" r=".5" fill="currentColor" /><circle cx="15" cy="11" r=".5" fill="currentColor" />
-        </svg>
-        <svg v-else class="h-[15px] w-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" aria-hidden="true">
-          <path d="M6 3.8h8.5L18 7.3v12.9H6z" /><path d="M14 3.8v3.5h4" /><path d="M9 14h6M9 10.5h2" />
-        </svg>
+        <img
+          :src="`/icon/${item.icon === 'owner' ? 'profile' : item.icon === 'sitter' ? 'paw' : 'copy'}.svg`"
+          alt=""
+          class="h-[15px] w-[15px] shrink-0"
+          :class="{ 'brightness-0 invert-[0.69]': item.icon === 'owner' }"
+          aria-hidden="true"
+        />
         <span>{{ item.label }}</span>
       </RouterLink>
     </nav>
 
     <RouterLink
-      to="/login"
+      to="/admin/login"
       class="mt-auto flex h-[54px] items-center gap-3 border-t border-[#1d1f24] px-4 text-[12px] font-medium text-[#f3f5fa] transition-colors hover:bg-[#171a1f]"
+      @click="logout"
     >
-      <svg class="h-[15px] w-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" aria-hidden="true">
-        <path d="M13 5H6.5v14H13M11 12h9M17 8l3.5 4-3.5 4" />
-      </svg>
+      <img src="/icon/logout.svg" alt="" class="h-[15px] w-[15px] shrink-0" aria-hidden="true" />
       <span>Log Out</span>
     </RouterLink>
   </aside>

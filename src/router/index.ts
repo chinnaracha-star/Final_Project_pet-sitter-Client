@@ -6,6 +6,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: () => import('../views/LandingView.vue') },
     { path: '/login', component: () => import('../views/LoginView.vue') },
+    { path: '/admin/login', component: () => import('../views/Admin/AdminLoginView.vue') },
     { path: '/register', component: () => import('../views/RegisterView.vue') },
     { path: '/search', component: () => import('../views/SitterSearchView.vue') },
     { path: '/sitters/:id', component: () => import('../views/PublicSitterProfileView.vue') },
@@ -48,12 +49,13 @@ const router = createRouter({
 })
 
 router.beforeEach(to => {
-  if (!to.meta.owner) return true
-  // Allow creating new pet without login if coming from booking flow for testing
-  if (to.path === '/owner/pets/new' && String(to.query.redirect || '').includes('/booking')) {
+  if (to.meta.owner && !useAuthStore().isOwnerLoggedIn
+      && to.path === '/owner/pets/new'
+      && String(to.query.redirect || '').includes('/booking')) {
     return true
   }
   const auth = useAuthStore()
+  if (!to.meta.owner) return true
   if (auth.isOwnerLoggedIn) return true
   return { path: '/login' }
 })

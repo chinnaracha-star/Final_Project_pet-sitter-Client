@@ -1,4 +1,5 @@
 import { currentSitterId } from './sitterApproval'
+import { api } from './http'
 import { isSitterDemo } from './sitterDemo'
 import { useSitterBookingsStore } from '../stores/sitterBookings'
 import { demoPayoutTransactions } from './sitterDemoLogic'
@@ -18,11 +19,8 @@ function demoBank(): BankAccount {
 }
 
 async function request<T>(path: string, options: RequestInit = {}) {
-  const id = currentSitterId()
-  if (!id) throw new Error('Server integration pending. Select “Use demo data” to preview payout.')
-  const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', 'X-User-Id': id, ...options.headers } })
-  if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail || `Request failed (${response.status})`)
-  return response.json() as Promise<T>
+  if (!currentSitterId()) throw new Error('Server integration pending. Select “Use demo data” to preview payout.')
+  return api<T>(path, options)
 }
 
 export function getPayout(): Promise<Payout> {

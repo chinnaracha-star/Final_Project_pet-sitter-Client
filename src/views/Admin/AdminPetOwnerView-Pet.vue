@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
+import { API_BASE_URL } from '../../config/api'
 
 interface Pet {
 	id: number
@@ -18,7 +19,6 @@ interface OwnerPetResponse {
 	pets: Pet[]
 }
 
-const API_BASE_URL = 'http://localhost:8081/api'
 const route = useRoute()
 const router = useRouter()
 const owner = ref<Pick<OwnerPetResponse, 'id' | 'name'> | null>(null)
@@ -40,7 +40,7 @@ const fetchOwnerPets = async (ownerId: string) => {
 	errorMessage.value = ''
 
 	try {
-		const response = await axios.get<OwnerPetResponse>(`${API_BASE_URL}/admin/owners/${ownerId}`)
+		const response = await adminApi.get<OwnerPetResponse>(`/admin/owners/${ownerId}`)
 		owner.value = { id: response.data.id, name: response.data.name }
 		pets.value = (response.data.pets || []).filter((pet) => pet.isSuspended === false)
 	} catch (error) {

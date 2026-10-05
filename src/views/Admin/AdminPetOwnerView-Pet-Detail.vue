@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import axios from 'axios'
+import { adminApi } from '../../services/adminApi'
 import { useRoute, useRouter } from 'vue-router'
+import { API_BASE_URL } from '../../config/api'
 
 interface PetDetail {
 	id: number
@@ -22,7 +23,6 @@ interface OwnerPetResponse {
 	pets: PetDetail[]
 }
 
-const API_BASE_URL = 'http://localhost:8081/api'
 const route = useRoute()
 const router = useRouter()
 const pet = ref<PetDetail | null>(null)
@@ -39,7 +39,7 @@ const fetchPet = async (ownerId: string, petId: string) => {
 	errorMessage.value = ''
 
 	try {
-		const response = await axios.get<OwnerPetResponse>(`${API_BASE_URL}/admin/owners/${ownerId}`)
+		const response = await adminApi.get<OwnerPetResponse>(`/admin/owners/${ownerId}`)
 		pet.value = response.data.pets.find((ownerPet) => ownerPet.id === Number(petId)) || null
 		if (!pet.value) errorMessage.value = 'This pet could not be found for the selected owner.'
 	} catch (error) {

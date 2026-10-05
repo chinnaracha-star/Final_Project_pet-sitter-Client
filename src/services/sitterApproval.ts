@@ -1,4 +1,5 @@
 import { useAuthStore } from '../stores/auth'
+import { api } from './http'
 
 export type ApprovalStatus =
   | 'Unverified'
@@ -110,48 +111,29 @@ export type ListedSitterSearchResponse = {
   limit: number
 }
 
-async function request<T>(path: string, options: RequestInit = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  })
-  if (!response.ok) {
-    const problem = await response.json().catch(() => null)
-    throw new Error(problem?.detail || problem?.message || `Request failed (${response.status})`)
-  }
-  return response.json() as Promise<T>
+export const currentSitterId = () => {
+  const auth = useAuthStore()
+  return auth.role === 'sitter' ? auth.userId : null
 }
 
-export const currentSitterId = () =>
-  (useAuthStore().role === 'sitter' ? useAuthStore().userId : null)
-  || localStorage.getItem('petSitterUserId') || new URLSearchParams(location.search).get('userId')
+export const getOwnProfile = () => api<ProfileResponse>('/api/sitter/profile')
 
-export const currentAdminId = () =>
-  localStorage.getItem('petSitterAdminId') || new URLSearchParams(location.search).get('adminId')
-
-export const getOwnProfile = (userId: string) =>
-  request<ProfileResponse>('/api/sitter/profile', { headers: { 'X-User-Id': userId } })
-
-export const submitProfile = (userId: string, profile: ProfilePayload) =>
-  request<ProfileResponse>('/api/sitter/profile/submit', {
+export const submitProfile = (profile: ProfilePayload) =>
+  api<ProfileResponse>('/api/sitter/profile/submit', {
     method: 'POST',
-    headers: { 'X-User-Id': userId },
     body: JSON.stringify(profile),
   })
 
-export const getApprovalQueue = (adminId: string) =>
-  request<ProfileResponse[]>('/api/admin/sitter-approvals', { headers: { 'X-Admin-Id': adminId } })
+export const getApprovalQueue = () => api<ProfileResponse[]>('/api/admin/sitter-approvals')
 
-export const approveSitter = (adminId: string, sitterId: string) =>
-  request<ProfileResponse>(`/api/admin/sitter-approvals/approve?sitterId=${encodeURIComponent(sitterId)}`, {
+export const approveSitter = (sitterId: string) =>
+  api<ProfileResponse>(`/api/admin/sitter-approvals/approve?sitterId=${encodeURIComponent(sitterId)}`, {
     method: 'PATCH',
-    headers: { 'X-Admin-Id': adminId },
   })
 
-export const rejectSitter = (adminId: string, sitterId: string, reason: string) =>
-  request<ProfileResponse>(`/api/admin/sitter-approvals/reject?sitterId=${encodeURIComponent(sitterId)}`, {
+export const rejectSitter = (sitterId: string, reason: string) =>
+  api<ProfileResponse>(`/api/admin/sitter-approvals/reject?sitterId=${encodeURIComponent(sitterId)}`, {
     method: 'PATCH',
-    headers: { 'X-Admin-Id': adminId },
     body: JSON.stringify({ reason }),
   })
 
@@ -165,7 +147,7 @@ export const getListedSitters = (params: ListedSitterSearchParams = {}) => {
   if (params.limit) query.set('limit', String(params.limit))
 
   const suffix = query.toString() ? `?${query.toString()}` : ''
-  return request<ListedSitterSearchResponse>(`/api/sitters${suffix}`)
+  return api<ListedSitterSearchResponse>(`/api/sitters${suffix}`)
 }
 
 function searchQuery(params: ListedSitterSearchParams = {}) {
@@ -180,11 +162,11 @@ function searchQuery(params: ListedSitterSearchParams = {}) {
 export const getMapSitters = (params: ListedSitterSearchParams = {}) => {
   const query = searchQuery(params)
   const suffix = query.toString() ? `?${query.toString()}` : ''
-  return request<ListedSitter[]>(`/api/sitters/map${suffix}`)
+  return api<ListedSitter[]>(`/api/sitters/map${suffix}`)
 }
 
 export const getPublicSitter = (sitterId: string) =>
-  request<PublicSitterDetail>(`/api/sitters/${encodeURIComponent(sitterId)}`)
+  api<PublicSitterDetail>(`/api/sitters/${encodeURIComponent(sitterId)}`)
 
 export const getPublicSitterReviews = (sitterId: string) =>
-  request<PublicReview[]>(`/api/sitters/${encodeURIComponent(sitterId)}/reviews`)
+  api<PublicReview[]>(`/api/sitters/${encodeURIComponent(sitterId)}/reviews`)

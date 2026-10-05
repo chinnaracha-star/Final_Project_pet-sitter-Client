@@ -28,15 +28,16 @@ watch(() => chat.activeConversationId, scrollToLatest)
       <div class="flex min-w-0 items-center gap-3">
         <img
           v-if="chat.activeConversation"
-          :src="chat.activeConversation.participantAvatar || '/icon/user.svg'"
-          :alt="chat.activeConversation.participantName"
+          :src="chat.activeConversation.ownerAvatar"
+          :alt="chat.activeConversation.ownerName"
           class="size-10 rounded-full object-cover"
         />
         <h2 class="truncate text-lg font-bold text-primary-900">
-          {{ chat.activeConversation?.participantName ?? 'Messages' }}
+          {{ chat.activeConversation?.ownerName ?? 'Messages' }}
         </h2>
       </div>
       <div class="flex items-center gap-2">
+        <span class="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-900">Demo data</span>
         <button
           v-if="showClose"
           type="button"
@@ -50,9 +51,7 @@ watch(() => chat.activeConversationId, scrollToLatest)
     </header>
 
     <div ref="thread" class="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
-      <p v-if="chat.error" class="m-auto text-sm text-red" role="alert">{{ chat.error }}</p>
-      <p v-else-if="chat.loading" class="m-auto text-sm text-primary-500">Loading messages...</p>
-      <p v-else-if="!chat.activeConversation" class="m-auto text-sm text-primary-500">
+      <p v-if="!chat.activeConversation" class="m-auto text-sm text-primary-500">
         Select a conversation to start chatting.
       </p>
       <MessageBubble
@@ -60,8 +59,8 @@ watch(() => chat.activeConversationId, scrollToLatest)
         :key="message.id"
         :content="message.content"
         :image-url="message.imageUrl"
-        :avatar-url="chat.activeConversation?.participantAvatar || undefined"
-        :is-mine="message.mine"
+        :avatar-url="chat.activeConversation?.ownerAvatar"
+        :is-mine="message.isMine"
       />
     </div>
 

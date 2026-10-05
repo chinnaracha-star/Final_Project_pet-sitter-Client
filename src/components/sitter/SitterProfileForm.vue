@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import AddressMap from "./AddressMap.vue";
 import ProfileGallery from "./ProfileGallery.vue";
 import { getProfileUiState } from "./profileFlow";
-import type { MapAddress } from "./mapAddress";
-import { useAuthStore } from "../../stores/auth";
 import {
+  currentSitterId,
   getOwnProfile,
   submitProfile as submitSitterProfile,
-  uploadSitterProfileMedia,
   type ApprovalStatus,
   type ProfilePayload,
   type ProfileResponse,
@@ -18,9 +17,23 @@ const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 
 const fullName = defineModel<string>("fullName", { required: true });
 
-const auth = useAuthStore();
-const userId = computed(() => auth.role === "pet-sitter" ? auth.userId : null);
-const status = ref<ApprovalStatus>("Unverified");
+const route = useRoute();
+const userId = currentSitterId();
+const demoStatuses: Record<string, ApprovalStatus> = {
+  unverified: "Unverified",
+  waiting: "Waiting for approve",
+  "waiting-for-verify": "Waiting for verify",
+  verified: "Verified",
+  approved: "Approved",
+  "rejected-first": "Unverified",
+  rejected: "Rejected",
+};
+const demoStatusKey = String(route.query.status);
+const status = ref<ApprovalStatus>(
+  !userId && demoStatuses[demoStatusKey]
+    ? demoStatuses[demoStatusKey]
+    : "Unverified",
+);
 
 const phone = ref("");
 const email = ref("");
@@ -48,9 +61,12 @@ const avatarUrl = ref("");
 const photoUrls = ref<string[]>([]);
 const notice = ref("");
 const photoInput = ref<HTMLInputElement | null>(null);
-const rejectionReason = ref("");
+const rejectionReason = ref(
+  !userId && demoStatusKey.startsWith("rejected")
+    ? "Please update the information and submit it again."
+    : "",
+);
 const loading = ref(false);
-const galleryUploading = ref(false);
 const uiState = computed(() => getProfileUiState(status.value, rejectionReason.value));
 const showFullProfile = computed(() => uiState.value.showFullProfile);
 const statusClass = computed(() =>
@@ -61,16 +77,7 @@ function setCoordinates(nextLatitude: number | null, nextLongitude: number | nul
   longitude.value = nextLongitude;
 }
 
-function setPlace(place: MapAddress & { latitude: number; longitude: number }) {
-  if (place.address) address.value = place.address;
-  if (place.district) district.value = place.district;
-  if (place.subDistrict) subDistrict.value = place.subDistrict;
-  if (place.province) province.value = place.province;
-  if (place.postCode) postCode.value = place.postCode;
-  setCoordinates(place.latitude, place.longitude);
-}
-
-async function changeAvatar(event: Event) {
+function changeAvatar(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -79,16 +86,10 @@ async function changeAvatar(event: Event) {
     input.value = "";
     return;
   }
-  loading.value = true;
-  try {
-    avatarUrl.value = (await uploadSitterProfileMedia(file, "profile")).url;
-    notice.value = "อัปโหลดรูปโปรไฟล์แล้ว";
-  } catch (error) {
-    notice.value = error instanceof Error ? error.message : "ไม่สามารถอัปโหลดรูปได้";
-  } finally {
-    loading.value = false;
-    input.value = "";
-  }
+  const reader = new FileReader();
+  reader.onload = () => (avatarUrl.value = String(reader.result));
+  reader.readAsDataURL(file);
+  input.value = "";
 }
 
 function fillForm(payload: ProfilePayload) {
@@ -133,13 +134,13 @@ function payload(): ProfilePayload {
     experienceYears: experience.value,
     dateOfBirth: dateOfBirth.value || null,
     idNumber: idNumber.value,
-    avatarUrl: avatarUrl.value.startsWith("https://") ? avatarUrl.value : "",
+    avatarUrl: avatarUrl.value,
     introduction: introduction.value,
     displayName: sitterName.value,
     petTypes: petTypes.value,
     services: services.value,
     myPlace: myPlace.value,
-    photoUrls: photoUrls.value.filter((url) => url.startsWith("https://")),
+    photoUrls: photoUrls.value,
     addressDetail: address.value,
     district: district.value,
     subDistrict: subDistrict.value,
@@ -156,15 +157,11 @@ function payload(): ProfilePayload {
 }
 
 async function submitProfile() {
-  if (galleryUploading.value) {
-    notice.value = "กรุณารอให้อัปโหลดรูปเสร็จก่อนส่งให้ Admin";
-    return;
-  }
   if (showFullProfile.value && petTypes.value.length === 0) {
     notice.value = "เลือก Pet type อย่างน้อย 1 ประเภท";
     return;
   }
-  if (!userId.value) {
+  if (!userId) {
     notice.value = "เข้าสู่ระบบด้วยบัญชี Sitter เพื่อเชื่อมต่อ API";
     return;
   }
@@ -183,11 +180,23 @@ function removePetType(pet: string) {
   petTypes.value = petTypes.value.filter((selectedPet) => selectedPet !== pet);
 }
 
+watch(
+  () => route.query.status,
+  (value) => {
+    if (userId) return;
+    const key = String(value);
+    const next = demoStatuses[key];
+    if (next) {
+      status.value = next;
+      rejectionReason.value = key.startsWith("rejected")
+        ? "Please update the information and submit it again."
+        : "";
+    }
+  },
+);
+
 onMounted(async () => {
-  if (!userId.value) {
-    notice.value = "กรุณาเข้าสู่ระบบด้วยบัญชี Pet Sitter";
-    return;
-  }
+  if (!userId) return;
   loading.value = true;
   try {
     applyResponse(await getOwnProfile());
@@ -211,11 +220,14 @@ onMounted(async () => {
         type="submit"
         form="profile-form"
         class="approval-button"
-        :disabled="loading || galleryUploading || !userId"
+        :disabled="loading || !userId"
       >
         {{ uiState.actionText }}
       </button>
     </div>
+    <p v-if="!userId" class="demo-notice" role="status">
+      {{ demoStatuses[demoStatusKey] ? 'Demo profile state. Saving requires the sitter API and a signed-in sitter account.' : 'Server integration pending. Sign in as a sitter to load and save a real profile.' }}
+    </p>
     <p v-if="rejectionReason" class="rejection" role="status">
       <img src="/icon/info-circle.svg" alt="" width="20" height="20" />
       Your request has not been approved: '{{ rejectionReason }}'
@@ -227,7 +239,7 @@ onMounted(async () => {
     <p v-if="notice" class="demo-notice" role="status">{{ notice }}</p>
 
     <form id="profile-form" @submit.prevent="submitProfile">
-      <fieldset class="profile-fields" :disabled="loading || galleryUploading || uiState.readOnly">
+      <fieldset class="profile-fields" :disabled="loading || uiState.readOnly">
       <section class="card">
         <h2>Basic Information</h2>
         <label class="image-label">Profile Image</label>
@@ -367,11 +379,7 @@ onMounted(async () => {
             <label for="my-place">My Place (Describe your place)</label>
             <textarea id="my-place" v-model.trim="myPlace" rows="4" />
           </div>
-          <ProfileGallery
-            v-model="photoUrls"
-            :readonly="uiState.readOnly"
-            @uploading="galleryUploading = $event"
-          />
+          <ProfileGallery v-model="photoUrls" :readonly="uiState.readOnly" />
         </div>
       </section>
 
@@ -413,12 +421,11 @@ onMounted(async () => {
           :latitude="latitude"
           :longitude="longitude"
           @coordinates="setCoordinates"
-          @place="setPlace"
         />
       </section>
       </fieldset>
       <div v-if="uiState.canSubmit" class="form-actions">
-        <button type="submit" :disabled="loading || galleryUploading || !userId">{{ uiState.actionText }}</button>
+        <button type="submit" :disabled="loading || !userId">{{ uiState.actionText }}</button>
       </div>
     </form>
   </main>

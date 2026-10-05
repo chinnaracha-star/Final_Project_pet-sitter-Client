@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import SitterPageShell from '../components/sitter/SitterPageShell.vue'
-import { getPayout, updateBankAccount, uploadBookBankImage, type BankAccount, type Payout } from '../services/sitterPayout'
-import { accountFromWords, digitsFromBinary, dottedBoxes, extractAccountNumber, formatAccountNumber, prepareDotBand, type OcrWord } from '../utils/accountNumberOcr'
+import SitterDemoNotice from '../components/sitter/SitterDemoNotice.vue'
+import { getPayout, updateBankAccount, type BankAccount, type Payout } from '../services/sitterPayout'
+import { isSitterDemo } from '../services/sitterDemo'
+import { extractAccountNumber } from '../utils/accountNumberOcr'
 
 // Add or edit supported banks here. The code is saved with the selected name.
 const bankOptions = [
@@ -18,8 +20,6 @@ const payout = ref<Payout | null>(null)
 const editing = ref(false)
 const confirming = ref(false)
 const busy = ref(false)
-const loading = ref(true)
-const uploading = ref(false)
 const error = ref('')
 const ocrStatus = ref('')
 const ocrProgress = ref(0)
@@ -34,39 +34,11 @@ async function load() {
     bank.value = { ...payout.value.bankAccount }
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to load payout'
-  } finally {
-    loading.value = false
   }
 }
 
 function selectBank() {
   bank.value.bankCode = bankOptions.find(option => option.name === bank.value.bankName)?.code || ''
-}
-
-function wordsOf(blocks: { paragraphs?: { lines?: { words?: { text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }[] }[] }[] }[]): OcrWord[] {
-  const words: OcrWord[] = []
-  for (const block of blocks || []) {
-    for (const paragraph of block.paragraphs || []) {
-      for (const line of paragraph.lines || []) {
-        for (const word of line.words || []) words.push({ text: word.text, confidence: word.confidence, x0: word.bbox.x0, y0: word.bbox.y0, x1: word.bbox.x1, y1: word.bbox.y1 })
-      }
-    }
-  }
-  return words
-}
-
-function bandDigits(bitmap: ImageBitmap, box: { left: number; top: number; width: number; height: number }) {
-  const canvas = document.createElement('canvas')
-  canvas.width = box.width
-  canvas.height = box.height
-  const context = canvas.getContext('2d', { willReadFrequently: true })
-  if (!context) return ''
-  context.drawImage(bitmap, box.left, box.top, box.width, box.height, 0, 0, box.width, box.height)
-  const pixels = context.getImageData(0, 0, box.width, box.height).data
-  const gray = new Uint8Array(box.width * box.height)
-  for (let index = 0, pixel = 0; index < pixels.length; index += 4, pixel++) gray[pixel] = pixels[index] * 0.299 + pixels[index + 1] * 0.587 + pixels[index + 2] * 0.114
-  const digits = digitsFromBinary(prepareDotBand(gray, box.width, box.height), box.width, box.height)
-  return /^\d{10}$/.test(digits) ? digits : ''
 }
 
 async function readAccountNumber(file: File) {
@@ -79,60 +51,20 @@ async function readAccountNumber(file: File) {
         if (message.status === 'recognizing text' && message.progress != null) ocrProgress.value = Math.round(message.progress * 100)
       },
     })
-    const bitmap = await createImageBitmap(file)
     try {
-      await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT })
-      const first = await worker.recognize(file, {}, { blocks: true })
-      const words = wordsOf(first.data.blocks || [])
-      let accountNumber = accountFromWords(words)
-      const tail = words.find(word => /\d-\d{5}-\d/.test(word.text.replace(/[.–—]/g, '-')))
-      if (!accountNumber && tail) {
-        await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE, user_defined_dpi: '300', tessedit_char_whitelist: '0123456789-' })
-        for (const trim of [0.22, 0.3, 0.38]) {
-          const left = Math.round(tail.x0 + (tail.x1 - tail.x0) * trim)
-          const top = Math.max(0, tail.y0 - 2)
-          const width = Math.min(bitmap.width - left, tail.x1 - left + 24)
-          const height = Math.min(bitmap.height - top, tail.y1 - tail.y0 + 10)
-          if (width < 40 || height < 12) continue
-          const canvas = document.createElement('canvas')
-          canvas.width = width * 4
-          canvas.height = height * 4
-          const context = canvas.getContext('2d', { willReadFrequently: true })
-          if (!context) continue
-          context.drawImage(bitmap, left, top, width, height, 0, 0, canvas.width, canvas.height)
-          const image = context.getImageData(0, 0, canvas.width, canvas.height)
-          const samples: number[] = []
-          for (let index = 0; index < image.data.length; index += 4) samples.push(image.data[index] * 0.299 + image.data[index + 1] * 0.587 + image.data[index + 2] * 0.114)
-          samples.sort((a, b) => a - b)
-          const darkest = samples[Math.floor(samples.length * 0.02)]
-          const lightest = samples[Math.floor(samples.length * 0.98)]
-          const span = lightest - darkest || 1
-          for (let index = 0; index < image.data.length; index += 4) {
-            const value = Math.max(0, Math.min(255, ((image.data[index] * 0.299 + image.data[index + 1] * 0.587 + image.data[index + 2] * 0.114 - darkest) * 255) / span))
-            image.data[index] = image.data[index + 1] = image.data[index + 2] = value
-          }
-          context.putImageData(image, 0, 0)
-          const line = extractAccountNumber((await worker.recognize(canvas)).data.text)
-          if (/^\d{3}-\d-\d{5}-\d$/.test(line) || /^\d{10}$/.test(line) || /^\d{12}$/.test(line)) {
-            accountNumber = line
-            break
-          }
-        }
-      }
-      if (!accountNumber) {
-        for (const box of dottedBoxes(words, bitmap.width, bitmap.height)) {
-          accountNumber = bandDigits(bitmap, box)
-          if (accountNumber) break
-        }
-      }
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789- ',
+        tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+      })
+      const { data: { text } } = await worker.recognize(file)
+      const accountNumber = extractAccountNumber(text)
       if (accountNumber) {
-        bank.value.accountNumber = formatAccountNumber(accountNumber, bank.value.bankName)
+        bank.value.accountNumber = accountNumber
         ocrStatus.value = 'Account number detected. Please verify it before updating.'
       } else {
         ocrStatus.value = 'No account number detected. Please enter it manually.'
       }
     } finally {
-      bitmap.close()
       await worker.terminate()
     }
   } catch {
@@ -140,28 +72,19 @@ async function readAccountNumber(file: File) {
   }
 }
 
-async function image(event: Event) {
+function image(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-  if (!file.type.startsWith('image/') || file.size > 5_000_000) {
-    error.value = 'Use an image no larger than 5 MB'
+  const maxSize = isSitterDemo() ? 1_000_000 : 5_000_000
+  if (!file.type.startsWith('image/') || file.size > maxSize) {
+    error.value = `Use an image no larger than ${isSitterDemo() ? 1 : 5} MB`
     return
   }
   error.value = ''
-  uploading.value = true
-  const previousUrl = bank.value.bookBankImageUrl
-  const previewUrl = URL.createObjectURL(file)
-  bank.value.bookBankImageUrl = previewUrl
-  try {
-    const [uploaded] = await Promise.all([uploadBookBankImage(file), readAccountNumber(file)])
-    bank.value.bookBankImageUrl = uploaded.url
-  } catch (cause) {
-    bank.value.bookBankImageUrl = previousUrl
-    error.value = cause instanceof Error ? cause.message : 'Unable to upload book bank image'
-  } finally {
-    URL.revokeObjectURL(previewUrl)
-    uploading.value = false
-  }
+  const reader = new FileReader()
+  reader.onload = () => (bank.value.bookBankImageUrl = String(reader.result))
+  reader.readAsDataURL(file)
+  void readAccountNumber(file)
 }
 
 async function save() {
@@ -185,8 +108,8 @@ onMounted(load)
 <template>
   <SitterPageShell>
     <main class="page">
+      <SitterDemoNotice />
       <p v-if="error" class="error">{{ error }}</p>
-      <p v-if="loading" role="status">Loading payout...</p>
       <template v-if="payout">
         <section v-if="!editing">
           <h1>Payout Option</h1>
@@ -207,7 +130,7 @@ onMounted(load)
         <form v-else @submit.prevent="confirming = true">
           <div class="form-head">
             <h1><button class="back" type="button" aria-label="Back" @click="editing = false">‹</button>Payout Option</h1>
-            <button class="primary" type="submit" :disabled="uploading">{{ uploading ? 'Uploading...' : 'Update' }}</button>
+            <button class="primary" type="submit">Update</button>
           </div>
           <section class="form-card">
             <label class="caption">Book Bank Image*</label>
@@ -241,19 +164,7 @@ onMounted(load)
 </style>
 
 <style scoped>
-.upload {
-  overflow: hidden;
-  grid-template-rows: minmax(0, 1fr);
-}
-.upload img {
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
+.page { background: #f8f9fd; }
 .page h1 { font-size: 24px; font-weight: 700; line-height: 32px; }
 .summary { gap: 20px; margin-top: 20px; }
 .summary-card, .summary article { display: flex; align-items: center; justify-content: space-between; min-width: 0; min-height: 78px; padding: 0 24px; border: 0; border-radius: 12px; background: #fff; color: #111; font-size: 16px; }

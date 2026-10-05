@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { uploadSitterProfileMedia } from '../../services/sitterApproval'
 
 const images = defineModel<string[]>({ required: true })
 defineProps<{ readonly?: boolean }>()
-const emit = defineEmits<{ uploading: [value: boolean] }>()
 const imageError = ref('')
-const uploading = ref(false)
+
+function readImage(file: File) {
+  // ponytail: data URLs keep v1 self-contained; use object storage when production upload volume matters.
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
 
 async function addImages(event: Event) {
   const input = event.target as HTMLInputElement
@@ -22,25 +29,10 @@ async function addImages(event: Event) {
     return
   }
   try {
-    uploading.value = true
-    emit('uploading', true)
-    const results = await Promise.allSettled(
-      selected.map(file => uploadSitterProfileMedia(file, 'gallery')),
-    )
-    const uploaded = results
-      .filter((result): result is PromiseFulfilledResult<{ url: string }> => result.status === 'fulfilled')
-      .map(result => result.value.url)
-    images.value.push(...uploaded)
-
-    const failed = results.find((result): result is PromiseRejectedResult => result.status === 'rejected')
-    imageError.value = failed
-      ? failed.reason instanceof Error
-        ? failed.reason.message
-        : 'ไม่สามารถอัปโหลดรูปภาพได้'
-      : ''
-  } finally {
-    uploading.value = false
-    emit('uploading', false)
+    images.value.push(...await Promise.all(selected.map(readImage)))
+    imageError.value = ''
+  } catch {
+    imageError.value = 'ไม่สามารถอ่านไฟล์รูปภาพได้'
   }
   input.value = ''
 }
@@ -64,20 +56,17 @@ function removeImage(index: number) {
           @click="removeImage(index)"
         >×</button>
       </div>
-      <label v-if="!readonly && images.length < 10" class="upload-tile">
+      <label v-if="!readonly" class="upload-tile">
         <span class="upload-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" />
             <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
         </span>
-        <span class="upload-text">{{ uploading ? 'Uploading...' : 'Upload Image' }}</span>
-        <input type="file" accept="image/*" multiple class="visually-hidden" :disabled="uploading" @change="addImages" />
+        <span class="upload-text">Upload Image</span>
+        <input type="file" accept="image/*" multiple class="visually-hidden" @change="addImages" />
       </label>
     </div>
-    <small v-if="readonly && images.length === 0" class="readonly-note" role="status">
-      Gallery is locked while waiting for Admin approval. Ask Admin to reject the request, then upload up to 10 images and submit again.
-    </small>
     <small v-if="imageError" class="error" role="alert">{{ imageError }}</small>
   </div>
 </template>
@@ -97,7 +86,6 @@ function removeImage(index: number) {
 .upload-icon svg { width: 100%; height: 100%; }
 .upload-text { font-size: 14px; font-weight: 500; }
 .error { color: #d43a3a; }
-.readonly-note { color: #777f90; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 760px) {
   .field.wide { grid-column: 1; }

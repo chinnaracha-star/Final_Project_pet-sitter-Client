@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useChatStore } from '../../stores/chat'
-import NotificationMenu from '../NotificationMenu.vue'
 
 defineProps<{ name: string }>()
 
 const chat = useChatStore()
-onMounted(() => void chat.loadConversations())
 </script>
 
 <template>
@@ -17,9 +14,7 @@ onMounted(() => void chat.loadConversations())
       </span>
       <span class="font-medium text-primary-900">{{ name || 'Jane Maison' }}</span>
     </div>
-    <div class="flex items-center gap-1">
-      <NotificationMenu />
-      <button
+    <button
       type="button"
       class="relative grid size-11 place-items-center rounded-full hover:bg-[#f6f7fb]"
       aria-label="Open messages"
@@ -45,7 +40,6 @@ onMounted(() => void chat.loadConversations())
         class="absolute top-2.5 right-2.5 size-2 rounded-full bg-orange-700"
         aria-hidden="true"
       />
-      </button>
-    </div>
+    </button>
   </header>
 </template>

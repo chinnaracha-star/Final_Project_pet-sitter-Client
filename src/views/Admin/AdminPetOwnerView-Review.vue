@@ -4,6 +4,8 @@ import { adminApi } from '../../services/adminApi'
 import { useRouter } from 'vue-router'
 import AdminSidebar from '../../components/AdminSidebar.vue'
 import { useAdminPetOwnerStore } from '../../stores/adminPetOwner'
+import { API_BASE_URL } from '../../config/api'
+
 interface OwnerReview {
 	id: number
 	rating: number

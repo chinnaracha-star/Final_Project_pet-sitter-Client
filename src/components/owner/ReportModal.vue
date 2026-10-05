@@ -36,7 +36,7 @@ function send() {
       <label class="auth-label" for="report-issue">Issue</label>
       <input id="report-issue" v-model.trim="issue" class="auth-input" placeholder="Subject" required />
       <label class="auth-label" for="report-description">Description</label>
-      <textarea id="report-description" v-model.trim="description" class="min-h-32 w-full rounded-2xl border border-primary-100 px-[18px] py-3" placeholder="Describe detail..." />
+      <textarea id="report-description" v-model.trim="description" class="min-h-32 w-full rounded-2xl border border-primary-100 px-[18px] py-3" placeholder="Describe detail..." required />
       <div class="mt-8 flex justify-end gap-3">
         <button type="button" class="min-h-12 rounded-full bg-orange-100 px-8 font-bold text-orange-700" @click="emit('close')">Cancel</button>
         <button class="auth-submit px-8" type="submit">Send Report</button>

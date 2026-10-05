@@ -10,7 +10,7 @@ const emit = defineEmits<{
   report: []
   review: []
   yourReview: []
-  mock: [action: string]
+  change: []
 }>()
 
 function formatDate(value: string) {
@@ -57,7 +57,7 @@ const statusLabel: Record<OwnerBooking['status'], string> = {
         </p>
         <p
           class="mt-1 flex items-center justify-end gap-2 font-medium"
-          :class="booking.status === 'pending' ? 'text-pink-500' : booking.status === 'in_service' ? 'text-blue-500' : 'text-green-500'"
+          :class="booking.status === 'pending' ? 'text-pink-500' : booking.status === 'cancelled' ? 'text-primary-500' : booking.status === 'completed' ? 'text-green-500' : 'text-blue-500'"
         >
           <span class="size-1.5 rounded-full bg-current" aria-hidden="true" />
           {{ statusLabel[booking.status] }}
@@ -78,7 +78,7 @@ const statusLabel: Record<OwnerBooking['status'], string> = {
             v-if="booking.status === 'pending'"
             type="button"
             class="inline-flex shrink-0 items-center gap-1 font-semibold whitespace-nowrap text-orange-700"
-            @click.stop="emit('mock', 'Change')"
+            @click.stop="emit('change')"
           >
             <span
               class="size-4 bg-current"
@@ -91,7 +91,7 @@ const statusLabel: Record<OwnerBooking['status'], string> = {
       </div>
       <div class="sm:border-l sm:border-primary-100 sm:pl-4">
         <p class="text-primary-500">Duration:</p>
-        <p class="mt-1 font-medium">{{ booking.durationHours }} hours</p>
+        <p class="mt-1 font-medium">{{ booking.durationLabel }}</p>
       </div>
       <div class="sm:border-l sm:border-primary-100 sm:pl-4">
         <p class="text-primary-500">Pet:</p>
@@ -105,14 +105,15 @@ const statusLabel: Record<OwnerBooking['status'], string> = {
     >
       <p class="text-sm text-primary-700">{{ booking.bannerText }}</p>
       <div class="flex gap-2">
-        <button type="button" class="auth-submit min-h-10 px-5 text-sm" @click.stop="emit('mock', 'Send Message')">
+        <button type="button" class="auth-submit min-h-10 cursor-not-allowed px-5 text-sm opacity-50" disabled title="Coming soon">
           Send Message
         </button>
         <button
           type="button"
-          class="grid size-10 place-items-center rounded-full bg-orange-100 text-orange-700"
-          aria-label="Call"
-          @click.stop="emit('mock', 'Call')"
+          class="grid size-10 cursor-not-allowed place-items-center rounded-full bg-orange-100 text-orange-700 opacity-50"
+          aria-label="Call is coming soon"
+          disabled
+          title="Coming soon"
         >
           <span
             class="size-5 bg-current"

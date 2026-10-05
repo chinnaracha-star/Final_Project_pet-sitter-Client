@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChatBox } from '../chat'
 import OwnerSidebar from './OwnerSidebar.vue'
 
 defineProps<{
@@ -19,5 +20,6 @@ defineProps<{
         <slot />
       </main>
     </div>
+    <ChatBox />
   </div>
 </template>

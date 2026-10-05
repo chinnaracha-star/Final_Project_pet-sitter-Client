@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import OwnerModal from "../components/owner/OwnerModal.vue";
 import SocialLoginButtons from "../components/SocialLoginButtons.vue";
 import { useAuthRole } from "../composables/useAuthRole";
@@ -9,6 +9,7 @@ import { useAuthStore } from "../stores/auth";
 const { isOwner, registerTo, setRole } = useAuthRole();
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const showPassword = ref(false);
 const email = ref("");
@@ -21,7 +22,9 @@ async function submitLogin() {
   try {
     const targetRole = isOwner.value ? "owner" : "pet-sitter";
     await auth.login(email.value, password.value, targetRole);
-    void router.push(auth.role === "pet-sitter" ? "/sitter/profile" : "/owner/profile");
+    const redirect = String(route.query.redirect || "");
+    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "";
+    void router.push(safeRedirect || (auth.role === "pet-sitter" ? "/sitter/profile" : "/owner/profile"));
   } catch (cause) {
     notice.value = cause instanceof Error ? cause.message : "Login failed";
   }
@@ -56,7 +59,7 @@ function continueWith(provider: "Facebook" | "Google") {
       >
         <button
           type="button"
-          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          class="w-1/3 rounded-full py-2.5 text-sm font-bold"
           :class="
             isOwner
               ? 'border border-orange-700 bg-white text-orange-700'
@@ -69,7 +72,7 @@ function continueWith(provider: "Facebook" | "Google") {
         </button>
         <button
           type="button"
-          class="w-1/2 rounded-full py-2.5 text-sm font-bold"
+          class="w-1/3 rounded-full py-2.5 text-sm font-bold"
           :class="
             !isOwner
               ? 'border border-orange-700 bg-white text-orange-700'
@@ -79,6 +82,13 @@ function continueWith(provider: "Facebook" | "Google") {
           @click="setRole('pet-sitter')"
         >
           Sitter
+        </button>
+        <button
+          type="button"
+          class="w-1/3 rounded-full py-2.5 text-sm font-bold text-primary-500"
+          @click="router.push('/admin/login')"
+        >
+          Admin
         </button>
       </div>
 

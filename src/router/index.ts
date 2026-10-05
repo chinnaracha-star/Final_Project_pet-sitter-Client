@@ -6,6 +6,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: () => import('../views/LandingView.vue') },
     { path: '/login', component: () => import('../views/LoginView.vue') },
+    { path: '/admin/login', component: () => import('../views/Admin/AdminLoginView.vue') },
     { path: '/register', component: () => import('../views/RegisterView.vue') },
     { path: '/search', component: () => import('../views/SitterSearchView.vue') },
     { path: '/sitters/:id', component: () => import('../views/PublicSitterProfileView.vue') },
@@ -55,13 +56,10 @@ router.beforeEach(to => {
     return true
   }
   const auth = useAuthStore()
-  if (to.path.startsWith('/admin')) {
-    if (!auth.isLoggedIn) return { path: '/login' }
-    return auth.isAdmin ? true : { path: '/' }
-  }
   if (to.meta.sitter) {
-    if (!auth.isLoggedIn) return { path: '/login', query: { redirect: to.fullPath } }
-    return auth.role === 'pet-sitter' ? true : { path: '/' }
+    if (!auth.isLoggedIn) return { path: '/login', query: { role: 'pet-sitter', redirect: to.fullPath } }
+    const role = auth.role as string | null
+    return role === 'pet-sitter' || role === 'sitter' ? true : { path: '/' }
   }
   if (!to.meta.owner) return true
   if (auth.isOwnerLoggedIn) return true

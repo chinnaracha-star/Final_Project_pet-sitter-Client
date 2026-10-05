@@ -1,6 +1,6 @@
 import { api } from './http'
 import type { AuthRole } from '../types/auth'
-import type { OwnerProfile } from '../types/owner'
+import type { OwnerBooking, OwnerProfile } from '../types/owner'
 
 export type AuthMe = {
   id: string
@@ -66,3 +66,18 @@ export const updateOwnerPet = (id: number, payload: PetPayload) =>
   api<PetPayload & { id: number }>(`/api/owner/pets/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
 
 export const deleteOwnerPet = (id: number) => api<void>(`/api/owner/pets/${id}`, { method: 'DELETE' })
+
+export const listOwnerBookings = () => api<OwnerBooking[]>('/api/bookings/owner')
+
+export const changeOwnerBookingSchedule = (id: number, schedule: {
+  startDate: string
+  endDate: string
+  startTime: string
+  endTime: string
+}) => api<OwnerBooking>(`/api/bookings/owner/${id}/schedule`, { method: 'PATCH', body: JSON.stringify(schedule) })
+
+export const reviewOwnerBooking = (id: number, rating: number, comment: string) =>
+  api<OwnerBooking>(`/api/bookings/owner/${id}/review`, { method: 'POST', body: JSON.stringify({ rating, comment }) })
+
+export const reportOwnerBooking = (id: number, issue: string, description: string) =>
+  api<OwnerBooking>(`/api/bookings/owner/${id}/report`, { method: 'POST', body: JSON.stringify({ issue, description }) })

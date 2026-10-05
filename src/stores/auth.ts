@@ -91,7 +91,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isOwnerLoggedIn = computed(() => role.value === 'owner')
 
   function applyMe(me: AuthMe) {
-    role.value = me.role
+    const raw = me.role as string
+    role.value = raw === 'sitter' || raw === 'pet-sitter' ? 'pet-sitter' : me.role
     profile.value = toProfile(me)
     userId.value = me.id
     profileComplete.value = me.profileComplete

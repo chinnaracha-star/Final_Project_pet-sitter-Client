@@ -1,11 +1,8 @@
 export interface ChatConversation {
   id: number
-  ownerId: string
-  ownerName: string
-  ownerAvatar: string
-  sitterId: string
-  sitterName: string
-  sitterAvatar: string
+  participantId: string
+  participantName: string
+  participantAvatar: string | null
   lastMessage: string
   unreadCount: number
 }
@@ -17,25 +14,5 @@ export interface ChatMessage {
   content: string | null
   imageUrl: string | null
   sentAt: string
-}
-
-export interface ChatPeer {
-  id: string
-  name: string
-  avatar: string
-}
-
-export function conversationPeer(conversation: ChatConversation, role: string | null): ChatPeer {
-  if (role === 'pet-sitter') {
-    return {
-      id: conversation.ownerId,
-      name: conversation.ownerName,
-      avatar: conversation.ownerAvatar,
-    }
-  }
-  return {
-    id: conversation.sitterId,
-    name: conversation.sitterName,
-    avatar: conversation.sitterAvatar,
-  }
+  mine: boolean
 }

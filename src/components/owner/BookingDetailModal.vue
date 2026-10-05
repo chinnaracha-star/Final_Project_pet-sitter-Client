@@ -2,15 +2,19 @@
 import type { OwnerBooking } from '../../types/owner'
 import OwnerModal from './OwnerModal.vue'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   booking: OwnerBooking | null
 }>()
 
 const emit = defineEmits<{
   close: []
-  mock: [action: string]
 }>()
+
+function openMap() {
+  if (!props.booking?.mapQuery) return
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(props.booking.mapQuery)}`, '_blank', 'noopener')
+}
 
 const statusLabel: Record<OwnerBooking['status'], string> = {
   pending: 'Waiting for confirm',
@@ -59,7 +63,7 @@ function formatTime(value: string) {
           <p class="text-sm text-primary-500">Pet Sitter:</p>
           <p class="mt-2 font-bold">{{ booking.sitterName }} By {{ booking.sitterOwner }}</p>
         </div>
-        <button type="button" class="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700" @click="emit('mock', 'View Map')">
+        <button type="button" class="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!booking.mapQuery" @click="openMap">
           <svg viewBox="0 0 24 24" class="size-5" fill="currentColor" aria-hidden="true">
             <path d="M12 2.5a6.5 6.5 0 0 0-6.5 6.5c0 4.8 6.5 12.5 6.5 12.5s6.5-7.7 6.5-12.5A6.5 6.5 0 0 0 12 2.5Zm0 8.8a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z" />
           </svg>
@@ -73,7 +77,7 @@ function formatTime(value: string) {
         </div>
         <div>
           <p class="text-sm text-primary-500">Duration:</p>
-          <p class="mt-2 font-bold">{{ booking.durationHours }} hours</p>
+          <p class="mt-2 font-bold">{{ booking.durationLabel }}</p>
         </div>
       </div>
       <div class="mt-8">

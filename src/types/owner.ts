@@ -32,21 +32,25 @@ export interface OwnerReview {
 
 export interface OwnerBooking {
   id: number
+  sitterId: string
   sitterName: string
   sitterOwner: string
   sitterAvatar: string
   status: BookingStatus
   startDate: string
+  endDate: string
   startTime: string
   endTime: string
   durationHours: number
+  durationLabel: string
   petNames: string[]
   totalPrice: number
   transactionNo: string
   transactionDate: string
   bannerText: string
-  completedAt?: string
-  review?: OwnerReview
+  completedAt?: string | null
+  mapQuery: string
+  review?: OwnerReview | null
 }
 
 export const PET_TYPES: PetTypeName[] = ['Dog', 'Cat', 'Bird', 'Rabbit']

@@ -10,7 +10,7 @@ defineProps<{
 
 const emit = defineEmits<{
   close: []
-  mock: []
+  viewSitter: []
 }>()
 
 const auth = useAuthStore()
@@ -43,7 +43,7 @@ const auth = useAuthStore()
         </div>
       </div>
       <div class="flex flex-1 items-end justify-center pb-2">
-        <button type="button" class="min-h-12 rounded-full bg-orange-100 px-8 font-bold text-orange-700" @click="emit('mock')">
+        <button type="button" class="min-h-12 rounded-full bg-orange-100 px-8 font-bold text-orange-700" @click="emit('viewSitter')">
           View Pet Sitter
         </button>
       </div>

@@ -4,7 +4,7 @@ import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiPort = env.VITE_API_PORT || "8082";
+  const apiPort = env.VITE_API_PORT || "8083";
 
   return {
     plugins: [vue(), tailwindcss()],

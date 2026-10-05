@@ -2,8 +2,10 @@
 import { ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { useChatStore } from '../../stores/chat'
 
 const auth = useAuthStore()
+const chat = useChatStore()
 const route = useRoute()
 const router = useRouter()
 const isMobileMenuOpen = ref(false)
@@ -13,6 +15,7 @@ const ownerLinks = [
   { to: '/owner/profile', label: 'Profile', icon: '/icon/profile.svg' },
   { to: '/owner/pets', label: 'Your Pet', icon: '/icon/paw.svg' },
   { to: '/owner/bookings', label: 'Booking History', icon: '/icon/list.svg' },
+  { to: '/owner/messages', label: 'Messages', icon: '/icon/message.svg' },
   { to: '/owner/password', label: 'Change Password', icon: '/icon/settings.svg' },
 ]
 
@@ -40,6 +43,19 @@ function logout() {
 
       <div class="hidden md:flex items-center gap-8">
         <template v-if="auth.isOwnerLoggedIn">
+          <button
+            type="button"
+            class="relative grid size-11 place-items-center rounded-full hover:bg-orange-100"
+            aria-label="Open messages"
+            @click="chat.openInbox()"
+          >
+            <img src="/navbar/icon-chat.svg" alt="" class="size-5" />
+            <span
+              v-if="chat.hasUnread"
+              class="absolute top-2.5 right-2.5 size-2 rounded-full bg-orange-700"
+              aria-hidden="true"
+            />
+          </button>
           <button
             type="button"
             class="grid size-11 place-items-center rounded-full text-primary-300"
@@ -127,6 +143,9 @@ function logout() {
 
     <div v-if="isMobileMenuOpen" class="md:hidden border-t border-gray-100 bg-white px-6 py-4 space-y-3 shadow-lg">
       <template v-if="auth.isOwnerLoggedIn">
+        <button type="button" class="block py-2 text-base font-medium text-[#292A36]" @click="chat.openInbox()">
+          Messages
+        </button>
         <RouterLink
           v-for="link in ownerLinks"
           :key="link.to"

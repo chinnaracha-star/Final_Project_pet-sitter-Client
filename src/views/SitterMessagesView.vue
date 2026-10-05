@@ -8,7 +8,10 @@ import { useChatStore } from '../stores/chat'
 
 const chat = useChatStore()
 onMounted(() => {
-  if (chat.activeConversationId === null && chat.conversations[0]) chat.selectConversation(chat.conversations[0].id)
+  void chat.loadInbox()
+  if (chat.activeConversationId === null && chat.visibleConversations[0]) {
+    chat.selectConversation(chat.visibleConversations[0].id)
+  }
 })
 </script>
 

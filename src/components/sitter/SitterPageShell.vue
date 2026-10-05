@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChatBox } from '../chat'
 import SitterSidebar from './SitterSidebar.vue'
 import SitterTopbar from './SitterTopbar.vue'
 
@@ -17,6 +16,5 @@ withDefaults(defineProps<{
       <SitterTopbar :name="name" />
       <slot />
     </div>
-    <ChatBox />
   </div>
 </template>

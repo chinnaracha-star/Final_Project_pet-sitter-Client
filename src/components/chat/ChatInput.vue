@@ -17,13 +17,12 @@ function submitMessage() {
 
 <template>
   <form class="flex items-center gap-3 border-t border-primary-100 px-5 py-4" @submit.prevent="submitMessage">
-    <label class="sr-only" for="chat-message">Message</label>
     <input
-      id="chat-message"
       v-model="draft"
       class="h-12 flex-1 rounded-full border-0 bg-[#f6f7fb] px-5 text-sm text-primary-900 outline-none placeholder:text-primary-300"
       type="text"
       placeholder="Message here..."
+      aria-label="Message"
       autocomplete="off"
     />
     <button

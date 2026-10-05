@@ -14,6 +14,7 @@ const router = createRouter({
     { path: '/owner/pets/new', component: () => import('../views/OwnerPetFormView.vue'), meta: { owner: true } },
     { path: '/owner/pets/:id', component: () => import('../views/OwnerPetFormView.vue'), meta: { owner: true } },
     { path: '/owner/bookings', component: () => import('../views/OwnerBookingsView.vue'), meta: { owner: true } },
+    { path: '/owner/messages', component: () => import('../views/OwnerMessagesView.vue'), meta: { owner: true } },
     { path: '/owner/password', component: () => import('../views/OwnerPasswordView.vue'), meta: { owner: true } },
     { path: '/sitter/profile', component: () => import('../views/SitterProfileView.vue'), meta: { sitter: true } },
     { path: '/sitter/bookings', component: () => import('../views/SitterBookingListView.vue'), meta: { sitter: true } },

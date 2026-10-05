@@ -5,6 +5,11 @@ import ChatInput from './ChatInput.vue'
 import MessageBubble from './MessageBubble.vue'
 
 const chat = useChatStore()
+
+function messageAvatar(isMine: boolean) {
+  if (isMine) return chat.selfAvatar
+  return chat.activePeer?.avatar || '/icon/user.svg'
+}
 withDefaults(defineProps<{ showClose?: boolean }>(), { showClose: true })
 const thread = ref<HTMLElement | null>(null)
 
@@ -27,17 +32,22 @@ watch(() => chat.activeConversationId, scrollToLatest)
     <header class="flex h-[72px] items-center justify-between border-b border-primary-100 px-6">
       <div class="flex min-w-0 items-center gap-3">
         <img
-          v-if="chat.activeConversation"
-          :src="chat.activeConversation.ownerAvatar"
-          :alt="chat.activeConversation.ownerName"
+          v-if="chat.activePeer"
+          :src="chat.activePeer.avatar || '/icon/user.svg'"
+          :alt="chat.activePeer.name"
           class="size-10 rounded-full object-cover"
         />
         <h2 class="truncate text-lg font-bold text-primary-900">
-          {{ chat.activeConversation?.ownerName ?? 'Messages' }}
+          {{ chat.activePeer?.name ?? 'Messages' }}
         </h2>
       </div>
       <div class="flex items-center gap-2">
-        <span class="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-900">Demo data</span>
+        <span
+          class="rounded-full px-2 py-1 text-xs font-semibold"
+          :class="chat.isLive || chat.isSocketOpen ? 'bg-green-100 text-green-500' : 'bg-orange-100 text-orange-900'"
+        >
+          {{ chat.isSocketOpen ? 'Live' : chat.isLive ? 'API' : 'Local' }}
+        </span>
         <button
           v-if="showClose"
           type="button"
@@ -59,8 +69,8 @@ watch(() => chat.activeConversationId, scrollToLatest)
         :key="message.id"
         :content="message.content"
         :image-url="message.imageUrl"
-        :avatar-url="chat.activeConversation?.ownerAvatar"
-        :is-mine="message.isMine"
+        :avatar-url="messageAvatar(chat.isMine(message))"
+        :is-mine="chat.isMine(message)"
       />
     </div>
 

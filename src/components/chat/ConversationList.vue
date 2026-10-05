@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useChatStore } from '../../stores/chat'
+import { conversationPeer } from '../../types/chat'
+import { useAuthStore } from '../../stores/auth'
 
 const chat = useChatStore()
+const auth = useAuthStore()
 </script>
 
 <template>
@@ -11,20 +14,20 @@ const chat = useChatStore()
       <img class="invert sm:hidden" src="/icon/message.svg" alt="Messages" width="20" height="20" />
     </header>
     <ul class="flex-1 overflow-y-auto px-2 pb-4 sm:px-3" role="listbox" aria-label="Conversations">
-      <li v-for="conversation in chat.conversations" :key="conversation.id">
+      <li v-for="conversation in chat.visibleConversations" :key="conversation.id">
         <button
           type="button"
           class="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left transition hover:bg-white/10 sm:px-3"
           :class="chat.activeConversationId === conversation.id ? 'bg-white/10' : ''"
           :aria-selected="chat.activeConversationId === conversation.id"
-          :aria-label="conversation.ownerName"
+          :aria-label="conversationPeer(conversation, auth.role).name"
           role="option"
           @click="chat.selectConversation(conversation.id)"
         >
           <span class="relative shrink-0">
             <img
-              :src="conversation.ownerAvatar"
-              :alt="conversation.ownerName"
+              :src="conversationPeer(conversation, auth.role).avatar || '/icon/user.svg'"
+              :alt="conversationPeer(conversation, auth.role).name"
               class="size-11 rounded-full object-cover"
             />
             <span
@@ -34,10 +37,13 @@ const chat = useChatStore()
             />
           </span>
           <span class="hidden min-w-0 flex-1 sm:block">
-            <span class="truncate text-sm font-semibold">{{ conversation.ownerName }}</span>
-            <span class="mt-0.5 block truncate text-xs text-white/55">{{ conversation.lastMessage }}</span>
+            <span class="truncate text-sm font-semibold">{{ conversationPeer(conversation, auth.role).name }}</span>
+            <span class="mt-0.5 block truncate text-xs text-white/55">{{ conversation.lastMessage || 'No messages yet' }}</span>
           </span>
         </button>
+      </li>
+      <li v-if="chat.visibleConversations.length === 0" class="px-3 py-8 text-center text-xs text-white/50">
+        No conversations yet.
       </li>
     </ul>
   </aside>

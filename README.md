@@ -2,15 +2,11 @@
 
 Frontend ของ Pet Sitter ใช้ Vue 3, TypeScript และ Vite
 
-## Pet Sitter demo while the server is pending
-
-เปิด `/sitter/bookings?demo=true` เพื่อเปิดข้อมูลเดโมอย่างชัดเจน จากนั้น Booking List, Booking Detail, Calendar และ Payout จะใช้ booking ชุดเดียวกัน หน้า Messages ใช้แชตเดโมเสมอ ป้าย **Demo data** ระบุหน้าที่ยังไม่อ่านข้อมูลจาก server; ปุ่ม **Reset demo** ล้างสถานะ booking และบัญชีธนาคารที่เก็บในเบราว์เซอร์ ส่วน **Exit demo** กลับไปเรียก API โดยไม่มีการสลับเป็น mock อัตโนมัติ
-
-Profile/Approval ต้องใช้บัญชี Supabase ที่ล็อกอินอยู่และส่ง access token ให้ API ส่วนการอัปโหลดรูป sitter และ booking payload ที่มี pets ยังไม่รองรับครบก่อนทดสอบ end-to-end ข้อมูลเดโมของ Payout เป็นยอดจาก booking สถานะ `success` ไม่ใช่รายการชำระเงินจริง
+Booking List, Booking Detail, Calendar, Payout, Messages และ Notifications ใช้ข้อมูลจริงจาก Spring Boot API โดยส่ง Supabase access token ไปกับทุก request
 
 ในเครื่อง ให้ตั้ง `VITE_API_BASE_URL=` ว่างและ `VITE_API_PORT` ให้ตรงกับ `PORT` ของ backend (ตัวอย่างใช้ `10000`) แล้วรัน `npm run dev`; Vite จะส่ง `/api/*` ไป backend ในเครื่อง บน Vercel คำขอ `/api/*` จะถูกส่งต่อไป Render ตาม `vercel.json` โดยอัตโนมัติ ไม่ต้องตั้ง `VITE_API_BASE_URL` ใน Vercel หลังแก้ `vercel.json` ต้อง deploy frontend ใหม่
 
-แผนที่ในหน้า Sitter Profile เป็น **preview ฝั่ง client** ด้วย Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก ยังไม่บันทึก lat/lng ลง API
+แผนที่ในหน้า Sitter Profile ใช้ Leaflet + OpenStreetMap ค้นพิกัดจากที่อยู่ที่กรอก และรองรับการคลิกแผนที่หรือลากหมุดเพื่อเลือกตำแหน่งที่แม่นยำ ค่า latitude/longitude จะถูกบันทึกใน `pending_profile` เพื่อรอ Admin อนุมัติ
 
 ## Sitter approval flow
 
@@ -35,6 +31,7 @@ API ส่วนตัวต้องส่ง `Authorization: Bearer <Supabase 
 |---|---|---|
 | `GET` | `/api/sitter/profile` | อ่าน live profile, pending profile และสถานะ |
 | `POST` | `/api/sitter/profile/submit` | ส่งข้อมูลเข้าคิว Verify/Approve |
+| `POST` | `/api/sitter/profile/media` | อัปโหลดรูป Profile/Gallery ไป bucket `uploads` แล้วคืน public URL |
 | `GET` | `/api/admin/sitter-approvals` | อ่านรายการที่รอ Admin |
 | `PATCH` | `/api/admin/sitter-approvals/approve?sitterId={uuid}` | อนุมัติและคัดลอก pending ไป live |
 | `PATCH` | `/api/admin/sitter-approvals/reject?sitterId={uuid}` | Reject พร้อม `{ "reason": "..." }` |
@@ -43,8 +40,23 @@ API ส่วนตัวต้องส่ง `Authorization: Bearer <Supabase 
 | `GET` | `/api/sitters/{id}` | อ่าน Public Sitter Profile โดยไม่ส่งข้อมูลส่วนตัว |
 | `GET` | `/api/sitters/{id}/reviews` | อ่านรีวิวที่ approved ล่าสุดสูงสุด 5 รายการ |
 | `POST` | `/api/bookings` | สร้าง Booking เมื่อ Sitter ยัง listed เท่านั้น |
+| `GET` | `/api/bookings/sitter` | อ่าน Booking ของ Sitter ที่ล็อกอิน พร้อมค้นหาและกรองช่วงวันที่ |
+| `GET` | `/api/bookings/sitter/{id}` | อ่านรายละเอียดและบันทึกว่า Sitter เปิดดู Booking แล้ว |
+| `PATCH` | `/api/bookings/sitter/{id}/status` | Confirm, reject หรือปิดงานตาม status transition |
+| `GET` | `/api/sitter/payout` | อ่านยอดรายได้ บัญชีธนาคาร และรายการงานสำเร็จ |
+| `PUT` | `/api/sitter/payout/bank-account` | บันทึกบัญชีรับเงิน |
+| `POST` | `/api/sitter/payout/book-bank-image` | อัปโหลดรูปสมุดบัญชีไป Supabase Storage |
+| `GET` | `/api/messages/conversations` | อ่าน conversation ของผู้ใช้ที่ล็อกอิน |
+| `POST` | `/api/messages/conversations` | Owner สร้างหรือเปิด conversation กับ Sitter |
+| `GET/POST` | `/api/messages/conversations/{id}` | อ่านหรือส่งข้อความ โดยตรวจว่าผู้ใช้เป็นคู่สนทนา |
+| `PATCH` | `/api/messages/conversations/{id}/read` | ทำเครื่องหมายข้อความของอีกฝ่ายว่าอ่านแล้ว |
+| `GET` | `/api/notifications` | อ่าน Notifications ของผู้ใช้ที่ล็อกอิน |
+| `PATCH` | `/api/notifications/{id}/read` | ทำเครื่องหมาย Notification ว่าอ่านแล้ว |
+| `PATCH` | `/api/notifications/read-all` | ทำเครื่องหมาย Notifications ทั้งหมดว่าอ่านแล้ว |
 
 `pending_profile` ใช้รูปแบบเดียวกับ `ProfilePayload` และรวมข้อมูล Basic Information, Pet Sitter, Address, Pet Type, Gallery และ Payout เพื่อให้การแก้ข้อมูลของ Sitter ที่ Approved แล้วไม่ทับ live ก่อน Admin อนุมัติ ส่วน `/api/sitters` ใช้ `ListedSitterResponse` ที่ไม่ส่งข้อมูลส่วนตัว เช่น ID Number และข้อมูลธนาคาร
+
+รูป Profile และ Gallery จะถูกอัปโหลดก่อน แล้ว `pending_profile.avatarUrl` และ `pending_profile.photoUrls` จะเก็บเฉพาะ HTTPS URL เท่านั้น ส่วน Address จะอยู่ใน `pending_profile.addressDetail`, `subDistrict`, `district`, `province`, `postCode`, `latitude` และ `longitude` จนกว่า Admin จะอนุมัติรอบที่ 2 จึงคัดลอกไป live profile
 
 หน้า `/search` เรียก `/api/sitters` โดยส่ง filter ไปที่ server ทั้งหมด:
 

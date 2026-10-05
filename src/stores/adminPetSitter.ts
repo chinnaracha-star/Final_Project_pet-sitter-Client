@@ -25,7 +25,7 @@ export const useAdminPetSitterStore = defineStore('adminPetSitter', () => {
     activeTab.value = 'Profile'
   }
 
-  function setApprovalStatus(status: Exclude<SitterStatus, 'Waiting for approve'>) {
+  function setApprovalStatus(status: SitterStatus) {
     selectedSitterStatus.value = status
   }
 

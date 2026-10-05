@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import NotificationMenu from '../NotificationMenu.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -40,14 +41,7 @@ function logout() {
 
       <div class="hidden md:flex items-center gap-8">
         <template v-if="auth.isOwnerLoggedIn">
-          <button
-            type="button"
-            class="grid size-11 place-items-center rounded-full text-primary-300"
-            aria-label="Notifications are not available yet"
-            disabled
-          >
-            <img src="/navbar/icon-bell.svg" alt="" class="size-6" />
-          </button>
+          <NotificationMenu />
           <div class="relative">
             <button
               type="button"

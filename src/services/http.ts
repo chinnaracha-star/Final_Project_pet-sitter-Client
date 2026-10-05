@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { parseApiError } from './parseApiError'
 
 // Production serves API requests through the hosting site's /api rewrite.
 // Vite's local proxy handles the same paths during development by default.
@@ -26,11 +27,6 @@ async function authHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-async function parseError(response: Response) {
-  const problem = await response.json().catch(() => null) as { detail?: string; message?: string; title?: string } | null
-  return problem?.detail || problem?.message || problem?.title || `Request failed (${response.status})`
-}
-
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers)
   const isForm = options.body instanceof FormData
@@ -39,6 +35,6 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   if (auth.Authorization) headers.set('Authorization', auth.Authorization)
   const response = await fetch(apiUrl(path), { ...options, headers })
   if (response.status === 204) return undefined as T
-  if (!response.ok) throw new ApiError(await parseError(response), response.status)
+  if (!response.ok) throw new ApiError(await parseApiError(response), response.status)
   return response.json() as Promise<T>
 }

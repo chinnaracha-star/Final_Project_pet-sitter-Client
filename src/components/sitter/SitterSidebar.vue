@@ -6,10 +6,10 @@ const bookings = useSitterBookingsStore()
 
 <template>
   <aside class="sidebar">
-    <RouterLink class="brand" to="/" aria-label="Sitter home">
+    <a class="brand" href="/" aria-label="Sitter home">
       <img class="logo" src="/navbar/logo-sitter.svg" width="106" height="32" alt="Sitter" />
       <img class="star" src="/navbar/logo-star.svg" width="17" height="17" alt="" />
-    </RouterLink>
+    </a>
     <nav aria-label="Sitter menu">
       <RouterLink class="nav-item" to="/sitter/profile">
         <span class="nav-icon profile" aria-hidden="true"></span>

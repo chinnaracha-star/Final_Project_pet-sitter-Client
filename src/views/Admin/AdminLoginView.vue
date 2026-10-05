@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
+import { isLocalAdminLogin } from "../../services/localAdminLogin";
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -20,6 +21,12 @@ async function submitLogin() {
   if (emailError.value || passwordError.value) return;
   loading.value = true;
   try {
+    if (isLocalAdminLogin(import.meta.env.DEV, window.location.hostname, email.value, password.value)) {
+      sessionStorage.setItem("pet_sitter_temporary_admin", "true");
+      await router.push("/admin/petsitters");
+      return;
+    }
+    sessionStorage.removeItem("pet_sitter_temporary_admin");
     await auth.login(email.value.trim(), password.value);
     if (!auth.isAdmin) {
       await auth.logout();

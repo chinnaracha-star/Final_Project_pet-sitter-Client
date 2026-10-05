@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import OwnerModal from "../components/owner/OwnerModal.vue";
 import SocialLoginButtons from "../components/SocialLoginButtons.vue";
 import { useAuthRole } from "../composables/useAuthRole";
@@ -9,6 +9,7 @@ import { useAuthStore } from "../stores/auth";
 const { isOwner, registerTo, setRole } = useAuthRole();
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const showPassword = ref(false);
 const email = ref("");
@@ -19,9 +20,11 @@ const notice = ref("");
 async function submitLogin() {
   notice.value = "";
   try {
-    const targetRole = isOwner.value ? "owner" : "sitter";
+    const targetRole = isOwner.value ? "owner" : "pet-sitter";
     await auth.login(email.value, password.value, targetRole);
-    void router.push(targetRole === "sitter" ? "/sitter/profile" : "/owner/profile");
+    const redirect = String(route.query.redirect || "");
+    const safeRedirect = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "";
+    void router.push(safeRedirect || (auth.role === "pet-sitter" ? "/sitter/profile" : "/owner/profile"));
   } catch (cause) {
     notice.value = cause instanceof Error ? cause.message : "Login failed";
   }
@@ -76,7 +79,7 @@ function continueWith(provider: "Facebook" | "Google") {
               : 'text-primary-500'
           "
           :aria-current="!isOwner ? 'page' : undefined"
-          @click="setRole('sitter')"
+          @click="setRole('pet-sitter')"
         >
           Sitter
         </button>

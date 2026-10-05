@@ -19,7 +19,9 @@ const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 const fullName = defineModel<string>("fullName", { required: true });
 
 const auth = useAuthStore();
-const userId = computed(() => auth.role === "pet-sitter" ? auth.userId : null);
+const userId = computed(() =>
+  auth.role === "pet-sitter" ? auth.userId : null,
+);
 const status = ref<ApprovalStatus>("Unverified");
 
 const phone = ref("");
@@ -47,26 +49,33 @@ const bookBankImageUrl = ref("");
 const avatarUrl = ref("");
 const photoUrls = ref<string[]>([]);
 const notice = ref("");
-const photoInput = ref<HTMLInputElement | null>(null);
 const rejectionReason = ref("");
 const loading = ref(false);
 const galleryUploading = ref(false);
-const uiState = computed(() => getProfileUiState(status.value, rejectionReason.value));
+const uiState = computed(() =>
+  getProfileUiState(status.value, rejectionReason.value),
+);
 const showFullProfile = computed(() => uiState.value.showFullProfile);
 const statusClass = computed(() =>
   uiState.value.displayStatus.toLowerCase().replaceAll(" ", "-"),
 );
-function setCoordinates(nextLatitude: number | null, nextLongitude: number | null) {
+function setCoordinates(
+  nextLatitude: number | null,
+  nextLongitude: number | null,
+) {
   latitude.value = nextLatitude;
   longitude.value = nextLongitude;
 }
 
 function setPlace(place: MapAddress & { latitude: number; longitude: number }) {
-  if (place.address) address.value = place.address;
-  if (place.district) district.value = place.district;
-  if (place.subDistrict) subDistrict.value = place.subDistrict;
-  if (place.province) province.value = place.province;
-  if (place.postCode) postCode.value = place.postCode;
+  address.value = place.address;
+  district.value = place.district;
+  subDistrict.value = place.subDistrict;
+  province.value = place.province;
+  postCode.value = place.postCode;
+  notice.value = place.address
+    ? "อัปเดตที่อยู่ตามหมุดแล้ว กรุณาตรวจบ้านเลขที่และข้อมูลที่อยู่ก่อนส่ง"
+    : "ตำแหน่งนี้ไม่มีข้อมูลบ้านเลขที่หรือถนน กรุณากรอก Address detail เพิ่มเติม";
   setCoordinates(place.latitude, place.longitude);
 }
 
@@ -84,7 +93,8 @@ async function changeAvatar(event: Event) {
     avatarUrl.value = (await uploadSitterProfileMedia(file, "profile")).url;
     notice.value = "อัปโหลดรูปโปรไฟล์แล้ว";
   } catch (error) {
-    notice.value = error instanceof Error ? error.message : "ไม่สามารถอัปโหลดรูปได้";
+    notice.value =
+      error instanceof Error ? error.message : "ไม่สามารถอัปโหลดรูปได้";
   } finally {
     loading.value = false;
     input.value = "";
@@ -173,7 +183,8 @@ async function submitProfile() {
     applyResponse(await submitSitterProfile(payload()));
     notice.value = "ส่งข้อมูลให้ Admin ตรวจสอบแล้ว";
   } catch (error) {
-    notice.value = error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้";
+    notice.value =
+      error instanceof Error ? error.message : "ไม่สามารถส่งข้อมูลได้";
   } finally {
     loading.value = false;
   }
@@ -192,7 +203,8 @@ onMounted(async () => {
   try {
     applyResponse(await getOwnProfile());
   } catch (error) {
-    notice.value = error instanceof Error ? error.message : "ไม่สามารถโหลดโปรไฟล์ได้";
+    notice.value =
+      error instanceof Error ? error.message : "ไม่สามารถโหลดโปรไฟล์ได้";
   } finally {
     loading.value = false;
   }
@@ -204,7 +216,9 @@ onMounted(async () => {
     <div class="page-heading">
       <div>
         <h1 class="text-2xl font-bold">Pet Sitter Profile</h1>
-        <span class="status" :class="statusClass">{{ uiState.displayStatus }}</span>
+        <span class="status" :class="statusClass">{{
+          uiState.displayStatus
+        }}</span>
       </div>
       <button
         v-if="uiState.canSubmit"
@@ -227,198 +241,201 @@ onMounted(async () => {
     <p v-if="notice" class="demo-notice" role="status">{{ notice }}</p>
 
     <form id="profile-form" @submit.prevent="submitProfile">
-      <fieldset class="profile-fields" :disabled="loading || galleryUploading || uiState.readOnly">
-      <section class="card">
-        <h2>Basic Information</h2>
-        <label class="image-label">Profile Image</label>
-        <div class="avatar-picker">
-          <div class="avatar-placeholder" aria-label="Profile image">
-            <img v-if="avatarUrl" :src="avatarUrl" alt="Selected profile" />
-            <img v-else class="avatar-fallback" src="/icon/user.svg" alt="" />
-          </div>
-          <button
-            v-if="!uiState.readOnly"
-            type="button"
-            class="add-avatar"
-            aria-label="Choose profile image"
-            @click="photoInput?.click()"
-          >
-            ＋
-          </button>
-          <input
-            ref="photoInput"
-            class="visually-hidden"
-            type="file"
-            accept="image/*"
-            aria-label="Profile image"
-            @change="changeAvatar"
-          />
-        </div>
-        <div class="fields">
-          <div class="field">
-            <label for="full-name">Your full name <b>*</b></label>
-            <input
-              id="full-name"
-              v-model.trim="fullName"
-              autocomplete="name"
-              required
-            />
-          </div>
-          <div class="field">
-            <label for="experience">Experience <b>*</b></label>
-            <select id="experience" v-model="experience" required>
-              <option value="" disabled>Select experience</option>
-              <option>0–1 year</option>
-              <option>1–3 years</option>
-              <option>3–5 years</option>
-              <option>5+ years</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="phone">Phone Number <b>*</b></label>
-            <input
-              id="phone"
-              v-model.trim="phone"
-              type="tel"
-              autocomplete="tel"
-              required
-            />
-          </div>
-          <div class="field">
-            <label for="email">Email <b>*</b></label>
-            <input
-              id="email"
-              v-model.trim="email"
-              type="email"
-              autocomplete="email"
-              required
-            />
-          </div>
-          <div class="field">
-            <label for="dob">Date of Birth <b>*</b></label>
-            <input id="dob" v-model="dateOfBirth" type="date" required />
-          </div>
-          <div class="field">
-            <label for="id-number">ID Number <b>*</b></label>
-            <input
-              id="id-number"
-              v-model.trim="idNumber"
-              inputmode="numeric"
-              required
-            />
-          </div>
-          <div class="field wide">
-            <label for="intro"
-              >Introduction (Describe about yourself as pet sitter)</label
+      <fieldset
+        class="profile-fields"
+        :disabled="loading || galleryUploading || uiState.readOnly"
+      >
+        <section class="card">
+          <h2>Basic Information</h2>
+          <label class="image-label">Profile Image</label>
+          <label class="avatar-picker">
+            <span class="avatar-placeholder">
+              <img v-if="avatarUrl" :src="avatarUrl" alt="Selected profile" />
+              <img v-else class="avatar-fallback" src="/icon/user.svg" alt="" />
+            </span>
+            <span v-if="!uiState.readOnly" class="add-avatar" aria-hidden="true"
+              >＋</span
             >
-            <textarea id="intro" v-model.trim="introduction" rows="5" />
+            <input
+              v-if="!uiState.readOnly"
+              class="avatar-file"
+              type="file"
+              accept="image/*"
+              aria-label="Choose profile image"
+              @change="changeAvatar"
+            />
+          </label>
+          <div class="fields">
+            <div class="field">
+              <label for="full-name">Your full name <b>*</b></label>
+              <input
+                id="full-name"
+                v-model.trim="fullName"
+                autocomplete="name"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="experience">Experience <b>*</b></label>
+              <select id="experience" v-model="experience" required>
+                <option value="" disabled>Select experience</option>
+                <option>0–1 year</option>
+                <option>1–3 years</option>
+                <option>3–5 years</option>
+                <option>5+ years</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="phone">Phone Number <b>*</b></label>
+              <input
+                id="phone"
+                v-model.trim="phone"
+                type="tel"
+                autocomplete="tel"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="email">Email <b>*</b></label>
+              <input
+                id="email"
+                v-model.trim="email"
+                type="email"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="dob">Date of Birth <b>*</b></label>
+              <input id="dob" v-model="dateOfBirth" type="date" required />
+            </div>
+            <div class="field">
+              <label for="id-number">ID Number <b>*</b></label>
+              <input
+                id="id-number"
+                v-model.trim="idNumber"
+                inputmode="numeric"
+                required
+              />
+            </div>
+            <div class="field wide">
+              <label for="intro"
+                >Introduction (Describe about yourself as pet sitter)</label
+              >
+              <textarea id="intro" v-model.trim="introduction" rows="5" />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section v-if="showFullProfile" class="card">
-        <h2>Pet Sitter</h2>
-        <div class="fields">
-          <div class="field">
-            <label for="sitter-name"
-              >Pet sitter name (Trade Name) <b>*</b></label
-            >
-            <input id="sitter-name" v-model.trim="sitterName" required />
-          </div>
-          <fieldset class="field wide pet-types">
-            <legend>Pet type <b>*</b></legend>
-            <details
-              class="pet-type-select"
-              :class="{ 'is-disabled': uiState.readOnly }"
-              @click="uiState.readOnly && $event.preventDefault()"
-            >
-              <summary>
-                <span v-if="petTypes.length === 0" class="pet-placeholder">
-                  Select pet type
-                </span>
-                <span v-else class="pet-chips">
-                  <span v-for="pet in petTypes" :key="pet" class="pet-chip">
-                    {{ pet }}
-                    <button
-                      type="button"
-                      :aria-label="`Remove ${pet}`"
-                      @click.stop.prevent="removePetType(pet)"
-                    >
-                      ×
-                    </button>
+        <section v-if="showFullProfile" class="card">
+          <h2>Pet Sitter</h2>
+          <div class="fields">
+            <div class="field">
+              <label for="sitter-name"
+                >Pet sitter name (Trade Name) <b>*</b></label
+              >
+              <input id="sitter-name" v-model.trim="sitterName" required />
+            </div>
+            <fieldset class="field wide pet-types">
+              <legend>Pet type <b>*</b></legend>
+              <details
+                class="pet-type-select"
+                :class="{ 'is-disabled': uiState.readOnly }"
+                @click="uiState.readOnly && $event.preventDefault()"
+              >
+                <summary>
+                  <span v-if="petTypes.length === 0" class="pet-placeholder">
+                    Select pet type
                   </span>
-                </span>
-              </summary>
-              <div class="pet-options">
-                <label v-for="pet in PET_TYPES" :key="pet">
-                  <input v-model="petTypes" type="checkbox" :value="pet" />
-                  {{ pet }}
-                </label>
-              </div>
-            </details>
-          </fieldset>
-          <div class="field wide">
-            <label for="services"
-              >Services (Describe your service for pet sitting)</label
-            >
-            <textarea id="services" v-model.trim="services" rows="4" />
-          </div>
-          <div class="field wide">
-            <label for="my-place">My Place (Describe your place)</label>
-            <textarea id="my-place" v-model.trim="myPlace" rows="4" />
-          </div>
-          <ProfileGallery
-            v-model="photoUrls"
-            :readonly="uiState.readOnly"
-            @uploading="galleryUploading = $event"
-          />
-        </div>
-      </section>
-
-      <section v-if="showFullProfile" class="card">
-        <h2>Address</h2>
-        <div class="fields">
-          <div class="field wide">
-            <label for="address">Address detail <b>*</b></label>
-            <input id="address" v-model.trim="address" required />
-          </div>
-          <div class="field">
-            <label for="district">District <b>*</b></label>
-            <input id="district" v-model.trim="district" required />
-          </div>
-          <div class="field">
-            <label for="sub-district">Sub-district <b>*</b></label>
-            <input id="sub-district" v-model.trim="subDistrict" required />
-          </div>
-          <div class="field">
-            <label for="province">Province <b>*</b></label>
-            <input id="province" v-model.trim="province" required />
-          </div>
-          <div class="field">
-            <label for="post-code">Post code <b>*</b></label>
-            <input
-              id="post-code"
-              v-model.trim="postCode"
-              inputmode="numeric"
-              required
+                  <span v-else class="pet-chips">
+                    <span v-for="pet in petTypes" :key="pet" class="pet-chip">
+                      {{ pet }}
+                      <button
+                        type="button"
+                        :aria-label="`Remove ${pet}`"
+                        @click.stop.prevent="removePetType(pet)"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </span>
+                </summary>
+                <div class="pet-options">
+                  <label v-for="pet in PET_TYPES" :key="pet">
+                    <input v-model="petTypes" type="checkbox" :value="pet" />
+                    {{ pet }}
+                  </label>
+                </div>
+              </details>
+            </fieldset>
+            <div class="field wide">
+              <label for="services"
+                >Services (Describe your service for pet sitting)</label
+              >
+              <textarea id="services" v-model.trim="services" rows="4" />
+            </div>
+            <div class="field wide">
+              <label for="my-place">My Place (Describe your place)</label>
+              <textarea id="my-place" v-model.trim="myPlace" rows="4" />
+            </div>
+            <ProfileGallery
+              v-model="photoUrls"
+              :readonly="uiState.readOnly"
+              @uploading="galleryUploading = $event"
             />
           </div>
-        </div>
-        <AddressMap
-          :address="address"
-          :district="district"
-          :sub-district="subDistrict"
-          :province="province"
-          :post-code="postCode"
-          :latitude="latitude"
-          :longitude="longitude"
-          @coordinates="setCoordinates"
-          @place="setPlace"
-        />
-      </section>
+        </section>
+
+        <section v-if="showFullProfile" class="card">
+          <h2>Address</h2>
+          <div class="fields">
+            <div class="field wide">
+              <label for="address">Address detail <b>*</b></label>
+              <input id="address" v-model.trim="address" required />
+            </div>
+            <div class="field">
+              <label for="district">District <b>*</b></label>
+              <input id="district" v-model.trim="district" required />
+            </div>
+            <div class="field">
+              <label for="sub-district">Sub-district <b>*</b></label>
+              <input id="sub-district" v-model.trim="subDistrict" required />
+            </div>
+            <div class="field">
+              <label for="province">Province <b>*</b></label>
+              <input id="province" v-model.trim="province" required />
+            </div>
+            <div class="field">
+              <label for="post-code">Post code <b>*</b></label>
+              <input
+                id="post-code"
+                v-model.trim="postCode"
+                inputmode="numeric"
+                required
+              />
+            </div>
+          </div>
+          <AddressMap
+              :readonly="loading || uiState.readOnly"
+            :address="address"
+            :district="district"
+            :sub-district="subDistrict"
+            :province="province"
+            :post-code="postCode"
+            :latitude="latitude"
+            :longitude="longitude"
+            @coordinates="setCoordinates"
+            @place="setPlace"
+          />
+        </section>
       </fieldset>
       <div v-if="uiState.canSubmit" class="form-actions">
-        <button type="submit" :disabled="loading || galleryUploading || !userId">{{ uiState.actionText }}</button>
+        <button
+          type="submit"
+          :disabled="loading || galleryUploading || !userId"
+        >
+          {{ uiState.actionText }}
+        </button>
       </div>
     </form>
   </main>
@@ -490,7 +507,8 @@ h1 {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  filter: invert(32%) sepia(63%) saturate(2148%) hue-rotate(330deg) brightness(96%);
+  filter: invert(32%) sepia(63%) saturate(2148%) hue-rotate(330deg)
+    brightness(96%);
 }
 .approved-note {
   color: #168e62;
@@ -519,8 +537,19 @@ h2 {
 }
 .avatar-picker {
   position: relative;
+  display: block;
   width: 210px;
   margin-bottom: 28px;
+  cursor: pointer;
+}
+.avatar-file {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 .avatar-placeholder {
   display: grid;
@@ -543,15 +572,18 @@ h2 {
 }
 .add-avatar {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 52px;
-  height: 52px;
-  border: 0;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   color: #ff713e;
   background: #fff2eb;
-  font-size: 30px;
+  font-size: 22px;
+  line-height: 1;
 }
 .fields {
   display: grid;

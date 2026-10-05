@@ -12,12 +12,19 @@ function stripAdmin(value: string | undefined) {
 
 export function placeFromNominatim(address: Record<string, string | undefined> | undefined): MapAddress {
   const source = address ?? {}
-  const district = stripAdmin(source.suburb || source.city_district || source.county || source.town)
+  const administrativeNames = [source.city_district, source.county, source.suburb, source.town, source.quarter, source.village, source.municipality]
+  const district = stripAdmin(
+    administrativeNames.find(value => /^(เขต|อำเภอ)/u.test(value ?? ''))
+      || source.city_district || source.county || source.suburb || source.town,
+  )
   const province = stripAdmin(source.state || source.province || source.city)
   return {
     address: [source.house_number, source.road || source.pedestrian].filter(Boolean).join(' '),
     district: district === province ? '' : district,
-    subDistrict: stripAdmin(source.quarter || source.village || source.municipality),
+    subDistrict: stripAdmin(
+      administrativeNames.find(value => /^(แขวง|ตำบล)/u.test(value ?? ''))
+        || source.quarter || source.village || source.municipality || source.neighbourhood,
+    ),
     province,
     postCode: (source.postcode ?? '').trim(),
   }

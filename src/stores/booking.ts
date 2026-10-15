@@ -48,10 +48,10 @@ export const useBookingStore = defineStore('booking', () => {
   // Sitter Information
   const sitter = ref<SitterBookingSummary>(
     initial?.sitter ?? {
-      id: '7f3a9c21-6b84-4d17-a2e9-51c8f0b7436d',
-      placeName: 'Happy House!',
-      ownerName: 'Jane Maison',
-      hourlyRate: 200,
+      id: '',
+      placeName: '',
+      ownerName: '',
+      hourlyRate: 0,
     }
   )
 
@@ -61,10 +61,10 @@ export const useBookingStore = defineStore('booking', () => {
   // Customer Information (Step 2)
   const customerInfo = ref<BookingCustomerInfo>(
     initial?.customerInfo?.name ? initial.customerInfo : {
-      name: authStore.profile?.name || 'Jane Doe',
-      email: authStore.profile?.email || 'jane.doe@example.com',
-      phone: authStore.profile?.phone || '081-234-5678',
-      additionalMessage: 'Please take good care of my pets!',
+      name: authStore.profile?.name || '',
+      email: authStore.profile?.email || '',
+      phone: authStore.profile?.phone || '',
+      additionalMessage: '',
     }
   )
 
@@ -72,10 +72,10 @@ export const useBookingStore = defineStore('booking', () => {
   const paymentMethod = ref<PaymentMethod>(initial?.paymentMethod ?? 'credit_card')
   const creditCardInfo = ref<CreditCardInfo>(
     initial?.creditCardInfo?.cardNumber ? initial.creditCardInfo : {
-      cardNumber: '4111 2222 3333 4444',
-      cardOwner: 'Jane Doe',
-      expiryDate: '12/28',
-      cvv: '123',
+      cardNumber: '',
+      cardOwner: authStore.profile?.name || '',
+      expiryDate: '',
+      cvv: '',
     }
   )
 

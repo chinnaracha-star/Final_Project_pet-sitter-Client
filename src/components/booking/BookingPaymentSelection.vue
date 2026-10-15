@@ -26,10 +26,10 @@ const emit = defineEmits<{
 const activeMethod = ref<PaymentMethod>(props.initialMethod)
 
 const card = reactive<CreditCardInfo>({
-  cardNumber: props.initialCard?.cardNumber || '4111 2222 3333 4444',
-  cardOwner: props.initialCard?.cardOwner || 'Jane Doe',
-  expiryDate: props.initialCard?.expiryDate || '12/28',
-  cvv: props.initialCard?.cvv || '123',
+  cardNumber: props.initialCard?.cardNumber || '',
+  cardOwner: props.initialCard?.cardOwner || '',
+  expiryDate: props.initialCard?.expiryDate || '',
+  cvv: props.initialCard?.cvv || '',
 })
 
 watch(

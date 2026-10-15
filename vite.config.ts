@@ -8,9 +8,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [vue(), tailwindcss()],
-    define: {
-      global: 'globalThis',
-    },
+    define: { global: 'globalThis' },
     server: {
       port: 5174,
       strictPort: true,

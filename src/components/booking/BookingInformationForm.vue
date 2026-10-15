@@ -12,10 +12,10 @@ const emit = defineEmits<{
 }>()
 
 const form = reactive<BookingCustomerInfo>({
-  name: props.initialData?.name || 'Jane Doe',
-  email: props.initialData?.email || 'jane.doe@example.com',
-  phone: props.initialData?.phone || '081-234-5678',
-  additionalMessage: props.initialData?.additionalMessage || 'Please take good care of my pets!',
+  name: props.initialData?.name || '',
+  email: props.initialData?.email || '',
+  phone: props.initialData?.phone || '',
+  additionalMessage: props.initialData?.additionalMessage || '',
 })
 
 // Watch for external prop updates

@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useChatStore } from '../../stores/chat'
 import NotificationMenu from '../NotificationMenu.vue'
 
-defineProps<{ name: string; avatarUrl?: string }>()
+defineProps<{ name?: string; avatarUrl?: string }>()
 
 const chat = useChatStore()
 onMounted(() => void chat.loadConversations())
@@ -16,7 +16,7 @@ onMounted(() => void chat.loadConversations())
         <img v-if="avatarUrl" class="size-10 object-cover" :src="avatarUrl" alt="" />
         <img v-else src="/icon/user.svg" alt="" width="20" height="20" />
       </span>
-      <span class="font-medium text-primary-900">{{ name || 'Jane Maison' }}</span>
+      <span class="font-medium text-primary-900">{{ name || 'Pet sitter' }}</span>
     </div>
     <div class="flex items-center gap-1">
       <NotificationMenu />

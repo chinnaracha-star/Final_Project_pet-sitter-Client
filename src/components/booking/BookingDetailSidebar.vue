@@ -12,9 +12,9 @@ const props = withDefaults(
   }>(),
   {
     sitter: () => ({
-      placeName: 'Happy House!',
-      ownerName: 'Jane Maison',
-      hourlyRate: 200,
+      placeName: '',
+      ownerName: '',
+      hourlyRate: 0,
     }),
   }
 )

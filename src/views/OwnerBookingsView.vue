@@ -10,9 +10,11 @@ import ReportModal from '../components/owner/ReportModal.vue'
 import ReviewModal from '../components/owner/ReviewModal.vue'
 import YourReviewModal from '../components/owner/YourReviewModal.vue'
 import { useOwnerBookingsStore } from '../stores/ownerBookings'
+import { useChatStore } from '../stores/chat'
 import type { OwnerBooking } from '../types/owner'
 
 const bookings = useOwnerBookingsStore()
+const chat = useChatStore()
 const router = useRouter()
 const selected = ref<OwnerBooking | null>(null)
 const detailOpen = ref(false)
@@ -93,6 +95,19 @@ function viewSitter() {
   if (!selected.value) return
   void router.push(`/sitters/${selected.value.sitterId}`)
 }
+
+async function messageSitter(booking: OwnerBooking) {
+  if (!booking.sitterId) {
+    notice.value = 'This booking has no pet sitter yet.'
+    return
+  }
+  try {
+    await chat.startConversation(booking.sitterId)
+    chat.isOpen = true
+  } catch (cause) {
+    showError(cause)
+  }
+}
 </script>
 
 <template>
@@ -114,6 +129,7 @@ function viewSitter() {
         @review="openReview(booking)"
         @your-review="openYourReview(booking)"
         @change="openChange(booking)"
+        @message="messageSitter(booking)"
       />
     </div>
 

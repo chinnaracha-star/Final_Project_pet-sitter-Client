@@ -11,6 +11,7 @@ const emit = defineEmits<{
   review: []
   yourReview: []
   change: []
+  message: []
 }>()
 
 function formatDate(value: string) {
@@ -105,21 +106,8 @@ const statusLabel: Record<OwnerBooking['status'], string> = {
     >
       <p class="text-sm text-primary-700">{{ booking.bannerText }}</p>
       <div class="flex gap-2">
-        <button type="button" class="auth-submit min-h-10 cursor-not-allowed px-5 text-sm opacity-50" disabled title="Coming soon">
+        <button type="button" class="auth-submit min-h-10 px-5 text-sm" :disabled="!booking.sitterId" @click.stop="emit('message')">
           Send Message
-        </button>
-        <button
-          type="button"
-          class="grid size-10 cursor-not-allowed place-items-center rounded-full bg-orange-100 text-orange-700 opacity-50"
-          aria-label="Call is coming soon"
-          disabled
-          title="Coming soon"
-        >
-          <span
-            class="size-5 bg-current"
-            style="mask: url('/icon/phone.svg') center / contain no-repeat; -webkit-mask: url('/icon/phone.svg') center / contain no-repeat"
-            aria-hidden="true"
-          />
         </button>
       </div>
     </div>

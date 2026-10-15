@@ -8,10 +8,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [vue(), tailwindcss()],
+    define: { global: 'globalThis' },
     server: {
       port: 5174,
       strictPort: true,
-      proxy: { "/api": `http://localhost:${apiPort}` },
+      proxy: {
+      "/api": `http://localhost:${apiPort}`,
+      "/ws": { target: `http://localhost:${apiPort}`, ws: true, changeOrigin: true },
+    },
     },
   };
 });

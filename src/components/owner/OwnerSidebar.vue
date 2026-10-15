@@ -10,6 +10,7 @@ const links = [
   { to: '/owner/profile', label: 'Profile', icon: '/icon/profile.svg', match: 'exact' as const },
   { to: '/owner/pets', label: 'Your Pet', icon: '/icon/paw.svg', match: 'prefix' as const },
   { to: '/owner/bookings', label: 'Booking History', icon: '/icon/list.svg', match: 'exact' as const },
+  { to: '/owner/messages', label: 'Messages', icon: '/icon/message.svg', match: 'exact' as const },
   { to: '/owner/password', label: 'Change Password', icon: '/icon/settings.svg', match: 'exact' as const },
 ]
 

@@ -2,11 +2,20 @@ import { api } from './http'
 
 export type BookingStatus = 'waiting_confirm' | 'waiting_service' | 'in_service' | 'success' | 'cancelled'
 export type BookingPet = { id: number; name: string; breed: string; sex: string; ageMonths: number; color: string; weightKg: number; about: string; avatarUrl: string }
+export type BookingOwner = {
+  id?: string
+  userId?: string
+  name: string
+  email: string
+  phone: string
+  avatarUrl: string
+}
+
 export type SitterBooking = {
   id: number; status: BookingStatus; startDate: string; endDate: string; startTime: string; endTime: string
   duration: number; durationUnit: string; totalPrice: number; transactionNo: string | null; transactionDate: string
   sitterViewedAt: string | null; additionalMessage: string
-  owner: { name: string; email: string; phone: string; avatarUrl: string }; pets: BookingPet[]
+  owner: BookingOwner; pets: BookingPet[]
 }
 
 export function getSitterBookings(query = '', from?: string, to?: string) {

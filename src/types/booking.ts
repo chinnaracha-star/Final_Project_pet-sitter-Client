@@ -14,7 +14,7 @@ export interface TimeSlotOption {
 export interface SitterBookingSummary {
   id?: string
   placeName: string // e.g. 'Happy House!'
-  ownerName: string // e.g. 'Jane Maison'
+  ownerName: string
   hourlyRate: number // e.g. 200
 }
 

@@ -198,24 +198,29 @@ async function handleFinalConfirmBooking() {
 
   let finalTxnNo = Math.floor(100000 + Math.random() * 900000).toString()
 
+  if (!bookingStore.sitter.id) {
+    showToast('Select a pet sitter before confirming the booking')
+    return
+  }
+
   try {
     const payload = {
-      sitterId: bookingStore.sitter.id || '7f3a9c21-6b84-4d17-a2e9-51c8f0b7436d',
+      sitterId: bookingStore.sitter.id,
       startDate: bookingStore.schedule.date || new Date().toISOString().split('T')[0],
       endDate: bookingStore.schedule.date || new Date().toISOString().split('T')[0],
       startTime: toLocalTimeString(bookingStore.schedule.startTime),
       endTime: toLocalTimeString(bookingStore.schedule.endTime),
       duration: Math.max(1, bookingStore.durationHours),
       durationUnit: 'hours',
-      contactName: bookingStore.customerInfo.name || 'Jane Doe',
-      contactEmail: bookingStore.customerInfo.email || 'jane.doe@example.com',
-      contactPhone: bookingStore.customerInfo.phone || '081-234-5678',
+      contactName: bookingStore.customerInfo.name || authStore.profile.name,
+      contactEmail: bookingStore.customerInfo.email || authStore.profile.email,
+      contactPhone: bookingStore.customerInfo.phone || authStore.profile.phone,
       additionalMessage: bookingStore.customerInfo.additionalMessage || '',
       totalPrice: Number(bookingStore.totalPrice) || 200,
       paymentMethod: bookingStore.paymentMethod || 'credit_card',
       petIds: bookingStore.selectedPets.map(p => Number(p.id)).filter(id => !isNaN(id)),
-      cardOwnerName: bookingStore.creditCardInfo.cardOwner || 'Jane Doe',
-      cardNumber: bookingStore.creditCardInfo.cardNumber || '4111 2222 3333 4444',
+      cardOwnerName: bookingStore.creditCardInfo.cardOwner || authStore.profile.name,
+      cardNumber: bookingStore.creditCardInfo.cardNumber,
     }
 
     const headers: Record<string, string> = {}

@@ -10,8 +10,7 @@ defineProps<{
 <template>
   <div class="flex max-w-[75%] items-end gap-2" :class="isMine ? 'ml-auto flex-row-reverse' : ''">
     <img
-      v-if="!isMine && avatarUrl"
-      :src="avatarUrl"
+      :src="avatarUrl || '/icon/user.svg'"
       alt=""
       class="size-8 shrink-0 rounded-full object-cover"
     />

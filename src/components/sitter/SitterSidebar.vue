@@ -28,6 +28,10 @@ const bookings = useSitterBookingsStore()
         <span class="nav-icon card" aria-hidden="true"></span>
         <span class="label">Payout Option</span>
       </RouterLink>
+      <RouterLink class="nav-item" to="/sitter/messages">
+        <span class="nav-icon chat" aria-hidden="true"></span>
+        <span class="label">Messages</span>
+      </RouterLink>
     </nav>
     <RouterLink class="nav-item logout" :to="{ path: '/login', query: { role: 'pet-sitter' } }">
       <span class="nav-icon exit" aria-hidden="true"></span>
@@ -83,6 +87,7 @@ const bookings = useSitterBookingsStore()
 .list { --icon: url('/icon/list.svg'); }
 .calendar { --icon: url('/icon/calendar.svg'); }
 .card { --icon: url('/icon/credit-card.svg'); }
+.chat { --icon: url('/icon/message.svg'); }
 .exit { --icon: url('/navbar/menu-logout.svg'); }
 .badge {
   width: 6px;

@@ -8,10 +8,10 @@
     "build": "vue-tsc -b && vite build",
     "test:profile-flow": "node --experimental-strip-types --test tests/profileFlow.test.mjs",
     "test:ocr": "node --experimental-strip-types --test tests/accountNumberOcr.test.mjs",
-    "test:sitter-demo": "node --experimental-strip-types --test tests/sitterDemoFlow.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.4.0",
     "@supabase/supabase-js": "^2.116.0",
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.20.0",
